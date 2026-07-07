@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paiement Réussi - OmniPay</title>
+<style>
+body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+.box { background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 350px; }
+.icon { font-size: 60px; margin-bottom: 20px; }
+h1 { color: #28a745; margin-bottom: 10px; }
+p { color: #666; margin-bottom: 20px; }
+a { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon" id="icon">⏳</div>
+  <h1 id="title">Vérification...</h1>
+  <p id="text">Confirmation de votre paiement en cours.</p>
+  <a href="/dashboard.html">Retour au dashboard</a>
+</div>
+<script>
+const params = new URLSearchParams(window.location.search);
+const sessionId = params.get('session_id');
+
+async function confirmPayment() {
+  if (!sessionId) {
+    document.getElementById('title').textContent = 'Erreur';
+    document.getElementById('text').textContent = 'Session introuvable';
+    return;
+  }
+  try {
+    const res = await fetch('/api/payments/confirm?session_id=' + sessionId);
+    const data = await res.json();
+    if (data.status === 'paid') {
+      document.getElementById('icon').textContent = '✅';
+      document.getElementById('title').textContent = 'Paiement réussi !';
+      document.getElementById('text').textContent = 'Votre solde a été mis à jour.';
+
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (user) {
+        const res2 = await fetch('/api/users/balance?userId=' + user.id);
+        const data2 = await res2.json();
+        if (data2.success) {
+          localStorage.setItem('user', JSON.stringify(data2.user));
+        }
+      }
+    } else {
+      document.getElementById('icon').textContent = '⚠️';
+      document.getElementById('title').textContent = 'Paiement en attente';
+    }
+  } catch (err) {
+    document.getElementById('title').textContent = 'Erreur de vérification';
+  }
+}
+confirmPayment();
+</script>
+</body>
+</html>
