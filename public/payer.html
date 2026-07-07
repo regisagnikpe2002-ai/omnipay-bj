@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payer - OmniPay</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.container { max-width: 400px; width: 100%; background: white; border-radius: 15px; padding: 40px; text-align: center; }
+h1 { color: #667eea; margin-bottom: 20px; }
+.form-group { margin-bottom: 15px; text-align: left; }
+label { display: block; margin-bottom: 6px; font-weight: 600; }
+input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+.btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+.btn:disabled { opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💳 Payer avec OmniPay</h1>
+  <div class="form-group"><label>Montant (EUR)</label><input type="number" id="amount" value="10" min="1"></div>
+  <div class="form-group"><label>Description</label><input type="text" id="description" value="Paiement OmniPay"></div>
+  <button class="btn" id="payBtn" onclick="payer()">Payer maintenant</button>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/auth.html';
+
+async function payer() {
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true; btn.textContent = 'Chargement...';
+  const amount = document.getElementById('amount').value;
+  const description = document.getElementById('description').value;
+
+  try {
+    const res = await fetch('/api/payments/create-checkout', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ amount, description, userId: user.id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = data.url;
+    } else {
+      alert(data.error);
+      btn.disabled = false; btn.textContent = 'Payer maintenant';
+    }
+  } catch (err) {
+    alert('Erreur de connexion');
+    btn.disabled = false; btn.textContent = 'Payer maintenant';
+  }
+}
+</script>
+</body>
+</html>
