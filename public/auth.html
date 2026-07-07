@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniPay - Connexion</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.container { max-width: 400px; width: 100%; background: white; border-radius: 15px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+h1 { text-align: center; color: #667eea; margin-bottom: 20px; }
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
+.tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; color: #999; font-weight: 600; border-bottom: 3px solid transparent; }
+.tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+.form-tab { display: none; }
+.form-tab.active { display: block; }
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+.btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+.btn:disabled { opacity: 0.5; }
+.message { padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; }
+.message.success { background: #d4edda; color: #155724; display: block; }
+.message.error { background: #f8d7da; color: #721c24; display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💳 OmniPay</h1>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('login')">Connexion</button>
+    <button class="tab-btn" onclick="switchTab('register')">Inscription</button>
+  </div>
+  <div class="message" id="message"></div>
+
+  <form id="loginForm" class="form-tab active" onsubmit="handleLogin(event)">
+    <div class="form-group"><label>Email</label><input type="email" id="login-email" required></div>
+    <div class="form-group"><label>Mot de passe</label><input type="password" id="login-password" required></div>
+    <button type="submit" class="btn" id="loginBtn">Se connecter</button>
+  </form>
+
+  <form id="registerForm" class="form-tab" onsubmit="handleRegister(event)">
+    <div class="form-group"><label>Nom complet</label><input type="text" id="register-name" required></div>
+    <div class="form-group"><label>Email</label><input type="email" id="register-email" required></div>
+    <div class="form-group"><label>Téléphone</label><input type="tel" id="register-phone"></div>
+    <div class="form-group"><label>Mot de passe (min 6 caractères)</label><input type="password" id="register-password" minlength="6" required></div>
+    <button type="submit" class="btn" id="registerBtn">Créer mon compte</button>
+  </form>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.form-tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tab + 'Form').classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showMessage(text, type) {
+  const msg = document.getElementById('message');
+  msg.textContent = text;
+  msg.className = 'message ' + type;
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Connexion...';
+
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
+      showMessage('Connexion réussie !', 'success');
+      setTimeout(() => window.location.href = '/dashboard.html', 800);
+    } else {
+      showMessage(data.error, 'error');
+      btn.disabled = false; btn.textContent = 'Se connecter';
+    }
+  } catch (err) {
+    showMessage('Erreur de connexion au serveur', 'error');
+    btn.disabled = false; btn.textContent = 'Se connecter';
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true; btn.textContent = 'Création...';
+
+  const name = document.getElementById('register-name').value;
+  const email = document.getElementById('register-email').value;
+  const phone = document.getElementById('register-phone').value;
+  const password = document.getElementById('register-password').value;
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, email, phone, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showMessage('Compte créé ! Connectez-vous maintenant.', 'success');
+      document.querySelector('.tab-btn').click();
+    } else {
+      showMessage(data.error, 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Créer mon compte';
+  } catch (err) {
+    showMessage('Erreur de connexion au serveur', 'error');
+    btn.disabled = false; btn.textContent = 'Créer mon compte';
+  }
+}
+</script>
+</body>
+</html>
