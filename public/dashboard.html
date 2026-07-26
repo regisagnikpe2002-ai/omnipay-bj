@@ -1,1 +1,47 @@
-public/dashboard.html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - OmniPay</title>
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; padding: 20px; }
+.container { max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; padding: 40px; }
+h1 { color: #667eea; margin-bottom: 20px; }
+.user-info { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+.balance { font-size: 24px; font-weight: 600; color: #28a745; }
+a { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💳 Tableau de bord</h1>
+  <div class="user-info">
+    <p>Bienvenue <strong id="userName"></strong></p>
+    <p class="balance">Solde: <span id="balance">0.00</span> EUR</p>
+  </div>
+  <a href="/payer.html">Faire un paiement</a>
+  <a href="#" onclick="logout()">Déconnexion</a>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) {
+  window.location.href = '/auth.html';
+} else {
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('balance').textContent = (user.balance || 0).toFixed(2);
+}
+
+function logout() {
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  window.location.href = '/index.html';
+}
+</script>
+</body>
+</html>
