@@ -2,96 +2,73 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { findUserByEmail, createUser } = require('../models/userModel');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'omnipay-secret-key';
-const JWT_EXPIRES_IN = '7d';
+// Inscription
+async function register(req, res) {
+  const { email, mot_de_passe, nom, role } = req.body;
 
-function generateToken(user) {
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.rôle
-    },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
+  try {
+    const userExists = await findUserByEmail(email);
+    if (userExists) {
+      return res.status(400).json({ message: 'Email déjà utilisé' });
+    }
+
+    const mot_de_passe_hash = await bcrypt.hash(mot_de_passe, 10);
+
+    const newUser = await createUser({
+      email,
+      mot_de_passe_hash,
+      nom,
+      role: role || 'client'
+    });
+
+    res.status(201).json({
+      message: 'Utilisateur créé avec succès',
+      user: newUser
+    });
+  } catch (error) {
+    console.error('Erreur register:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
 }
 
-exports.register = async (req, res) => {
+// Connexion
+async function login(req, res) {
+  const { email, mot_de_passe } = req.body;
+
   try {
-    const { email, password, nom } = req.body;
-
-    if (!email || !password || !nom)
-      return res.status(400).json({ erreur: 'Email, mot de passe et nom requis' });
-
-    const existing = await findUserByEmail(email);
-    if (existing)
-      return res.status(409).json({ erreur: 'Un compte existe déjà avec cet email' });
-
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(password, salt);
-
-    const user = await createUser({
-      email,
-      mot_de_passe_hash: hash,
-      nom,
-      role: 'client'
-    });
-
-    const token = generateToken(user);
-
-    return res.status(201).json({
-      succès: true,
-      token,
-      utilisateur: {
-        id: user.id,
-        email: user.email,
-        nom: user.nom,
-        rôle: user.rôle
-      }
-    });
-  } catch (err) {
-    console.error('Erreur register:', err);
-    return res.status(500).json({ erreur: 'Erreur interne du serveur' });
-  }
-};
-
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password)
-      return res.status(400).json({ erreur: 'Email et mot de passe requis' });
-
     const user = await findUserByEmail(email);
-    if (!user)
-      return res.status(401).json({ erreur: 'Email ou mot de passe invalide' });
+    if (!user) {
+      return res.status(400).json({ message: 'Utilisateur introuvable' });
+    }
 
-    const valid = await bcrypt.compare(password, user.mot_de_passe);
-    if (!valid)
-      return res.status(401).json({ erreur: 'Email ou mot de passe invalide' });
+    const isMatch = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Mot de passe incorrect' });
+    }
 
-    const token = generateToken(user);
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET || 'secret123',
+      { expiresIn: '7d' }
+    );
 
-    return res.status(200).json({
-      succès: true,
+    res.json({
+      message: 'Connexion réussie',
       token,
-      utilisateur: {
-        id: user.id,
-        email: user.email,
-        nom: user.nom,
-        rôle: user.rôle
-      }
+      user
     });
-  } catch (err) {
-    console.error('Erreur login:', err);
-    return res.status(500).json({ erreur: 'Erreur interne du serveur' });
+  } catch (error) {
+    console.error('Erreur login:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
-};
+}
 
-exports.me = async (req, res) => {
-  return res.status(200).json({
-    succès: true,
-    utilisateur: req.user
+// Profil utilisateur
+async function me(req, res) {
+  res.json({
+    message: 'Profil utilisateur',
+    user: req.user
   });
-};
+}
+
+module.exports = { register, login, me };
