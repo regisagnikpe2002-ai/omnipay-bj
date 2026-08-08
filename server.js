@@ -1,14 +1,24 @@
 const express = require('express');
 const app = express();
+const cors = require('cors');
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Import des routes
 const authRoutes = require('./routes/auth');
 
-app.use(express.json());
+// Utilisation des routes
 app.use('/auth', authRoutes);
 
+// Route de test
+app.get('/', (req, res) => {
+  res.send('OMNIPAY API fonctionne ✔');
+});
+
+// Démarrage du serveur
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`OMNIPAY backend running on port ${PORT}`);
-});
-app.get('/', (req, res) => {
-  res.send('OMNIPAY API is running');
+  console.log(`Serveur OMNIPAY démarré sur le port ${PORT}`);
 });
