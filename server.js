@@ -1,4 +1,4 @@
- const express = require('express');
+const express = require('express');
 const app = express();
 const cors = require('cors');
 
@@ -10,10 +10,12 @@ const authRoutes = require('./routes/auth');
 app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
-  res.send('OMNIPAY API fonctionne ✔');
+    res.send('OMNIPAY API fonctionne ✔');
 });
 
-const PORT = process.env.PORT || 3000;
+// Render impose son propre port
+const PORT = process.env.PORT;
+
 app.listen(PORT, () => {
-  console.log(`Serveur OMNIPAY démarré sur le port ${PORT}`);
+    console.log(`OMNIPAY backend running on port ${PORT}`);
 });
