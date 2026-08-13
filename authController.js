@@ -26,15 +26,24 @@ exports.login = (req, res) => {
     const sql = "SELECT * FROM utilisateurs WHERE email = ?";
     db.query(sql, [email], async (err, results) => {
         if (err) return res.status(500).json({ error: err });
-        if (results.length === 0) return res.status(404).json({ message: "Utilisateur introuvable" });
+        if (results.length === 0)
+            return res.status(404).json({ message: "Utilisateur introuvable" });
 
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) return res.status(401).json({ message: "Mot de passe incorrect" });
+        if (!isMatch)
+            return res.status(401).json({ message: "Mot de passe incorrect" });
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+        const token = jwt.sign(
+            { id: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
 
-        res.json({ message: "Connexion réussie", token });
+        res.json({
+            message: "Connexion réussie",
+            token
+        });
     });
 };
