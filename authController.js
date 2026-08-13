@@ -1,74 +1,40 @@
+const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { findUserByEmail, createUser } = require('../models/userModel');
 
-// Inscription
-async function register(req, res) {
-  const { email, mot_de_passe, nom, role } = req.body;
+// REGISTER
+exports.register = async (req, res) => {
+    const { nom, email, password } = req.body;
 
-  try {
-    const userExists = await findUserByEmail(email);
-    if (userExists) {
-      return res.status(400).json({ message: 'Email déjà utilisé' });
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const sql = "INSERT INTO utilisateurs (nom, email, password) VALUES (?, ?, ?)";
+        db.query(sql, [nom, email, hashedPassword], (err, result) => {
+            if (err) return res.status(500).json({ error: err });
+            res.json({ message: "Utilisateur enregistré avec succès" });
+        });
+    } catch (error) {
+        res.status(500).json({ error });
     }
+};
 
-    const mot_de_passe_hash = await bcrypt.hash(mot_de_passe, 10);
+// LOGIN
+exports.login = (req, res) => {
+    const { email, password } = req.body;
 
-    const newUser = await createUser({
-      email,
-      mot_de_passe_hash,
-      nom,
-      role: role || 'client'
+    const sql = "SELECT * FROM utilisateurs WHERE email = ?";
+    db.query(sql, [email], async (err, results) => {
+        if (err) return res.status(500).json({ error: err });
+        if (results.length === 0) return res.status(404).json({ message: "Utilisateur introuvable" });
+
+        const user = results[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) return res.status(401).json({ message: "Mot de passe incorrect" });
+
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+        res.json({ message: "Connexion réussie", token });
     });
-
-    res.status(201).json({
-      message: 'Utilisateur créé avec succès',
-      user: newUser
-    });
-  } catch (error) {
-    console.error('Erreur register:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-// Connexion
-async function login(req, res) {
-  const { email, mot_de_passe } = req.body;
-
-  try {
-    const user = await findUserByEmail(email);
-    if (!user) {
-      return res.status(400).json({ message: 'Utilisateur introuvable' });
-    }
-
-    const isMatch = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Mot de passe incorrect' });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET || 'secret123',
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      message: 'Connexion réussie',
-      token,
-      user
-    });
-  } catch (error) {
-    console.error('Erreur login:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-// Profil utilisateur
-async function me(req, res) {
-  res.json({
-    message: 'Profil utilisateur',
-    user: req.user
-  });
-}
-
-module.exports = { register, login, me };
+};
