@@ -1,20 +1,25 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'omnipay-secret-key';
-
 exports.protect = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  let token;
 
-  if (!authHeader || !authHeader.startsWith('Bearer '))
-    return res.status(401).json({ erreur: 'Token manquant ou invalide' });
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
 
-  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: "Accès non autorisé" });
+  }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
-  } catch (err) {
-    return res.status(401).json({ erreur: 'Token invalide ou expiré' });
+
+  } catch (error) {
+    return res.status(401).json({ message: "Token invalide" });
   }
 };
