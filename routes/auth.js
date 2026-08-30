@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
 
-// Import correct des controllers et middleware
-const { register, login, me } = require('../controllers/authController');
-const { protect } = require('../middleware/authMiddleware');
+const { register, login, me } = require('../controllers/auth');
+const { protect } = require('../middleware/auth');
 
-// Routes d'authentification
+// Inscription
 router.post('/register', register);
+
+// Connexion
 router.post('/login', login);
 
-// Route protégée
+// Profil utilisateur (protégé)
 router.get('/me', protect, me);
 
 module.exports = router;
