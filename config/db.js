@@ -1,4 +1,10 @@
-const { sql } = require('@vercel/postgres');
+const { Pool } = require('pg');
 
-// Export du client SQL pour les requêtes
-module.exports = sql;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+module.exports = pool;
