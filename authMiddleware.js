@@ -1,25 +1,18 @@
-const jwt = require('jsonwebtoken');
+const { verifyAccessToken } = require("./lib/auth-utils.js");
 
-exports.protect = (req, res, next) => {
-  let token;
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
+function requireAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Token manquant." });
   }
-
-  if (!token) {
-    return res.status(401).json({ message: "Accès non autorisé" });
-  }
-
+  const token = header.slice(7);
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const payload = verifyAccessToken(token);
+    req.user = payload;
     next();
-
-  } catch (error) {
-    return res.status(401).json({ message: "Token invalide" });
+  } catch {
+    return res.status(401).json({ error: "Token invalide ou expiré." });
   }
-};
+}
+
+module.exports = { requireAuth };
