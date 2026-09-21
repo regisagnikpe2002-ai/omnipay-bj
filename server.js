@@ -11,11 +11,13 @@ app.use(express.json());
 // Routes
 const authRoutes = require('./routes/auth');
 app.use('/auth', authRoutes);
+
 const walletRoutes = require('./routes/wallet');
 app.use('/wallet', walletRoutes);
-// Route test
+
+// Route par défaut (test)
 app.get('/', (req, res) => {
-  res.send('OMNIPAY API fonctionnel');
+  res.send('OMNIPAY API fonctionne ✓');
 });
 
 // Render impose son propre port

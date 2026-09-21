@@ -1,0 +1,107 @@
+{
+  "info": {
+    "name": "OMNIPAY API",
+    "_postman_id": "12345678-abcd-efgh-ijkl-987654321000",
+    "description": "Collection complète pour tester OMNIPAY API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Regis\",\n  \"email\": \"regis@example.com\",\n  \"password\": \"motdepasse123\"\n}"
+        },
+        "url": {
+          "raw": "https://omnipay-bj.com/auth/register",
+          "protocol": "https",
+          "host": ["omnipay-bj","com"],
+          "path": ["auth","register"]
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"regis@example.com\",\n  \"password\": \"motdepasse123\"\n}"
+        },
+        "url": {
+          "raw": "https://omnipay-bj.com/auth/login",
+          "protocol": "https",
+          "host": ["omnipay-bj","com"],
+          "path": ["auth","login"]
+        }
+      }
+    },
+    {
+      "name": "Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+        ],
+        "url": {
+          "raw": "https://omnipay-bj.com/auth/me",
+          "protocol": "https",
+          "host": ["omnipay-bj","com"],
+          "path": ["auth","me"]
+        }
+      }
+    },
+    {
+      "name": "Create Wallet",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"currency\": \"XOF\",\n  \"balance\": 0\n}"
+        },
+        "url": {
+          "raw": "https://omnipay-bj.com/wallet/create",
+          "protocol": "https",
+          "host": ["omnipay-bj","com"],
+          "path": ["wallet","create"]
+        }
+      }
+    },
+    {
+      "name": "Get Wallet",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+        ],
+        "url": {
+          "raw": "https://omnipay-bj.com/wallet",
+          "protocol": "https",
+          "host": ["omnipay-bj","com"],
+          "path": ["wallet"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "TOKEN",
+      "value": ""
+    }
+  ]
+}
+
+
+

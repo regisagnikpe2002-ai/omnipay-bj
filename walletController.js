@@ -133,8 +133,8 @@ async function initiateDeposit(req, res) {
       amount: numericAmount,
       description: `Dépôt OMNIPAY - ${numericAmount} XOF`,
       userId: req.user.userId,
-      callbackUrl: "http://localhost:3000/wallet/deposit/callback",
-      returnUrl: "http://localhost:3000",
+      callbackUrl: "https://omnipay-bj.onrender.com/wallet/deposit/callback",
+      returnUrl: "https://omnipay-bj.onrender.com",
     });
 
     await db.insert(transactions).values({
