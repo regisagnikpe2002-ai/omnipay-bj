@@ -9,17 +9,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Page web (public/index.html)
+app.use(express.static('public'));
+
+// Routes API
 const authRoutes = require('./routes/auth');
 app.use('/auth', authRoutes);
 
 const walletRoutes = require('./routes/wallet');
 app.use('/wallet', walletRoutes);
-
-// Route par défaut (test)
-app.get('/', (req, res) => {
-  res.send('OMNIPAY API fonctionne ✓');
-});
 
 // Render impose son propre port
 const PORT = process.env.PORT || 3000;
