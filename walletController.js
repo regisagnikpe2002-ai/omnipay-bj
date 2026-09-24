@@ -162,7 +162,13 @@ async function initiateDeposit(req, res) {
 async function depositCallback(req, res) {
   console.log("=== CALLBACK PAYDUNYA REÇU ===", JSON.stringify(req.body));
   try {
-    const { token } = req.body.data || req.body;
+    const token = req.body.data?.invoice?.token || req.body.data?.token || req.body.token;
+
+    if (!token) {
+      console.error("Token introuvable dans le callback.");
+      return res.status(400).json({ error: "Token manquant." });
+    }
+
     const confirmation = await confirmInvoice(token);
 
     if (confirmation.status !== "completed") {
