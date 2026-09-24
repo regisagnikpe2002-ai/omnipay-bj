@@ -160,6 +160,7 @@ async function initiateDeposit(req, res) {
 }
 
 async function depositCallback(req, res) {
+  console.log("=== CALLBACK PAYDUNYA REÇU ===", JSON.stringify(req.body));
   try {
     const { token } = req.body.data || req.body;
     const confirmation = await confirmInvoice(token);
