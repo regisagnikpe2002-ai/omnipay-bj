@@ -25,3 +25,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`OMNIPAY backend running on port ${PORT}`);
 });
+
+const binanceRoutes = require('./routes/binance');
+app.use('/api', binanceRoutes);
