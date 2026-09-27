@@ -4,6 +4,8 @@ const { db } = require("./db/index.js");
 const { wallets, transactions, users } = require("./db/schema.js");
 const { createInvoice, confirmInvoice } = require("./providers/paydunya.js");
 
+const COMMISSION = 50;
+
 async function getMyWallet(req, res) {
   try {
     const wallet = await db.query.wallets.findFirst({
@@ -55,8 +57,10 @@ async function transfer(req, res) {
       return res.status(404).json({ error: "Wallet expéditeur introuvable." });
     }
 
-    if (Number(senderWallet.balance) < numericAmount) {
-      return res.status(400).json({ error: "Solde insuffisant." });
+    const totalDebit = numericAmount + COMMISSION;
+
+    if (Number(senderWallet.balance) < totalDebit) {
+      return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
     }
 
     const recipientUser = await db.query.users.findFirst({
@@ -74,7 +78,7 @@ async function transfer(req, res) {
     }
 
     const idempotencyKey = crypto.randomUUID();
-    const newSenderBalance = (Number(senderWallet.balance) - numericAmount).toFixed(2);
+    const newSenderBalance = (Number(senderWallet.balance) - totalDebit).toFixed(2);
     const newRecipientBalance = (Number(recipientWallet.balance) + numericAmount).toFixed(2);
 
     await db.update(wallets).set({ balance: newSenderBalance }).where(eq(wallets.id, senderWallet.id));
@@ -100,6 +104,16 @@ async function transfer(req, res) {
       provider: "internal",
       idempotencyKey: idempotencyKey + "-in",
       counterpartyUserId: req.user.userId,
+    });
+
+    await db.insert(transactions).values({
+      walletId: senderWallet.id,
+      type: "commission",
+      amount: COMMISSION.toFixed(2),
+      balanceAfter: newSenderBalance,
+      status: "completed",
+      provider: "internal",
+      idempotencyKey: idempotencyKey + "-fee",
     });
 
     return res.status(200).json({
@@ -198,10 +212,94 @@ async function depositCallback(req, res) {
   }
 }
 
+async function requestWithdrawal(req, res) {
+  try {
+    const { amount, phone, operator } = req.body;
+    const numericAmount = Number(amount);
+
+    if (!numericAmount || numericAmount <= 0 || !phone) {
+      return res.status(400).json({ error: "amount (> 0) et phone sont requis." });
+    }
+
+    const wallet = await db.query.wallets.findFirst({
+      where: eq(wallets.userId, req.user.userId),
+    });
+    if (!wallet) {
+      return res.status(404).json({ error: "Wallet introuvable." });
+    }
+
+    const totalDebit = numericAmount + COMMISSION;
+
+    if (Number(wallet.balance) < totalDebit) {
+      return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
+    }
+
+    const idempotencyKey = crypto.randomUUID();
+    const newBalance = (Number(wallet.balance) - totalDebit).toFixed(2);
+
+    await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
+
+    await db.insert(transactions).values({
+      walletId: wallet.id,
+      type: "withdrawal",
+      amount: numericAmount.toFixed(2),
+      balanceAfter: newBalance,
+      status: "pending",
+      provider: operator || "mobile_money",
+      providerRef: phone,
+      idempotencyKey,
+    });
+
+    await db.insert(transactions).values({
+      walletId: wallet.id,
+      type: "commission",
+      amount: COMMISSION.toFixed(2),
+      balanceAfter: newBalance,
+      status: "completed",
+      provider: "internal",
+      idempotencyKey: idempotencyKey + "-fee",
+    });
+
+    return res.status(200).json({
+      message: "Demande de retrait enregistrée. Traitement sous 24h.",
+      newBalance,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erreur serveur lors du retrait." });
+  }
+}
+
+async function getCommissionsSummary(req, res) {
+  try {
+    const key = req.headers["x-admin-key"];
+    if (!key || key !== process.env.ADMIN_KEY) {
+      return res.status(403).json({ error: "Accès refusé." });
+    }
+
+    const rows = await db.query.transactions.findMany({
+      where: eq(transactions.type, "commission"),
+    });
+
+    const total = rows.reduce((sum, tx) => sum + Number(tx.amount), 0);
+
+    return res.status(200).json({
+      totalCommissions: total,
+      count: rows.length,
+      currency: "XOF",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+}
+
 module.exports = {
   getMyWallet,
   getMyTransactions,
   transfer,
   initiateDeposit,
   depositCallback,
+  requestWithdrawal,
+  getCommissionsSummary,
 };

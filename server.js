@@ -28,3 +28,4 @@ app.listen(PORT, () => {
 
 const binanceRoutes = require('./routes/binance');
 app.use('/api', binanceRoutes);
+
