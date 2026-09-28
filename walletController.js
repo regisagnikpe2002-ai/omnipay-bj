@@ -2,18 +2,15 @@ const { eq, desc } = require("drizzle-orm");
 const crypto = require("crypto");
 const { db } = require("./db/index.js");
 const { wallets, transactions, users } = require("./db/schema.js");
-const { createInvoice, confirmInvoice } = require("./providers/paydunya.js");
+const { createInvoice, confirmInvoice, createDisburseToken, submitDisburse } = require("./providers/paydunya.js");
 
 const COMMISSION = 50;
+const WITHDRAW_MODES = { mtn: "mtn-benin", moov: "moov-benin", celtiis: "celtiis-cash" };
 
 async function getMyWallet(req, res) {
   try {
-    const wallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, req.user.userId),
-    });
-    if (!wallet) {
-      return res.status(404).json({ error: "Wallet introuvable." });
-    }
+    const wallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
+    if (!wallet) return res.status(404).json({ error: "Wallet introuvable." });
     return res.status(200).json({ wallet });
   } catch (err) {
     console.error(err);
@@ -23,12 +20,8 @@ async function getMyWallet(req, res) {
 
 async function getMyTransactions(req, res) {
   try {
-    const wallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, req.user.userId),
-    });
-    if (!wallet) {
-      return res.status(404).json({ error: "Wallet introuvable." });
-    }
+    const wallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
+    if (!wallet) return res.status(404).json({ error: "Wallet introuvable." });
     const txs = await db.query.transactions.findMany({
       where: eq(transactions.walletId, wallet.id),
       orderBy: [desc(transactions.createdAt)],
@@ -45,37 +38,23 @@ async function transfer(req, res) {
   try {
     const { recipientPhone, amount } = req.body;
     const numericAmount = Number(amount);
-
     if (!recipientPhone || !numericAmount || numericAmount <= 0) {
       return res.status(400).json({ error: "recipientPhone et amount (> 0) sont requis." });
     }
 
-    const senderWallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, req.user.userId),
-    });
-    if (!senderWallet) {
-      return res.status(404).json({ error: "Wallet expéditeur introuvable." });
-    }
+    const senderWallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
+    if (!senderWallet) return res.status(404).json({ error: "Wallet expéditeur introuvable." });
 
     const totalDebit = numericAmount + COMMISSION;
-
     if (Number(senderWallet.balance) < totalDebit) {
       return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
     }
 
-    const recipientUser = await db.query.users.findFirst({
-      where: eq(users.phone, recipientPhone),
-    });
-    if (!recipientUser) {
-      return res.status(404).json({ error: "Destinataire introuvable." });
-    }
+    const recipientUser = await db.query.users.findFirst({ where: eq(users.phone, recipientPhone) });
+    if (!recipientUser) return res.status(404).json({ error: "Destinataire introuvable." });
 
-    const recipientWallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, recipientUser.id),
-    });
-    if (!recipientWallet) {
-      return res.status(404).json({ error: "Wallet destinataire introuvable." });
-    }
+    const recipientWallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, recipientUser.id) });
+    if (!recipientWallet) return res.status(404).json({ error: "Wallet destinataire introuvable." });
 
     const idempotencyKey = crypto.randomUUID();
     const newSenderBalance = (Number(senderWallet.balance) - totalDebit).toFixed(2);
@@ -85,41 +64,22 @@ async function transfer(req, res) {
     await db.update(wallets).set({ balance: newRecipientBalance }).where(eq(wallets.id, recipientWallet.id));
 
     await db.insert(transactions).values({
-      walletId: senderWallet.id,
-      type: "transfer_out",
-      amount: numericAmount.toFixed(2),
-      balanceAfter: newSenderBalance,
-      status: "completed",
-      provider: "internal",
-      idempotencyKey: idempotencyKey + "-out",
-      counterpartyUserId: recipientUser.id,
+      walletId: senderWallet.id, type: "transfer_out", amount: numericAmount.toFixed(2),
+      balanceAfter: newSenderBalance, status: "completed", provider: "internal",
+      idempotencyKey: idempotencyKey + "-out", counterpartyUserId: recipientUser.id,
     });
-
     await db.insert(transactions).values({
-      walletId: recipientWallet.id,
-      type: "transfer_in",
-      amount: numericAmount.toFixed(2),
-      balanceAfter: newRecipientBalance,
-      status: "completed",
-      provider: "internal",
-      idempotencyKey: idempotencyKey + "-in",
-      counterpartyUserId: req.user.userId,
+      walletId: recipientWallet.id, type: "transfer_in", amount: numericAmount.toFixed(2),
+      balanceAfter: newRecipientBalance, status: "completed", provider: "internal",
+      idempotencyKey: idempotencyKey + "-in", counterpartyUserId: req.user.userId,
     });
-
     await db.insert(transactions).values({
-      walletId: senderWallet.id,
-      type: "commission",
-      amount: COMMISSION.toFixed(2),
-      balanceAfter: newSenderBalance,
-      status: "completed",
-      provider: "internal",
+      walletId: senderWallet.id, type: "commission", amount: COMMISSION.toFixed(2),
+      balanceAfter: newSenderBalance, status: "completed", provider: "internal",
       idempotencyKey: idempotencyKey + "-fee",
     });
 
-    return res.status(200).json({
-      message: "Transfert effectué avec succès.",
-      newBalance: newSenderBalance,
-    });
+    return res.status(200).json({ message: "Transfert effectué avec succès.", newBalance: newSenderBalance });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur lors du transfert." });
@@ -130,19 +90,12 @@ async function initiateDeposit(req, res) {
   try {
     const { amount } = req.body;
     const numericAmount = Number(amount);
-    if (!numericAmount || numericAmount <= 0) {
-      return res.status(400).json({ error: "amount (> 0) est requis." });
-    }
+    if (!numericAmount || numericAmount <= 0) return res.status(400).json({ error: "amount (> 0) est requis." });
 
-    const wallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, req.user.userId),
-    });
-    if (!wallet) {
-      return res.status(404).json({ error: "Wallet introuvable." });
-    }
+    const wallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
+    if (!wallet) return res.status(404).json({ error: "Wallet introuvable." });
 
     const idempotencyKey = crypto.randomUUID();
-
     const invoice = await createInvoice({
       amount: numericAmount,
       description: `Dépôt OMNIPAY - ${numericAmount} XOF`,
@@ -152,14 +105,9 @@ async function initiateDeposit(req, res) {
     });
 
     await db.insert(transactions).values({
-      walletId: wallet.id,
-      type: "deposit",
-      amount: numericAmount.toFixed(2),
-      balanceAfter: wallet.balance,
-      status: "pending",
-      provider: "paydunya",
-      providerRef: invoice.token,
-      idempotencyKey,
+      walletId: wallet.id, type: "deposit", amount: numericAmount.toFixed(2),
+      balanceAfter: wallet.balance, status: "pending", provider: "paydunya",
+      providerRef: invoice.token, idempotencyKey,
     });
 
     return res.status(200).json({
@@ -177,29 +125,15 @@ async function depositCallback(req, res) {
   console.log("=== CALLBACK PAYDUNYA REÇU ===", JSON.stringify(req.body));
   try {
     const token = req.body.data?.invoice?.token || req.body.data?.token || req.body.token;
-
-    if (!token) {
-      console.error("Token introuvable dans le callback.");
-      return res.status(400).json({ error: "Token manquant." });
-    }
+    if (!token) return res.status(400).json({ error: "Token manquant." });
 
     const confirmation = await confirmInvoice(token);
+    if (confirmation.status !== "completed") return res.status(200).json({ message: "Paiement non confirmé." });
 
-    if (confirmation.status !== "completed") {
-      return res.status(200).json({ message: "Paiement non confirmé." });
-    }
+    const tx = await db.query.transactions.findFirst({ where: eq(transactions.providerRef, token) });
+    if (!tx || tx.status === "completed") return res.status(200).json({ message: "Déjà traité ou introuvable." });
 
-    const tx = await db.query.transactions.findFirst({
-      where: eq(transactions.providerRef, token),
-    });
-    if (!tx || tx.status === "completed") {
-      return res.status(200).json({ message: "Déjà traité ou introuvable." });
-    }
-
-    const wallet = await db.query.wallets.findFirst({
-      where: eq(wallets.id, tx.walletId),
-    });
-
+    const wallet = await db.query.wallets.findFirst({ where: eq(wallets.id, tx.walletId) });
     const newBalance = (Number(wallet.balance) + Number(tx.amount)).toFixed(2);
 
     await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
@@ -217,77 +151,111 @@ async function requestWithdrawal(req, res) {
     const { amount, phone, operator } = req.body;
     const numericAmount = Number(amount);
 
-    if (!numericAmount || numericAmount <= 0 || !phone) {
-      return res.status(400).json({ error: "amount (> 0) et phone sont requis." });
+    if (!numericAmount || numericAmount <= 0 || !phone || !operator) {
+      return res.status(400).json({ error: "amount (> 0), phone et operator (mtn, moov, celtiis) sont requis." });
     }
 
-    const wallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, req.user.userId),
-    });
-    if (!wallet) {
-      return res.status(404).json({ error: "Wallet introuvable." });
+    const withdrawMode = WITHDRAW_MODES[operator.toLowerCase()];
+    if (!withdrawMode) {
+      return res.status(400).json({ error: "operator invalide. Utilise: mtn, moov ou celtiis." });
     }
+
+    const wallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
+    if (!wallet) return res.status(404).json({ error: "Wallet introuvable." });
 
     const totalDebit = numericAmount + COMMISSION;
-
     if (Number(wallet.balance) < totalDebit) {
       return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
     }
 
+    // Débit immédiat (évite double-dépense pendant l'appel PayDunya)
     const idempotencyKey = crypto.randomUUID();
     const newBalance = (Number(wallet.balance) - totalDebit).toFixed(2);
-
     await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
 
-    await db.insert(transactions).values({
-      walletId: wallet.id,
-      type: "withdrawal",
-      amount: numericAmount.toFixed(2),
-      balanceAfter: newBalance,
-      status: "pending",
-      provider: operator || "mobile_money",
-      providerRef: phone,
-      idempotencyKey,
-    });
+    const [tx] = await db.insert(transactions).values({
+      walletId: wallet.id, type: "withdrawal", amount: numericAmount.toFixed(2),
+      balanceAfter: newBalance, status: "pending", provider: withdrawMode,
+      providerRef: phone, idempotencyKey,
+    }).returning();
 
     await db.insert(transactions).values({
-      walletId: wallet.id,
-      type: "commission",
-      amount: COMMISSION.toFixed(2),
-      balanceAfter: newBalance,
-      status: "completed",
-      provider: "internal",
+      walletId: wallet.id, type: "commission", amount: COMMISSION.toFixed(2),
+      balanceAfter: newBalance, status: "completed", provider: "internal",
       idempotencyKey: idempotencyKey + "-fee",
     });
 
-    return res.status(200).json({
-      message: "Demande de retrait enregistrée. Traitement sous 24h.",
-      newBalance,
-    });
+    // Appel réel PayDunya : créer puis soumettre le décaissement
+    try {
+      const disburse = await createDisburseToken({
+        accountAlias: phone,
+        amount: Math.round(numericAmount),
+        withdrawMode,
+        callbackUrl: "https://omnipay-bj.onrender.com/wallet/withdraw/callback",
+      });
+
+      const result = await submitDisburse({
+        disburseInvoice: disburse.disburse_token,
+        disburseId: tx.id,
+      });
+
+      const finalStatus = result.status === "pending" ? "pending" : (result.response_code === "00" ? "completed" : "failed");
+
+      await db.update(transactions).set({
+        status: finalStatus,
+        providerRef: result.transaction_id || phone,
+      }).where(eq(transactions.id, tx.id));
+
+      if (finalStatus === "failed") {
+        // Remboursement automatique si échec immédiat
+        const refunded = (Number(newBalance) + numericAmount + COMMISSION).toFixed(2);
+        await db.update(wallets).set({ balance: refunded }).where(eq(wallets.id, wallet.id));
+        return res.status(400).json({ error: "Le décaissement a échoué. Montant remboursé.", detail: result.response_text });
+      }
+
+      return res.status(200).json({
+        message: finalStatus === "completed" ? "Retrait envoyé avec succès." : "Retrait en cours de traitement.",
+        newBalance,
+      });
+    } catch (apiErr) {
+      console.error("Erreur API décaissement:", apiErr.response?.data || apiErr);
+      // Remboursement si l'appel API échoue complètement
+      const refunded = (Number(newBalance) + numericAmount + COMMISSION).toFixed(2);
+      await db.update(wallets).set({ balance: refunded }).where(eq(wallets.id, wallet.id));
+      await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, tx.id));
+      return res.status(500).json({ error: "Erreur lors du décaissement. Montant remboursé." });
+    }
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur lors du retrait." });
   }
 }
 
+async function withdrawCallback(req, res) {
+  console.log("=== CALLBACK RETRAIT PAYDUNYA ===", JSON.stringify(req.body));
+  try {
+    const { status, transaction_id, disburse_id } = req.body;
+    if (disburse_id) {
+      await db.update(transactions).set({
+        status: status === "success" ? "completed" : status === "failed" ? "failed" : "pending",
+      }).where(eq(transactions.id, disburse_id));
+    }
+    return res.status(200).json({ message: "OK" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erreur callback retrait." });
+  }
+}
+
 async function getCommissionsSummary(req, res) {
   try {
     const key = req.headers["x-admin-key"];
-    if (!key || key !== process.env.ADMIN_KEY) {
-      return res.status(403).json({ error: "Accès refusé." });
-    }
+    if (!key || key !== process.env.ADMIN_KEY) return res.status(403).json({ error: "Accès refusé." });
 
-    const rows = await db.query.transactions.findMany({
-      where: eq(transactions.type, "commission"),
-    });
-
+    const rows = await db.query.transactions.findMany({ where: eq(transactions.type, "commission") });
     const total = rows.reduce((sum, tx) => sum + Number(tx.amount), 0);
 
-    return res.status(200).json({
-      totalCommissions: total,
-      count: rows.length,
-      currency: "XOF",
-    });
+    return res.status(200).json({ totalCommissions: total, count: rows.length, currency: "XOF" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur." });
@@ -295,11 +263,6 @@ async function getCommissionsSummary(req, res) {
 }
 
 module.exports = {
-  getMyWallet,
-  getMyTransactions,
-  transfer,
-  initiateDeposit,
-  depositCallback,
-  requestWithdrawal,
-  getCommissionsSummary,
+  getMyWallet, getMyTransactions, transfer, initiateDeposit, depositCallback,
+  requestWithdrawal, withdrawCallback, getCommissionsSummary,
 };

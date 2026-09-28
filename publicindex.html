@@ -1,0 +1,16 @@
+async function withdraw() {
+  hideError('dash-err');
+  const amount = prompt('Montant à retirer (XOF) :');
+  if (!amount) return;
+  const phone = prompt('Numéro Mobile Money (sans indicatif pays) :');
+  if (!phone) return;
+  const operator = prompt('Opérateur : tape mtn, moov ou celtiis');
+  if (!operator) return;
+  try {
+    const res = await fetch('/wallet/withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ amount: Number(amount), phone, operator }) });
+    const data = await res.json();
+    if (!res.ok) { showError('dash-err', data.error || 'Retrait impossible.'); return; }
+    alert(data.message);
+    showDashboard();
+  } catch (e) { showError('dash-err', 'Erreur réseau, réessaie.'); }
+}
