@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OMNIPAY — Admin</title>
+<style>
+  body { font-family: sans-serif; background: #161A33; color: #F6F2EA; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .card { background: #F6F2EA; color: #23262F; padding: 30px; border-radius: 16px; max-width: 360px; width: 100%; }
+  input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+  button { width: 100%; padding: 12px; background: #D9A441; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  .num { font-size: 36px; font-weight: 700; margin: 10px 0; }
+  .label { font-size: 12px; color: #6B6E78; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Commissions OMNIPAY</h2>
+  <input id="key" type="password" placeholder="Clé admin">
+  <button onclick="load()">Voir le total</button>
+  <div id="result" style="margin-top:20px; display:none;">
+    <div class="label">TOTAL COMMISSIONS COLLECTÉES</div>
+    <div class="num" id="total">0 XOF</div>
+    <div class="label" id="count"></div>
+  </div>
+  <p id="err" style="color:#C4523A; display:none;"></p>
+</div>
+<script>
+async function load() {
+  const key = document.getElementById('key').value;
+  const err = document.getElementById('err');
+  err.style.display = 'none';
+  try {
+    const res = await fetch('/wallet/admin/commissions', { headers: { 'x-admin-key': key } });
+    const data = await res.json();
+    if (!res.ok) { err.textContent = data.error || 'Erreur'; err.style.display = 'block'; return; }
+    document.getElementById('total').textContent = Number(data.totalCommissions).toLocaleString('fr-FR') + ' XOF';
+    document.getElementById('count').textContent = data.count + ' commissions perçues';
+    document.getElementById('result').style.display = 'block';
+  } catch (e) { err.textContent = 'Erreur réseau.'; err.style.display = 'block'; }
+}
+</script>
+</body>
+</html>
