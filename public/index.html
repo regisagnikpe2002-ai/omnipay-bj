@@ -9,152 +9,64 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --indigo: #161A33;
-    --indigo-deep: #0E1024;
-    --cream: #F6F2EA;
-    --gold: #D9A441;
-    --gold-soft: #E9C583;
-    --green: #1F5C48;
-    --coral: #C4523A;
-    --ink: #23262F;
-    --ink-soft: #6B6E78;
+    --indigo: #161A33; --indigo-deep: #0E1024; --cream: #F6F2EA;
+    --gold: #D9A441; --green: #1F5C48; --coral: #C4523A;
+    --ink: #23262F; --ink-soft: #6B6E78; --line: #E7E0D2;
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0;
-    min-height: 100vh;
+    margin: 0; min-height: 100vh;
     background: radial-gradient(circle at 20% -10%, #232852 0%, var(--indigo) 45%, var(--indigo-deep) 100%);
-    font-family: 'IBM Plex Sans', sans-serif;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    font-family: 'IBM Plex Sans', sans-serif; color: var(--ink);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
   }
   .wrap { width: 100%; max-width: 420px; }
-  .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    margin-bottom: 22px;
-    padding-left: 4px;
+  .brand { display: flex; align-items: baseline; gap: 8px; margin-bottom: 22px; padding-left: 4px; }
+  .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); display: inline-block; margin-bottom: 2px; }
+  .brand span { color: var(--cream); font-weight: 600; letter-spacing: 0.04em; font-size: 15px; }
+  .card { background: var(--cream); border-radius: 18px; padding: 28px; box-shadow: 0 30px 60px -25px rgba(0,0,0,0.55); }
+  h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; margin: 0 0 6px; }
+  .sub { color: var(--ink-soft); font-size: 14px; margin: 0 0 20px; line-height: 1.5; }
+  .tabs { display: flex; gap: 4px; background: #ECE5D6; border-radius: 10px; padding: 4px; margin-bottom: 22px; }
+  .tabs button { flex: 1; background: none; border: none; padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; font-family: inherit; }
+  .tabs button.active { background: var(--cream); color: var(--indigo); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 6px; }
+  input { width: 100%; padding: 12px 14px; border: 1.5px solid #DED6C6; border-radius: 10px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); }
+  input:focus { outline: none; border-color: var(--gold); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1; }
+  button.primary, button.gold {
+    width: 100%; border: none; border-radius: 10px; padding: 13px;
+    font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 20px;
   }
-  .brand .mark {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--gold);
-    display: inline-block;
-    margin-bottom: 2px;
-  }
-  .brand span {
-    color: var(--cream);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    font-size: 15px;
-  }
-  .card {
-    background: var(--cream);
-    border-radius: 18px;
-    padding: 32px 28px;
-    box-shadow: 0 30px 60px -25px rgba(0,0,0,0.55);
-  }
-  h1 {
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 26px;
-    margin: 0 0 6px;
-    color: var(--ink);
-  }
-  .sub {
-    color: var(--ink-soft);
-    font-size: 14px;
-    margin: 0 0 26px;
-    line-height: 1.5;
-  }
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    margin: 16px 0 6px;
-  }
-  input {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1.5px solid #DED6C6;
-    border-radius: 10px;
-    font-size: 15px;
-    font-family: inherit;
-    background: #fff;
-    color: var(--ink);
-  }
-  input:focus {
-    outline: none;
-    border-color: var(--gold);
-  }
-  button {
-    width: 100%;
-    border: none;
-    border-radius: 10px;
-    padding: 13px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: transform 0.08s ease;
-  }
+  button.primary { background: var(--indigo); color: var(--cream); }
+  button.gold { background: var(--gold); color: var(--indigo-deep); }
   button:active { transform: scale(0.98); }
-  .btn-primary {
-    background: var(--indigo);
-    color: var(--cream);
-    margin-top: 22px;
-  }
-  .btn-gold {
-    background: var(--gold);
-    color: var(--indigo-deep);
-  }
-  .error {
-    color: var(--coral);
-    font-size: 13px;
-    margin-top: 12px;
-    display: none;
-  }
-  .toggle {
-    text-align: center;
-    margin-top: 18px;
-    font-size: 13px;
-    color: var(--ink-soft);
-  }
-  .toggle a { color: var(--green); font-weight: 600; text-decoration: none; }
-
+  .error { color: var(--coral); font-size: 13px; margin-top: 12px; display: none; }
   #dash { display: none; }
-  .balance-block { text-align: center; padding: 8px 0 24px; }
+  .balance-block { text-align: center; padding: 4px 0 22px; }
   .balance-label { font-size: 12px; color: var(--ink-soft); font-weight: 600; letter-spacing: 0.03em; }
-  .balance-num {
-    font-family: 'Fraunces', serif;
-    font-size: 44px;
-    font-weight: 600;
-    color: var(--indigo);
-    margin: 6px 0 0;
+  .balance-num { font-family: 'Fraunces', serif; font-size: 42px; font-weight: 600; color: var(--indigo); margin: 6px 0 0; }
+  .balance-num span { font-size: 18px; color: var(--ink-soft); font-family: 'IBM Plex Sans', sans-serif; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .action-btn {
+    border: none; border-radius: 12px; padding: 16px 10px; font-family: inherit; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
   }
-  .balance-num span { font-size: 20px; color: var(--ink-soft); font-family: 'IBM Plex Sans', sans-serif; }
-  .actions { display: flex; gap: 10px; margin-top: 20px; }
-  .actions button { flex: 1; }
-  .tx-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 28px 0 10px; }
-  .tx-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #E7E0D2;
-    font-size: 14px;
-  }
+  .action-btn .ic { font-size: 19px; }
+  .action-btn.on { background: var(--gold); color: var(--indigo-deep); }
+  .action-btn.on2 { background: var(--indigo); color: var(--cream); }
+  .action-btn.off { background: #ECE5D6; color: var(--ink-soft); cursor: default; }
+  .action-btn .tag { font-size: 9.5px; font-weight: 500; opacity: 0.75; }
+  .tx-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 26px 0 10px; }
+  .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .tx-item:last-child { border-bottom: none; }
   .tx-type { font-weight: 500; text-transform: capitalize; }
   .tx-status { font-size: 11px; color: var(--ink-soft); }
   .tx-amount.in { color: var(--green); font-weight: 600; }
   .tx-amount.out { color: var(--coral); font-weight: 600; }
-  .empty { color: var(--ink-soft); font-size: 13px; text-align: center; padding: 20px 0; }
-  .logout { text-align: center; margin-top: 20px; }
+  .empty { color: var(--ink-soft); font-size: 13px; text-align: center; padding: 18px 0; }
+  .logout { text-align: center; margin-top: 18px; }
   .logout a { font-size: 12px; color: var(--ink-soft); text-decoration: underline; cursor: pointer; }
 </style>
 </head>
@@ -162,15 +74,37 @@
 <div class="wrap">
   <div class="brand"><span class="mark"></span><span>OMNIPAY</span></div>
 
-  <div class="card" id="login">
-    <h1>Content de te revoir</h1>
-    <p class="sub">Connecte-toi pour voir ton solde et gérer ton wallet.</p>
-    <label for="li-id">Email ou téléphone</label>
-    <input id="li-id" type="text" placeholder="ex: nom@email.com">
-    <label for="li-pw">Mot de passe</label>
-    <input id="li-pw" type="password" placeholder="••••••••">
-    <button class="btn-primary" onclick="login()">Se connecter</button>
-    <p class="error" id="login-err"></p>
+  <div class="card" id="auth">
+    <div class="tabs">
+      <button id="tab-login" class="active" onclick="switchTab('login')">Connexion</button>
+      <button id="tab-register" onclick="switchTab('register')">Créer un compte</button>
+    </div>
+    <div id="pane-login">
+      <h1>Content de te revoir</h1>
+      <p class="sub">Connecte-toi pour voir ton solde et gérer ton wallet.</p>
+      <label>Email ou téléphone</label>
+      <input id="li-id" type="text" placeholder="ex: nom@email.com">
+      <label>Mot de passe</label>
+      <input id="li-pw" type="password" placeholder="••••••••">
+      <button class="primary" onclick="login()">Se connecter</button>
+      <p class="error" id="login-err"></p>
+    </div>
+    <div id="pane-register" style="display:none">
+      <h1>Créer ton compte</h1>
+      <p class="sub">Quelques infos et ton wallet OMNIPAY est prêt.</p>
+      <div class="row2">
+        <div><label>Prénom</label><input id="re-fn" type="text"></div>
+        <div><label>Nom</label><input id="re-ln" type="text"></div>
+      </div>
+      <label>Email</label>
+      <input id="re-email" type="email" placeholder="nom@email.com">
+      <label>Téléphone</label>
+      <input id="re-phone" type="text" placeholder="22990000000">
+      <label>Mot de passe</label>
+      <input id="re-pw" type="password" placeholder="••••••••">
+      <button class="gold" onclick="register()">Créer mon compte</button>
+      <p class="error" id="register-err"></p>
+    </div>
   </div>
 
   <div class="card" id="dash">
@@ -179,7 +113,10 @@
       <div class="balance-num" id="balance">0<span> XOF</span></div>
     </div>
     <div class="actions">
-      <button class="btn-gold" onclick="deposit()">Déposer</button>
+      <button class="action-btn on" onclick="deposit()"><span class="ic">↓</span>Déposer</button>
+      <button class="action-btn on2" onclick="withdraw()"><span class="ic">↑</span>Retrait</button>
+      <button class="action-btn on2" onclick="soon()"><span class="ic">⇄</span>Envoyer<span class="tag">Bientôt</span></button>
+      <button class="action-btn off" onclick="soon()"><span class="ic">▤</span>Carte virtuelle<span class="tag">Bientôt</span></button>
     </div>
     <p class="error" id="dash-err"></p>
     <div class="tx-title">Dernières transactions</div>
@@ -191,12 +128,16 @@
 <script>
   let token = localStorage.getItem('omnipay_token');
 
-  function showError(id, msg) {
-    const el = document.getElementById(id);
-    el.textContent = msg;
-    el.style.display = 'block';
+  function switchTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('pane-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('pane-register').style.display = tab === 'register' ? 'block' : 'none';
   }
+
+  function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
   function hideError(id) { document.getElementById(id).style.display = 'none'; }
+  function soon() { alert("Bientôt disponible — en cours de construction."); }
 
   async function login() {
     hideError('login-err');
@@ -204,30 +145,41 @@
     const password = document.getElementById('li-pw').value;
     if (!identifier || !password) { showError('login-err', 'Remplis les deux champs.'); return; }
     try {
-      const res = await fetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password })
-      });
+      const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier, password }) });
       const data = await res.json();
       if (!res.ok) { showError('login-err', data.error || 'Connexion impossible.'); return; }
       token = data.accessToken;
       localStorage.setItem('omnipay_token', token);
       showDashboard();
-    } catch (e) {
-      showError('login-err', 'Erreur réseau, réessaie.');
-    }
+    } catch (e) { showError('login-err', 'Erreur réseau, réessaie.'); }
+  }
+
+  async function register() {
+    hideError('register-err');
+    const firstName = document.getElementById('re-fn').value.trim();
+    const lastName = document.getElementById('re-ln').value.trim();
+    const email = document.getElementById('re-email').value.trim();
+    const phone = document.getElementById('re-phone').value.trim();
+    const password = document.getElementById('re-pw').value;
+    if (!email || !phone || !password) { showError('register-err', 'Email, téléphone et mot de passe sont requis.'); return; }
+    try {
+      const res = await fetch('/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone, password, firstName, lastName }) });
+      const data = await res.json();
+      if (!res.ok) { showError('register-err', data.error || 'Inscription impossible.'); return; }
+      token = data.accessToken;
+      localStorage.setItem('omnipay_token', token);
+      showDashboard();
+    } catch (e) { showError('register-err', 'Erreur réseau, réessaie.'); }
   }
 
   function logout() {
-    localStorage.removeItem('omnipay_token');
-    token = null;
+    localStorage.removeItem('omnipay_token'); token = null;
     document.getElementById('dash').style.display = 'none';
-    document.getElementById('login').style.display = 'block';
+    document.getElementById('auth').style.display = 'block';
   }
 
   async function showDashboard() {
-    document.getElementById('login').style.display = 'none';
+    document.getElementById('auth').style.display = 'none';
     document.getElementById('dash').style.display = 'block';
     hideError('dash-err');
     try {
@@ -238,12 +190,9 @@
       if (walletRes.status === 401) { logout(); return; }
       const walletData = await walletRes.json();
       const txData = await txRes.json();
-      document.getElementById('balance').innerHTML =
-        Number(walletData.wallet.balance).toLocaleString('fr-FR') + '<span> ' + walletData.wallet.currency + '</span>';
+      document.getElementById('balance').innerHTML = Number(walletData.wallet.balance).toLocaleString('fr-FR') + '<span> ' + walletData.wallet.currency + '</span>';
       renderTx(txData.transactions || []);
-    } catch (e) {
-      showError('dash-err', 'Impossible de charger le wallet.');
-    }
+    } catch (e) { showError('dash-err', 'Impossible de charger le wallet.'); }
   }
 
   function renderTx(txs) {
@@ -251,13 +200,7 @@
     if (!txs.length) { list.innerHTML = '<p class="empty">Aucune transaction pour l\'instant.</p>'; return; }
     list.innerHTML = txs.slice(0, 8).map(tx => {
       const isIn = tx.type === 'deposit' || tx.type === 'transfer_in';
-      return `<div class="tx-item">
-        <div>
-          <div class="tx-type">${tx.type.replace('_', ' ')}</div>
-          <div class="tx-status">${tx.status}</div>
-        </div>
-        <div class="tx-amount ${isIn ? 'in' : 'out'}">${isIn ? '+' : '-'}${Number(tx.amount).toLocaleString('fr-FR')}</div>
-      </div>`;
+      return `<div class="tx-item"><div><div class="tx-type">${tx.type.replace('_',' ')}</div><div class="tx-status">${tx.status}</div></div><div class="tx-amount ${isIn?'in':'out'}">${isIn?'+':'-'}${Number(tx.amount).toLocaleString('fr-FR')}</div></div>`;
     }).join('');
   }
 
@@ -266,21 +209,31 @@
     const amount = prompt('Montant à déposer (XOF, minimum 200) :');
     if (!amount) return;
     try {
-      const res = await fetch('/wallet/deposit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({ amount: Number(amount) })
-      });
+      const res = await fetch('/wallet/deposit', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ amount: Number(amount) }) });
       const data = await res.json();
       if (!res.ok) { showError('dash-err', data.error || 'Dépôt impossible.'); return; }
       window.location.href = data.paymentUrl;
-    } catch (e) {
-      showError('dash-err', 'Erreur réseau, réessaie.');
-    }
+    } catch (e) { showError('dash-err', 'Erreur réseau, réessaie.'); }
+  }
+
+  async function withdraw() {
+    hideError('dash-err');
+    const amount = prompt('Montant à retirer (XOF) :');
+    if (!amount) return;
+    const phone = prompt('Numéro Mobile Money (sans indicatif pays, ex: 90000000) :');
+    if (!phone) return;
+    const operator = prompt('Opérateur : tape mtn, moov ou celtiis');
+    if (!operator) return;
+    try {
+      const res = await fetch('/wallet/withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ amount: Number(amount), phone, operator }) });
+      const data = await res.json();
+      if (!res.ok) { showError('dash-err', data.error || 'Retrait impossible.'); return; }
+      alert(data.message);
+      showDashboard();
+    } catch (e) { showError('dash-err', 'Erreur réseau, réessaie.'); }
   }
 
   if (token) { showDashboard(); }
 </script>
 </body>
 </html>
-
