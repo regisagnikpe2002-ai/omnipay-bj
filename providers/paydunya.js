@@ -5,6 +5,8 @@ const BASE_URL =
     ? "https://app.paydunya.com/api/v1"
     : "https://app.paydunya.com/sandbox-api/v1";
 
+const DISBURSE_BASE_URL = "https://app.paydunya.com/api/v2/disburse";
+
 function getHeaders() {
   return {
     "Content-Type": "application/json",
@@ -17,37 +19,34 @@ function getHeaders() {
 
 async function createInvoice({ amount, description, userId, callbackUrl, returnUrl }) {
   const payload = {
-    invoice: {
-      total_amount: amount,
-      description: description || "Dépôt OMNIPAY",
-    },
-    store: {
-      name: "OMNIPAY",
-    },
-    actions: {
-      callback_url: callbackUrl,
-      return_url: returnUrl,
-    },
-    custom_data: {
-      userId,
-    },
+    invoice: { total_amount: amount, description: description || "Dépôt OMNIPAY" },
+    store: { name: "OMNIPAY" },
+    actions: { callback_url: callbackUrl, return_url: returnUrl },
+    custom_data: { userId },
   };
-
-  const response = await axios.post(
-    `${BASE_URL}/checkout-invoice/create`,
-    payload,
-    { headers: getHeaders() }
-  );
-
+  const response = await axios.post(`${BASE_URL}/checkout-invoice/create`, payload, { headers: getHeaders() });
   return response.data;
 }
 
 async function confirmInvoice(token) {
-  const response = await axios.get(
-    `${BASE_URL}/checkout-invoice/confirm/${token}`,
+  const response = await axios.get(`${BASE_URL}/checkout-invoice/confirm/${token}`, { headers: getHeaders() });
+  return response.data;
+}
+
+async function createDisburseToken({ accountAlias, amount, withdrawMode, callbackUrl }) {
+  const response = await axios.post(
+    `${DISBURSE_BASE_URL}/get-invoice`,
+    { account_alias: accountAlias, amount, withdraw_mode: withdrawMode, callback_url: callbackUrl },
     { headers: getHeaders() }
   );
   return response.data;
 }
 
-module.exports = { createInvoice, confirmInvoice };
+async function submitDisburse({ disburseInvoice, disburseId }) {
+  const body = { disburse_invoice: disburseInvoice };
+  if (disburseId) body.disburse_id = disburseId;
+  const response = await axios.post(`${DISBURSE_BASE_URL}/submit-invoice`, body, { headers: getHeaders() });
+  return response.data;
+}
+
+module.exports = { createInvoice, confirmInvoice, createDisburseToken, submitDisburse };
