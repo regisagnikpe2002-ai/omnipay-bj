@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>OMNIPAY</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Inter,sans-serif;
+}
+
+body{
+background:#f5f7fb;
+}
+
+.header{
+
+padding:30px;
+color:white;
+
+background:linear-gradient(
+135deg,
+#0f172a,
+#1e3a8a,
+#10b981
+);
+
+border-radius:0 0 30px 30px;
+}
+
+.header h1{
+font-size:30px;
+}
+
+.balance{
+
+margin-top:30px;
+background:white;
+padding:25px;
+border-radius:20px;
+box-shadow:0 8px 25px rgba(0,0,0,.1);
+
+}
+
+.balance h2{
+
+color:#64748b;
+font-size:15px;
+
+}
+
+.amount{
+margin-top:10px;
+font-size:36px;
+font-weight:bold;
+color:#0f172a;
+}
+
+.actions{
+
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:12px;
+
+margin-top:20px;
+}
+
+.action{
+
+background:white;
+padding:15px;
+border-radius:18px;
+text-align:center;
+
+box-shadow:0 4px 15px rgba(0,0,0,.08);
+
+cursor:pointer;
+transition:.3s;
+
+}
+
+.action:hover{
+transform:translateY(-5px);
+}
+
+.action span{
+display:block;
+margin-top:10px;
+font-size:14px;
+}
+
+.services{
+
+margin-top:25px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+
+}
+
+.card{
+
+background:white;
+padding:20px;
+border-radius:20px;
+
+box-shadow:0 5px 20px rgba(0,0,0,.08);
+
+}
+
+.card h3{
+color:#0f172a;
+margin-bottom:10px;
+}
+
+.transaction{
+
+background:white;
+padding:18px;
+border-radius:15px;
+margin-top:10px;
+
+display:flex;
+justify-content:space-between;
+
+}
+
+.credit{
+color:#10b981;
+font-weight:bold;
+}
+
+.debit{
+color:#ef4444;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h1>OMNIPAY</h1>
+
+<p>Votre quotidien financier tout-en-un</p>
+
+</div>
+
+<div style="padding:20px">
+
+<div class="balance">
+
+<h2>Solde disponible</h2>
+
+<div class="amount">25 000 FCFA</div>
+
+</div>
+
+<div class="actions">
+
+<div class="action">
+📥
+<span>Dépôt</span>
+</div>
+
+<div class="action">
+📤
+<span>Retrait</span>
+</div>
+
+<div class="action">
+💳
+<span>Payer</span>
+</div>
+
+<div class="action">
+🔗
+<span>Lien</span>
+</div>
+
+</div>
+
+<div class="services">
+
+<div class="card">
+
+<h3>💳 Carte virtuelle</h3>
+
+<p>Bientôt disponible</p>
+
+</div>
+
+<div class="card">
+
+<h3>🏪 Boutique</h3>
+
+<p>Créer votre commerce</p>
+
+</div>
+
+<div class="card">
+
+<h3>🧾 Reçus PDF</h3>
+
+<p>Télécharger vos reçus</p>
+
+</div>
+
+<div class="card">
+
+<h3>📊 Historique</h3>
+
+<p>Toutes vos transactions</p>
+
+</div>
+
+</div>
+
+<h3 style="margin-top:25px">
+Transactions récentes
+</h3>
+
+<div class="transaction">
+
+<div>
+Dépôt MTN
+</div>
+
+<div class="credit">
++500 FCFA
+</div>
+
+</div>
+
+<div class="transaction">
+
+<div>
+Retrait MTN
+</div>
+
+<div class="debit">
+-200 FCFA
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>
