@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OMNIPAY</title>
+<title>OMNIPAY — Votre quotidien financier tout-en-un</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,20 +21,37 @@
     display: flex; align-items: center; justify-content: center; padding: 24px;
   }
   .wrap { width: 100%; max-width: 420px; }
-  .brand { display: flex; align-items: baseline; gap: 8px; margin-bottom: 22px; padding-left: 4px; }
-  .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); display: inline-block; margin-bottom: 2px; }
-  .brand span { color: var(--cream); font-weight: 600; letter-spacing: 0.04em; font-size: 15px; }
+
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 6px; padding-left: 2px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold), #B9862C);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; color: var(--indigo-deep);
+    box-shadow: 0 4px 14px -4px rgba(217,164,65,0.6);
+    flex-shrink: 0;
+  }
+  .brand-text span:first-child { color: var(--cream); font-weight: 600; letter-spacing: 0.04em; font-size: 16px; display: block; }
+  .brand-text span:last-child { color: #A9ADC4; font-size: 10.5px; letter-spacing: 0.02em; }
+
+  .trust { display: flex; gap: 14px; margin: 14px 0 20px 2px; flex-wrap: wrap; }
+  .trust-item { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: #B7BAD1; font-weight: 500; }
+  .trust-item svg { width: 12px; height: 12px; flex-shrink: 0; }
+
   .card { background: var(--cream); border-radius: 18px; padding: 28px; box-shadow: 0 30px 60px -25px rgba(0,0,0,0.55); }
   h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; margin: 0 0 6px; }
   .sub { color: var(--ink-soft); font-size: 14px; margin: 0 0 20px; line-height: 1.5; }
+
   .tabs { display: flex; gap: 4px; background: #ECE5D6; border-radius: 10px; padding: 4px; margin-bottom: 22px; }
   .tabs button { flex: 1; background: none; border: none; padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; font-family: inherit; }
   .tabs button.active { background: var(--cream); color: var(--indigo); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
   label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 6px; }
   input { width: 100%; padding: 12px 14px; border: 1.5px solid #DED6C6; border-radius: 10px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); }
   input:focus { outline: none; border-color: var(--gold); }
   .row2 { display: flex; gap: 10px; }
   .row2 > div { flex: 1; }
+
   button.primary, button.gold {
     width: 100%; border: none; border-radius: 10px; padding: 13px;
     font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 20px;
@@ -42,12 +59,17 @@
   button.primary { background: var(--indigo); color: var(--cream); }
   button.gold { background: var(--gold); color: var(--indigo-deep); }
   button:active { transform: scale(0.98); }
+
   .error { color: var(--coral); font-size: 13px; margin-top: 12px; display: none; }
+
   #dash { display: none; }
-  .balance-block { text-align: center; padding: 4px 0 22px; }
+  .balance-block { text-align: center; padding: 4px 0 6px; }
   .balance-label { font-size: 12px; color: var(--ink-soft); font-weight: 600; letter-spacing: 0.03em; }
   .balance-num { font-family: 'Fraunces', serif; font-size: 42px; font-weight: 600; color: var(--indigo); margin: 6px 0 0; }
   .balance-num span { font-size: 18px; color: var(--ink-soft); font-family: 'IBM Plex Sans', sans-serif; }
+  .secured { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 10.5px; color: var(--ink-soft); margin: 0 0 22px; }
+  .secured svg { width: 11px; height: 11px; }
+
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .action-btn {
     border: none; border-radius: 12px; padding: 16px 10px; font-family: inherit; cursor: pointer;
@@ -58,6 +80,7 @@
   .action-btn.on2 { background: var(--indigo); color: var(--cream); }
   .action-btn.off { background: #ECE5D6; color: var(--ink-soft); cursor: default; }
   .action-btn .tag { font-size: 9.5px; font-weight: 500; opacity: 0.75; }
+
   .tx-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 26px 0 10px; }
   .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .tx-item:last-child { border-bottom: none; }
@@ -72,7 +95,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><span class="mark"></span><span>OMNIPAY</span></div>
+  <div class="brand">
+    <div class="logo">Ω</div>
+    <div class="brand-text"><span>OMNIPAY</span><span>Votre quotidien financier tout-en-un</span></div>
+  </div>
+  <div class="trust">
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="#D9A441" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5l8-3z"/></svg>Sécurisé</div>
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="#D9A441" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg>Paiements via PayDunya</div>
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="#D9A441" stroke-width="2"><path d="M2 12h20M12 2c2.5 2.5 4 5.5 4 10s-1.5 7.5-4 10c-2.5-2.5-4-5.5-4-10s1.5-7.5 4-10z"/></svg>100% béninois</div>
+  </div>
 
   <div class="card" id="auth">
     <div class="tabs">
@@ -112,6 +143,7 @@
       <div class="balance-label">SOLDE DISPONIBLE</div>
       <div class="balance-num" id="balance">0<span> XOF</span></div>
     </div>
+    <div class="secured"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6E78" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>Transactions chiffrées et sécurisées</div>
     <div class="actions">
       <button class="action-btn on" onclick="deposit()"><span class="ic">↓</span>Déposer</button>
       <button class="action-btn on2" onclick="withdraw()"><span class="ic">↑</span>Retrait</button>
