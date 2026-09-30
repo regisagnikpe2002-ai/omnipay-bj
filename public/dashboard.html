@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>OMNIPAY</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#eef2ff;
+}
+
+.header{
+background:linear-gradient(135deg,#0f172a,#1e40af,#10b981);
+color:white;
+padding:30px;
+border-radius:0 0 30px 30px;
+}
+
+.balance-card{
+margin:20px;
+padding:25px;
+background:white;
+border-radius:25px;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+.balance{
+font-size:42px;
+font-weight:bold;
+margin-top:10px;
+}
+
+.actions{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:10px;
+padding:20px;
+}
+
+.btn{
+background:white;
+padding:15px;
+border-radius:18px;
+text-align:center;
+box-shadow:0 5px 20px rgba(0,0,0,.08);
+cursor:pointer;
+}
+
+.services{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:18px;
+box-shadow:0 5px 20px rgba(0,0,0,.08);
+}
+
+.history{
+padding:20px;
+}
+
+.transaction{
+background:white;
+padding:15px;
+margin-bottom:10px;
+border-radius:15px;
+display:flex;
+justify-content:space-between;
+}
+
+.credit{
+color:#10b981;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="header">
+
+<h1>OMNIPAY</h1>
+
+<p>Votre quotidien financier tout-en-un</p>
+
+</div>
+
+<div class="balance-card">
+
+<p>Solde disponible</p>
+
+<div class="balance">
+200 FCFA
+</div>
+
+</div>
+
+<div class="actions">
+
+<div class="btn">📥<br>Dépôt</div>
+
+<div class="btn">📤<br>Retrait</div>
+
+<div class="btn">💳<br>Payer</div>
+
+<div class="btn">🔗<br>Lien</div>
+
+</div>
+
+<div class="services">
+
+<div class="card">
+💳 Carte virtuelle
+<br><br>
+Bientôt disponible
+</div>
+
+<div class="card">
+🧾 Reçus PDF
+<br><br>
+Télécharger
+</div>
+
+<div class="card">
+📊 Historique
+<br><br>
+Transactions
+</div>
+
+<div class="card">
+🏪 Boutique
+<br><br>
+Créer une boutique
+</div>
+
+</div>
+
+<div class="history">
+
+<h3>Transactions récentes</h3>
+
+<br>
+
+<div class="transaction">
+
+<span>Commission OMNIPAY</span>
+
+<span class="credit">
++200 FCFA
+</span>
+
+</div>
+
+</div>
+
+</body>
+</html>
