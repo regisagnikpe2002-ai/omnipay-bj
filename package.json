@@ -6,6 +6,8 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@neon/config": "^1.8.3",
+    "@neon/env": "^1.4.8",
     "@neondatabase/serverless": "^1.1.0",
     "@upstash/redis": "^1.38.4",
     "axios": "^1.20.0",
