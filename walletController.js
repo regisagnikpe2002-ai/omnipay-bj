@@ -198,7 +198,9 @@ async function requestWithdrawal(req, res) {
         disburseInvoice: disburse.disburse_token,
         disburseId: tx.id,
       });
-
+console.log("========== PAYDUNYA RESULT ==========");
+console.log(result);
+console.log("====================================");
       const finalStatus = result.status === "pending" ? "pending" : (result.response_code === "00" ? "completed" : "failed");
 
       await db.update(transactions).set({
