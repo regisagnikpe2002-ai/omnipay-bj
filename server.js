@@ -106,6 +106,9 @@ console.log("PAYDUNYA_MASTER_KEY:", !!process.env.PAYDUNYA_MASTER_KEY);
 console.log("PAYDUNYA_PRIVATE_KEY:", !!process.env.PAYDUNYA_PRIVATE_KEY);
 console.log("PAYDUNYA_TOKEN:", !!process.env.PAYDUNYA_TOKEN);
 console.log("ADMIN_KEY:", !!process.env.ADMIN_KEY);
+console.log("PAYDUNYA_PUBLIC_KEY:", !!process.env.PAYDUNYA_PUBLIC_KEY);
+console.log("PAYDUNYA_MODE:", process.env.PAYDUNYA_MODE);
+console.log("DATABASE_URL:", !!process.env.DATABASE_URL);
 
 app.listen(PORT, () => {
 
