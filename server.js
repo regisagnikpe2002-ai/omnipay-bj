@@ -102,6 +102,10 @@ app.use((req, res) => {
 // =========================
 
 const PORT = process.env.PORT || 3000;
+console.log("PAYDUNYA_MASTER_KEY:", !!process.env.PAYDUNYA_MASTER_KEY);
+console.log("PAYDUNYA_PRIVATE_KEY:", !!process.env.PAYDUNYA_PRIVATE_KEY);
+console.log("PAYDUNYA_TOKEN:", !!process.env.PAYDUNYA_TOKEN);
+console.log("ADMIN_KEY:", !!process.env.ADMIN_KEY);
 
 app.listen(PORT, () => {
 
