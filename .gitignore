@@ -3,3 +3,6 @@ node_modules/
 .env.local
 *.log
 .neon
+
+# Sauvegardes locales OMNIPAY
+*.backup.js
