@@ -10,10 +10,10 @@ const DISBURSE_BASE_URL = "https://app.paydunya.com/api/v2/disburse";
 function getHeaders() {
   return {
     "Content-Type": "application/json",
-    "PAYDUNYA-MASTER-KEY": process.env.PAYDUNYA_MASTER_KEY,
-    "PAYDUNYA-PRIVATE-KEY": process.env.PAYDUNYA_PRIVATE_KEY,
-    "PAYDUNYA-PUBLIC-KEY": process.env.PAYDUNYA_PUBLIC_KEY,
-    "PAYDUNYA-TOKEN": process.env.PAYDUNYA_TOKEN,
+    "PAYDUNYA-MASTER-KEY": (process.env.PAYDUNYA_MASTER_KEY || "").trim(),
+    "PAYDUNYA-PRIVATE-KEY": (process.env.PAYDUNYA_PRIVATE_KEY || "").trim(),
+    "PAYDUNYA-PUBLIC-KEY": (process.env.PAYDUNYA_PUBLIC_KEY || "").trim(),
+    "PAYDUNYA-TOKEN": (process.env.PAYDUNYA_TOKEN || "").trim(),
   };
 }
 
