@@ -147,6 +147,13 @@ async function depositCallback(req, res) {
 }
 
 async function requestWithdrawal(req, res) {
+  console.log("WITHDRAW_STEP_1_REQUEST_RECEIVED", {
+    userId: req.user?.userId,
+    amount: req.body?.amount,
+    operator: req.body?.operator,
+    phonePresent: Boolean(req.body?.phone),
+  });
+
   try {
     const { amount, phone, operator } = req.body;
     const numericAmount = Number(amount);
@@ -187,11 +194,28 @@ async function requestWithdrawal(req, res) {
 
     // Appel réel PayDunya : créer puis soumettre le décaissement
     try {
+      console.log("WITHDRAW_STEP_2_BEFORE_TOKEN", {
+        transactionId: tx.id,
+        withdrawMode,
+        amount: Math.round(numericAmount),
+      });
+
       const disburse = await createDisburseToken({
         accountAlias: phone,
         amount: Math.round(numericAmount),
         withdrawMode,
         callbackUrl: "https://omnipay-bj.onrender.com/wallet/withdraw/callback",
+      });
+
+      console.log("WITHDRAW_STEP_3_TOKEN_CREATED", {
+        transactionId: tx.id,
+        tokenPresent: Boolean(disburse?.disburse_token),
+        responseCode: disburse?.response_code,
+        responseText: disburse?.response_text,
+      });
+
+      console.log("WITHDRAW_STEP_4_BEFORE_SUBMIT", {
+        transactionId: tx.id,
       });
 
       const result = await submitDisburse({
