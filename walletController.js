@@ -1,10 +1,12 @@
+cat > walletController.js << 'EOF'
 const { eq, desc } = require("drizzle-orm");
 const crypto = require("crypto");
 const { db } = require("./db/index.js");
 const { wallets, transactions, users } = require("./db/schema.js");
-const { createInvoice, confirmInvoice } = require("./providers/paydunya.js");
+const { createInvoice, confirmInvoice, createDisburseToken, submitDisburse } = require("./providers/paydunya.js");
 
 const COMMISSION = 50;
+const WITHDRAW_MODES = { mtn: "mtn-benin", moov: "moov-benin", celtiis: "celtiis-cash" };
 
 async function getMyWallet(req, res) {
   try {
@@ -37,14 +39,9 @@ async function lookupRecipient(req, res) {
   try {
     const { phone } = req.params;
     if (!phone) return res.status(400).json({ error: "Numéro requis." });
-
     const user = await db.query.users.findFirst({ where: eq(users.phone, phone) });
     if (!user) return res.status(404).json({ error: "Aucun utilisateur avec ce numéro." });
-
-    return res.status(200).json({
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-    });
+    return res.status(200).json({ firstName: user.firstName || "", lastName: user.lastName || "" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur." });
@@ -117,8 +114,8 @@ async function initiateDeposit(req, res) {
       amount: numericAmount,
       description: `Dépôt OMNIPAY - ${numericAmount} XOF`,
       userId: req.user.userId,
-      callbackUrl: "https://omnipay-bj.onrender.com/wallet/deposit/callback",
-      returnUrl: "https://omnipay-bj.onrender.com",
+      callbackUrl: "https://www.omnipay-bj.com/wallet/deposit/callback",
+      returnUrl: "https://www.omnipay-bj.com",
     });
 
     await db.insert(transactions).values({
@@ -168,8 +165,13 @@ async function requestWithdrawal(req, res) {
     const { amount, phone, operator } = req.body;
     const numericAmount = Number(amount);
 
-    if (!numericAmount || numericAmount <= 0 || !phone) {
-      return res.status(400).json({ error: "amount (> 0) et phone sont requis." });
+    if (!numericAmount || numericAmount <= 0 || !phone || !operator) {
+      return res.status(400).json({ error: "amount (> 0), phone et operator (mtn, moov, celtiis) sont requis." });
+    }
+
+    const withdrawMode = WITHDRAW_MODES[operator.toLowerCase()];
+    if (!withdrawMode) {
+      return res.status(400).json({ error: "operator invalide. Utilise: mtn, moov ou celtiis." });
     }
 
     const wallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
@@ -184,11 +186,11 @@ async function requestWithdrawal(req, res) {
     const newBalance = (Number(wallet.balance) - totalDebit).toFixed(2);
     await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
 
-    await db.insert(transactions).values({
+    const [tx] = await db.insert(transactions).values({
       walletId: wallet.id, type: "withdrawal", amount: numericAmount.toFixed(2),
-      balanceAfter: newBalance, status: "pending", provider: operator || "mobile_money",
+      balanceAfter: newBalance, status: "pending", provider: withdrawMode,
       providerRef: phone, idempotencyKey,
-    });
+    }).returning();
 
     await db.insert(transactions).values({
       walletId: wallet.id, type: "commission", amount: COMMISSION.toFixed(2),
@@ -196,10 +198,47 @@ async function requestWithdrawal(req, res) {
       idempotencyKey: idempotencyKey + "-fee",
     });
 
-    return res.status(200).json({
-      message: "Demande de retrait enregistrée. Traitement sous 24h.",
-      newBalance,
-    });
+    try {
+      const disburse = await createDisburseToken({
+        accountAlias: phone,
+        amount: Math.round(numericAmount),
+        withdrawMode,
+        callbackUrl: "https://www.omnipay-bj.com/wallet/withdraw/callback",
+      });
+
+      console.log("=== DISBURSE TOKEN RESPONSE ===", JSON.stringify(disburse));
+
+      const result = await submitDisburse({
+        disburseInvoice: disburse.disburse_token,
+        disburseId: tx.id,
+      });
+
+      console.log("=== DISBURSE SUBMIT RESPONSE ===", JSON.stringify(result));
+
+      const finalStatus = result.status === "pending" ? "pending" : (result.response_code === "00" ? "completed" : "failed");
+
+      await db.update(transactions).set({
+        status: finalStatus,
+        providerRef: result.transaction_id || phone,
+      }).where(eq(transactions.id, tx.id));
+
+      if (finalStatus === "failed") {
+        const refunded = (Number(newBalance) + numericAmount + COMMISSION).toFixed(2);
+        await db.update(wallets).set({ balance: refunded }).where(eq(wallets.id, wallet.id));
+        return res.status(400).json({ error: "Le décaissement a échoué. Montant remboursé.", detail: result.response_text });
+      }
+
+      return res.status(200).json({
+        message: finalStatus === "completed" ? "Retrait envoyé avec succès." : "Retrait en cours de traitement.",
+        newBalance,
+      });
+    } catch (apiErr) {
+      console.error("Erreur API décaissement:", apiErr.response?.data || apiErr);
+      const refunded = (Number(newBalance) + numericAmount + COMMISSION).toFixed(2);
+      await db.update(wallets).set({ balance: refunded }).where(eq(wallets.id, wallet.id));
+      await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, tx.id));
+      return res.status(500).json({ error: "Erreur lors du décaissement. Montant remboursé." });
+    }
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur lors du retrait." });
@@ -226,10 +265,8 @@ async function getCommissionsSummary(req, res) {
   try {
     const key = req.headers["x-admin-key"];
     if (!key || key !== process.env.ADMIN_KEY) return res.status(403).json({ error: "Accès refusé." });
-
     const rows = await db.query.transactions.findMany({ where: eq(transactions.type, "commission") });
     const total = rows.reduce((sum, tx) => sum + Number(tx.amount), 0);
-
     return res.status(200).json({ totalCommissions: total, count: rows.length, currency: "XOF" });
   } catch (err) {
     console.error(err);
@@ -241,3 +278,5 @@ module.exports = {
   getMyWallet, getMyTransactions, transfer, initiateDeposit, depositCallback,
   requestWithdrawal, withdrawCallback, getCommissionsSummary, lookupRecipient,
 };
+EOF
+wc -l walletController.js 
