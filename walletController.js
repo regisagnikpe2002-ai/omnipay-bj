@@ -164,13 +164,8 @@ async function requestWithdrawal(req, res) {
     const { amount, phone, operator } = req.body;
     const numericAmount = Number(amount);
 
-    if (!numericAmount || numericAmount <= 0 || !phone || !operator) {
-      return res.status(400).json({ error: "amount (> 0), phone et operator (mtn, moov, celtiis) sont requis." });
-    }
-
-    const withdrawMode = WITHDRAW_MODES[operator.toLowerCase()];
-    if (!withdrawMode) {
-      return res.status(400).json({ error: "operator invalide. Utilise: mtn, moov ou celtiis." });
+    if (!numericAmount || numericAmount <= 0 || !phone) {
+      return res.status(400).json({ error: "amount (> 0) et phone sont requis." });
     }
 
     const wallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
@@ -185,11 +180,11 @@ async function requestWithdrawal(req, res) {
     const newBalance = (Number(wallet.balance) - totalDebit).toFixed(2);
     await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
 
-    const [tx] = await db.insert(transactions).values({
+    await db.insert(transactions).values({
       walletId: wallet.id, type: "withdrawal", amount: numericAmount.toFixed(2),
-      balanceAfter: newBalance, status: "pending", provider: withdrawMode,
+      balanceAfter: newBalance, status: "pending", provider: operator || "mobile_money",
       providerRef: phone, idempotencyKey,
-    }).returning();
+    });
 
     await db.insert(transactions).values({
       walletId: wallet.id, type: "commission", amount: COMMISSION.toFixed(2),
@@ -197,47 +192,10 @@ async function requestWithdrawal(req, res) {
       idempotencyKey: idempotencyKey + "-fee",
     });
 
-    try {
-      const disburse = await createDisburseToken({
-        accountAlias: phone,
-        amount: Math.round(numericAmount),
-        withdrawMode,
-        callbackUrl: "https://www.omnipay-bj.com/wallet/withdraw/callback",
-      });
-
-      console.log("=== DISBURSE TOKEN RESPONSE ===", JSON.stringify(disburse));
-
-      const result = await submitDisburse({
-        disburseInvoice: disburse.disburse_token,
-        disburseId: tx.id,
-      });
-
-      console.log("=== DISBURSE SUBMIT RESPONSE ===", JSON.stringify(result));
-
-      const finalStatus = result.status === "pending" ? "pending" : (result.response_code === "00" ? "completed" : "failed");
-
-      await db.update(transactions).set({
-        status: finalStatus,
-        providerRef: result.transaction_id || phone,
-      }).where(eq(transactions.id, tx.id));
-
-      if (finalStatus === "failed") {
-        const refunded = (Number(newBalance) + numericAmount + COMMISSION).toFixed(2);
-        await db.update(wallets).set({ balance: refunded }).where(eq(wallets.id, wallet.id));
-        return res.status(400).json({ error: "Le décaissement a échoué. Montant remboursé.", detail: result.response_text });
-      }
-
-      return res.status(200).json({
-        message: finalStatus === "completed" ? "Retrait envoyé avec succès." : "Retrait en cours de traitement.",
-        newBalance,
-      });
-    } catch (apiErr) {
-      console.error("Erreur API décaissement:", apiErr.response?.data || apiErr);
-      const refunded = (Number(newBalance) + numericAmount + COMMISSION).toFixed(2);
-      await db.update(wallets).set({ balance: refunded }).where(eq(wallets.id, wallet.id));
-      await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, tx.id));
-      return res.status(500).json({ error: "Erreur lors du décaissement. Montant remboursé." });
-    }
+    return res.status(200).json({
+      message: "Demande de retrait enregistrée. Traitement sous 24h.",
+      newBalance,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur lors du retrait." });
