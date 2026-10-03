@@ -1,4 +1,3 @@
-cat > walletController.js << 'EOF'
 const { eq, desc } = require("drizzle-orm");
 const crypto = require("crypto");
 const { db } = require("./db/index.js");
@@ -278,5 +277,3 @@ module.exports = {
   getMyWallet, getMyTransactions, transfer, initiateDeposit, depositCallback,
   requestWithdrawal, withdrawCallback, getCommissionsSummary, lookupRecipient,
 };
-EOF
-wc -l walletController.js 
