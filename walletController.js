@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { db } = require("./db/index.js");
 const { wallets, transactions, users } = require("./db/schema.js");
 const { createInvoice, confirmInvoice, createDisburseToken, submitDisburse } = require("./providers/paydunya.js");
+const { sendAdminNotification } = require("./lib/mailer.js");
 
 const COMMISSION = 50;
 const WITHDRAW_MODES = { mtn: "mtn-benin", moov: "moov-benin", celtiis: "celtiis-cash" };
@@ -191,6 +192,11 @@ async function requestWithdrawal(req, res) {
       balanceAfter: newBalance, status: "completed", provider: "internal",
       idempotencyKey: idempotencyKey + "-fee",
     });
+
+    await sendAdminNotification(
+      "Nouvelle demande de retrait OMNIPAY",
+      `<p>Montant : <b>${numericAmount} XOF</b></p><p>Numero : <b>${phone}</b></p><p>Operateur : <b>${operator || "non precise"}</b></p>`
+    );
 
     return res.status(200).json({
       message: "Demande de retrait enregistrée. Traitement sous 24h.",
