@@ -85,6 +85,13 @@ app.get('/api/status', (req, res) => {
 });
 
 // =========================
+// OTP Email
+// =========================
+
+const emailOtpRoutes = require("./routes/emailOtp");
+app.use("/api/email-otp", emailOtpRoutes);
+
+// =========================
 // Gestion erreurs
 // =========================
 
