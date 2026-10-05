@@ -7,17 +7,49 @@ const {
   signAccessToken,
   signRefreshToken,
 } = require("./lib/auth-utils.js");
+const {
+  verifyEmailVerificationToken,
+} = require("./controllers/emailOtpController.js");
 
 async function register(req, res) {
   try {
-    const { email, phone, password, firstName, lastName } = req.body;
+    const {
+      email,
+      phone,
+      password,
+      firstName,
+      lastName,
+      verificationToken,
+    } = req.body;
 
-    if (!email || !phone || !password) {
-      return res.status(400).json({ error: "email, phone et password sont requis." });
+    if (!email || !phone || !password || !verificationToken) {
+      return res.status(400).json({
+        error:
+          "email, phone, password et verificationToken sont requis.",
+      });
+    }
+
+    const normalizedEmail = String(email)
+      .trim()
+      .toLowerCase();
+
+    try {
+      verifyEmailVerificationToken({
+        verificationToken,
+        expectedEmail: normalizedEmail,
+        expectedPurpose: "register",
+      });
+    } catch (verificationError) {
+      return res.status(403).json({
+        error: verificationError.message,
+      });
     }
 
     const existing = await db.query.users.findFirst({
-      where: or(eq(users.email, email), eq(users.phone, phone)),
+      where: or(
+        eq(users.email, normalizedEmail),
+        eq(users.phone, phone)
+      ),
     });
     if (existing) {
       return res.status(409).json({ error: "Un compte existe déjà avec cet email ou ce numéro." });
@@ -28,11 +60,12 @@ async function register(req, res) {
     const [user] = await db
       .insert(users)
       .values({
-        email,
+        email: normalizedEmail,
         phone,
         passwordHash,
         firstName,
         lastName,
+        emailVerified: true,
       })
       .returning();
 

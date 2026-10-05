@@ -7,6 +7,7 @@ const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
+  emailVerified: boolean("email_verified").notNull().default(false),
   kycStatus: varchar("kyc_status", { length: 20 }).notNull().default("unverified"),
   role: varchar("role", { length: 20 }).notNull().default("user"),
   status: varchar("status", { length: 20 }).notNull().default("active"),
