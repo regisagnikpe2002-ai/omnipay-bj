@@ -86,6 +86,11 @@ async function sendOtpEmail({ email, code, expiresInMinutes }) {
       </div>
     `,
   });
+console.log("SMTP_RESULT", {
+  accepted: result.accepted,
+  rejected: result.rejected,
+  response: result.response,
+});
 
   return {
     messageId: result.messageId,
