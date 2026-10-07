@@ -70,6 +70,13 @@ try {
 }
 
 // =========================
+// Routes Web3
+// =========================
+
+const web3Routes = require("./routes/web3");
+app.use("/api/web3", web3Routes);
+
+// =========================
 // Test API
 // =========================
 
