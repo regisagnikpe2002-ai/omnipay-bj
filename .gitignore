@@ -6,3 +6,6 @@ node_modules/
 
 # Sauvegardes locales OMNIPAY
 *.backup.js
+
+.env
+.env.*
