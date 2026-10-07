@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" 
+content="width=device-width, 
+initial-scale=1.0">
+
+<title>OMNIPAY 2.0</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Inter, Arial, 
+sans-serif;
+}
+
+body{
+  background:#0b1220;
+  color:white;
+  min-height:100vh;
+}
+
+.header{
+  padding:24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.logo{
+  font-size:28px;
+  font-weight:700;
+  color:#14b8a6;
+}
+
+.hero{
+  padding:25px;
+}
+
+.hero h1{
+  font-size:36px;
+  margin-bottom:12px;
+}
+
+.hero p{
+  color:#9ca3af;
+}
+
+.balance-card{
+  margin:20px;
+  padding:24px;
+  border-radius:24px;
+  background:linear-gradient(
+    135deg,
+    #14b8a6,
+    #2563eb
+  );
+  box-shadow:0 15px 35px 
+rgba(0,0,0,.3);
+}
+
+.balance-label{
+  opacity:.8;
+}
+
+.balance-value{
+  font-size:38px;
+  font-weight:bold;
+  margin-top:10px;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:20px;
+}
+
+.btn{
+  border:none;
+  padding:16px;
+  border-radius:16px;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.deposit{
+  background:#22c55e;
+  color:white;
+}
+
+.withdraw{
+  background:#ef4444;
+  color:white;
+}
+
+.wallet-card{
+  margin:20px;
+  padding:24px;
+  background:#111827;
+  border-radius:24px;
+}
+
+.wallet-title{
+  margin-bottom:10px;
+  font-size:20px;
+}
+
+.wallet-status{
+  color:#9ca3af;
+  margin-bottom:15px;
+}
+
+.connect-btn{
+  width:100%;
+  background:#3b82f6;
+  color:white;
+  border:none;
+  padding:14px;
+  border-radius:14px;
+  cursor:pointer;
+}
+
+.transactions{
+  margin:20px;
+  background:#111827;
+  border-radius:24px;
+  padding:24px;
+}
+
+.tx{
+  padding:12px 0;
+  border-bottom:1px solid #1f2937;
+}
+
+.tx:last-child{
+  border:none;
+}
+
+.footer{
+  text-align:center;
+  color:#6b7280;
+  padding:30px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="logo">OMNIPAY</div>
+</div>
+
+<div class="hero">
+  <h1>Votre quotidien financier 
+tout-en-un</h1>
+  <p>
+    Mobile Money,
+    Wallet Web3,
+    paiements et transferts en 
+Afrique.
+  </p>
+</div>
+
+<div class="balance-card">
+  <div class="balance-label">
+    Solde principal
+  </div>
+
+  <div class="balance-value">
+    1 250 000 FCFA
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn deposit">
+    Déposer
+  </button>
+
+  <button class="btn withdraw">
+    Retirer
+  </button>
+</div>
+
+<div class="wallet-card">
+
+  <div class="wallet-title">
+    Wallet Web3
+  </div>
+
+  <div class="wallet-status">
+    Aucun portefeuille connecté
+  </div>
+
+  <button class="connect-btn">
+    Connecter MetaMask
+  </button>
+
+</div>
+
+<div class="transactions">
+
+  <h3>Transactions récentes</h3>
+
+  <div class="tx">
+    Dépôt MTN • +25 000 FCFA
+  </div>
+
+  <div class="tx">
+    Paiement Moov • -5 000 FCFA
+  </div>
+
+  <div class="tx">
+    Virement reçu • +100 000 FCFA
+  </div>
+
+</div>
+
+<div class="footer">
+  OMNIPAY AFRICA • 2026
+</div>
+
+</body>
+</html>
