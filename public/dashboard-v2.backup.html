@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OMNIPAY 2.0</title>
+  <style>
+    :root{--bg:#07111f;--panel:#101c2f;--panel2:#15243b;--text:#f8fafc;--muted:#94a3b8;--line:rgba(148,163,184,.16);--teal:#14b8a6;--blue:#3b82f6;--green:#22c55e;--amber:#f59e0b;--red:#ef4444}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 5% 0%,rgba(20,184,166,.2),transparent 33%),radial-gradient(circle at 100% 20%,rgba(59,130,246,.18),transparent 30%),var(--bg)}
+    button,input{font:inherit}.hidden{display:none!important}.shell{width:min(1120px,100%);margin:auto;padding:22px}.header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 0 28px}.brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;color:#052e2b;background:linear-gradient(135deg,#5eead4,var(--teal));font-size:24px;font-weight:900;box-shadow:0 12px 30px rgba(20,184,166,.25)}.brand h1{font-size:22px;margin:0}.muted{color:var(--muted)}.small{font-size:13px}.status{padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(15,23,42,.72);color:var(--muted)}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}.panel{border:1px solid var(--line);border-radius:26px;background:linear-gradient(145deg,rgba(23,36,58,.96),rgba(15,27,46,.96));box-shadow:0 24px 70px rgba(0,0,0,.25)}.intro{padding:34px}.intro h2{font-size:clamp(38px,6vw,68px);line-height:1.02;letter-spacing:-.05em;margin:0}.gradient{color:transparent;background:linear-gradient(90deg,#5eead4,#60a5fa);background-clip:text;-webkit-background-clip:text}.intro p{line-height:1.7}.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.chip{padding:10px 13px;border:1px solid var(--line);border-radius:14px;background:rgba(15,23,42,.65);color:#cbd5e1;font-size:13px}
+    .login{padding:28px}.login h2{margin:0}.field{margin-top:15px}.field label{display:block;margin-bottom:7px;color:#cbd5e1;font-size:13px;font-weight:700}.field input{width:100%;padding:14px;border:1px solid #334155;border-radius:14px;outline:none;color:var(--text);background:#091323}.field input:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(20,184,166,.12)}.btn{min-height:48px;border:0;border-radius:14px;padding:13px 17px;color:#fff;font-weight:800;cursor:pointer;transition:.18s}.btn:hover{transform:translateY(-2px)}.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}.primary{width:100%;margin-top:18px;background:linear-gradient(135deg,var(--teal),#0f9e90)}.message{min-height:22px;margin-top:13px;color:var(--amber);font-size:13px}
+    .dashboard{margin-top:22px}.dash-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}.dash-head h2{margin:0}.ghost{border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:#cbd5e1;background:transparent;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}.balance{grid-column:span 7;min-height:245px;padding:28px;position:relative;overflow:hidden;background:linear-gradient(135deg,#0f766e,#2563eb)}.balance::after{content:"";position:absolute;width:260px;height:260px;right:-80px;bottom:-110px;border-radius:50%;background:rgba(255,255,255,.1)}.amount{font-size:clamp(38px,6vw,58px);font-weight:900;letter-spacing:-.04em;margin-top:12px}.actions{display:flex;gap:12px;margin-top:24px;position:relative;z-index:1}.deposit{background:var(--green)}.withdraw{background:#0f172a}.wallet{grid-column:span 5;padding:28px}.wallet-box{min-height:52px;margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#091323;color:var(--muted);line-height:1.45}.wallet-btn{width:100%;background:linear-gradient(135deg,var(--blue),#2563eb)}.notice{margin-top:16px;padding:14px;border:1px solid rgba(245,158,11,.26);border-radius:14px;background:rgba(245,158,11,.09);color:#fde68a;font-size:13px;line-height:1.5}.transactions{grid-column:span 12;padding:28px}.transaction{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 0;border-bottom:1px solid var(--line)}.transaction:last-child{border-bottom:0}.t-name{font-weight:750}.positive{color:#86efac}.negative{color:#fca5a5}.footer{text-align:center;color:#64748b;padding:34px 0 10px;font-size:13px}
+    @media(max-width:820px){.hero{grid-template-columns:1fr}.balance,.wallet,.transactions{grid-column:span 12}}@media(max-width:560px){.shell{padding:15px}.intro,.login,.balance,.wallet,.transactions{padding:21px}.actions{flex-direction:column}.actions .btn{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="header">
+      <div class="brand"><div class="mark">Ω</div><div><h1>OMNIPAY</h1><div class="muted small">Votre quotidien financier tout-en-un</div></div></div>
+      <div id="backendStatus" class="status">Vérification du serveur...</div>
+    </header>
+
+    <section class="hero">
+      <article class="panel intro">
+        <h2>La finance africaine, <span class="gradient">simplement connectée.</span></h2>
+        <p class="muted">Consultez votre solde réel OMNIPAY, votre activité récente et votre portefeuille Web3 dans une interface unique.</p>
+        <div class="chips"><span class="chip">Solde réel Neon</span><span class="chip">Transactions sécurisées</span><span class="chip">Wallet Web3</span><span class="chip">Conçu au Bénin</span></div>
+      </article>
+
+      <aside id="loginPanel" class="panel login">
+        <h2>Connexion OMNIPAY</h2>
+        <p class="muted">Utilisez votre compte réel pour accéder au tableau de bord.</p>
+        <form id="loginForm">
+          <div class="field"><label for="loginIdentifier">Email ou téléphone</label><input id="loginIdentifier" autocomplete="username" required></div>
+          <div class="field"><label for="loginPassword">Mot de passe</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+          <button id="loginButton" class="btn primary" type="submit">Se connecter</button>
+          <div id="loginMessage" class="message" aria-live="polite"></div>
+        </form>
+      </aside>
+    </section>
+
+    <main id="dashboardPanel" class="dashboard hidden">
+      <div class="dash-head"><div><h2>Bonjour, <span id="welcomeName">utilisateur</span></h2><div class="muted small">Tableau de bord OMNIPAY</div></div><button id="logoutBtn" class="ghost" type="button">Déconnexion</button></div>
+      <section class="grid">
+        <article class="panel balance">
+          <div>Solde principal</div>
+          <div id="balanceValue" class="amount">Chargement...</div>
+          <p id="balanceNote">Lecture sécurisée du solde réel.</p>
+          <div class="actions"><button id="depositBtn" class="btn deposit" type="button">Déposer</button><button id="withdrawBtn" class="btn withdraw" type="button">Retirer</button></div>
+        </article>
+
+        <article class="panel wallet">
+          <h3>Wallet Web3</h3>
+          <div id="web3WalletStatus" class="wallet-box">Aucun portefeuille vérifié</div>
+          <button id="connectMetaMaskBtn" class="btn wallet-btn" type="button">Connecter MetaMask</button>
+          <div id="walletNotice" class="notice hidden"></div>
+        </article>
+
+        <article class="panel transactions">
+          <h3>Activité récente</h3>
+          <div id="transactionList"><div class="transaction"><div><div class="t-name">Chargement...</div><div class="muted small">Lecture des transactions réelles.</div></div><div>-</div></div></div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">OMNIPAY AFRICA • 2026</footer>
+  </div>
+  <script src="/dashboard-v2.js"></script>
+</body>
+</html>
