@@ -116,7 +116,7 @@ async function initiateDeposit(req, res) {
       userId: req.user.userId,
       callbackUrl: "https://www.omnipay-bj.com/wallet/deposit/callback",
       returnUrl: "https://www.omnipay-bj.com",
-    });
+      });
 
     await db.insert(transactions).values({
       walletId: wallet.id, type: "deposit", amount: numericAmount.toFixed(2),

@@ -44,8 +44,18 @@ async function register(req, res) {
 
     const payload = { userId: user.id, role: user.role };
     return res.status(201).json({
-      user: { id: user.id, email: user.email, phone: user.phone },
-      accessToken: signAccessToken(payload),
+user: {
+  id: user.id,
+  firstName: 
+user.firstName,
+  lastName: 
+user.lastName,
+  email: user.email,
+  phone: user.phone,
+  role: user.role
+},      
+accessToken: 
+signAccessToken(payload),
       refreshToken: signRefreshToken(payload),
     });
   } catch (err) {
@@ -75,7 +85,14 @@ async function login(req, res) {
 
     const payload = { userId: user.id, role: user.role };
     return res.status(200).json({
-      user: { id: user.id, email: user.email, phone: user.phone, role: user.role },
+      user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          role: user.role
+        },
       accessToken: signAccessToken(payload),
       refreshToken: signRefreshToken(payload),
     });

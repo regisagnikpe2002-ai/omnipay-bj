@@ -1,230 +1,170 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" 
-content="width=device-width, 
-initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, 
+initial-scale=1"
+  >
 
-<title>OMNIPAY 2.0</title>
+  <title>OMNIPAY 2.0</title>
 
-<style>
+  <style>
+    :root {
+      --background: #07101f;
+      --surface: #101b2d;
+      --surface-light: #17243a;
+      --primary: #14b8a6;
+      --secondary: #3b82f6;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --white: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(148, 163, 184, 
+0.16);
+    }
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Inter, Arial, 
-sans-serif;
-}
+    * {
+      box-sizing: border-box;
+    }
 
-body{
-  background:#0b1220;
-  color:white;
-  min-height:100vh;
-}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--white);
+      background:
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(20, 184, 166, 0.18),
+          transparent 35%
+        ),
+        radial-gradient(
+          circle at 100% 30%,
+          rgba(59, 130, 246, 0.18),
+          transparent 30%
+        ),
+        var(--background);
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
 
-.header{
-  padding:24px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+    button,
+    input {
+      font: inherit;
+    }
 
-.logo{
-  font-size:28px;
-  font-weight:700;
-  color:#14b8a6;
-}
+    button {
+      cursor: pointer;
+    }
 
-.hero{
-  padding:25px;
-}
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
 
-.hero h1{
-  font-size:36px;
-  margin-bottom:12px;
-}
+    .hidden {
+      display: none !important;
+    }
 
-.hero p{
-  color:#9ca3af;
-}
+    .shell {
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      padding: 22px;
+    }
 
-.balance-card{
-  margin:20px;
-  padding:24px;
-  border-radius:24px;
-  background:linear-gradient(
-    135deg,
-    #14b8a6,
-    #2563eb
-  );
-  box-shadow:0 15px 35px 
-rgba(0,0,0,.3);
-}
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: 
+space-between;
+      gap: 18px;
+      padding: 8px 0 28px;
+    }
 
-.balance-label{
-  opacity:.8;
-}
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-.balance-value{
-  font-size:38px;
-  font-weight:bold;
-  margin-top:10px;
-}
+    .brand-mark {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border-radius: 16px;
+      color: #052e2b;
+      background:
+        linear-gradient(
+          135deg,
+          #5eead4,
+          #14b8a6
+        );
+      box-shadow:
+        0 12px 30px
+        rgba(20, 184, 166, 0.28);
+      font-size: 22px;
+      font-weight: 900;
+    }
 
-.actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  padding:20px;
-}
+    .brand-name {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
 
-.btn{
-  border:none;
-  padding:16px;
-  border-radius:16px;
-  font-size:16px;
-  font-weight:600;
-  cursor:pointer;
-}
+    .brand-tagline {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
 
-.deposit{
-  background:#22c55e;
-  color:white;
-}
+    .backend-status {
+      padding: 9px 13px;
+      border: 1px solid 
+var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background:
+        rgba(15, 23, 42, 0.72);
+      font-size: 13px;
+    }
 
-.withdraw{
-  background:#ef4444;
-  color:white;
-}
+    .hero {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1.2fr)
+        minmax(280px, 0.8fr);
+      gap: 20px;
+      align-items: stretch;
+    }
 
-.wallet-card{
-  margin:20px;
-  padding:24px;
-  background:#111827;
-  border-radius:24px;
-}
+    .panel {
+      border: 1px solid 
+var(--border);
+      border-radius: 26px;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(23, 36, 58, 0.96),
+          rgba(15, 27, 46, 0.96)
+        );
+      box-shadow:
+        0 24px 70px
+        rgba(0, 0, 0, 0.26);
+    }
 
-.wallet-title{
-  margin-bottom:10px;
-  font-size:20px;
-}
+    .presentation {
+      padding: 34px;
+    }
 
-.wallet-status{
-  color:#9ca3af;
-  margin-bottom:15px;
-}
-
-.connect-btn{
-  width:100%;
-  background:#3b82f6;
-  color:white;
-  border:none;
-  padding:14px;
-  border-radius:14px;
-  cursor:pointer;
-}
-
-.transactions{
-  margin:20px;
-  background:#111827;
-  border-radius:24px;
-  padding:24px;
-}
-
-.tx{
-  padding:12px 0;
-  border-bottom:1px solid #1f2937;
-}
-
-.tx:last-child{
-  border:none;
-}
-
-.footer{
-  text-align:center;
-  color:#6b7280;
-  padding:30px;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="header">
-  <div class="logo">OMNIPAY</div>
-</div>
-
-<div class="hero">
-  <h1>Votre quotidien financier 
-tout-en-un</h1>
-  <p>
-    Mobile Money,
-    Wallet Web3,
-    paiements et transferts en 
-Afrique.
-  </p>
-</div>
-
-<div class="balance-card">
-  <div class="balance-label">
-    Solde principal
-  </div>
-
-  <div class="balance-value">
-    1 250 000 FCFA
-  </div>
-</div>
-
-<div class="actions">
-  <button class="btn deposit">
-    Déposer
-  </button>
-
-  <button class="btn withdraw">
-    Retirer
-  </button>
-</div>
-
-<div class="wallet-card">
-
-  <div class="wallet-title">
-    Wallet Web3
-  </div>
-
-  <div class="wallet-status">
-    Aucun portefeuille connecté
-  </div>
-
-  <button class="connect-btn">
-    Connecter MetaMask
-  </button>
-
-</div>
-
-<div class="transactions">
-
-  <h3>Transactions récentes</h3>
-
-  <div class="tx">
-    Dépôt MTN • +25 000 FCFA
-  </div>
-
-  <div class="tx">
-    Paiement Moov • -5 000 FCFA
-  </div>
-
-  <div class="tx">
-    Virement reçu • +100 000 FCFA
-  </div>
-
-</div>
-
-<div class="footer">
-  OMNIPAY AFRICA • 2026
-</div>
-
-</body>
-</html>
+    .eyebrow {
+      display: inline-block;
+     
