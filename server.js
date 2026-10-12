@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const gatewayRoutes = require('./integrations/gateway/routes');
 
 require('dotenv').config();
 
@@ -101,6 +102,8 @@ app.use("/api/email-otp", emailOtpRoutes);
 // =========================
 // Gestion erreurs
 // =========================
+
+app.use('/api/gateway', gatewayRoutes);
 
 app.use((req, res) => {
 
