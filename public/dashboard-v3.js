@@ -143,6 +143,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   byId("depositBtn")?.addEventListener("click", deposit);
   byId("withdrawBtn")?.addEventListener("click", () => alert("Retrait bientôt disponible."));
   byId("transferBtn")?.addEventListener("click", () => alert("Transfert OMNIPAY bientôt disponible."));
-  byId("forgotPasswordBtn")?.addEventListener("click", () => alert("Récupération du mot de passe bientôt disponible."));
+  byId("forgotPasswordBtn")?.addEventListener("click", () => { window.location.href = "/forgot-password.html"; });
   if (state.accessToken) { showDashboard(); await loadDashboard(); } else showLogin();
 });

@@ -11,7 +11,7 @@ const {
   signRefreshToken,
 } = require("./lib/auth-utils.js");
 
-function verifyEmailVerificationToken({ verificationToken, email }) {
+function verifyEmailVerificationToken({ verificationToken, email, purpose = "register" }) {
   const secret = process.env.OTP_SECRET?.trim();
 
   if (!secret || secret.length < 32) {
@@ -49,7 +49,7 @@ function verifyEmailVerificationToken({ verificationToken, email }) {
 
   return (
     data.email === normalizedEmail &&
-    data.purpose === "register" &&
+    data.purpose === purpose &&
     Number(data.expiresAt) > Date.now()
   );
 }
@@ -77,6 +77,7 @@ async function register(req, res) {
     const otpVerified = verifyEmailVerificationToken({
       verificationToken,
       email: normalizedEmail,
+      purpose: "register",
     });
 
     if (!otpVerified) {
@@ -190,4 +191,61 @@ async function login(req, res) {
   }
 }
 
-module.exports = { register, login };
+
+async function resetPassword(req, res) {
+  try {
+    const { email, newPassword, verificationToken } = req.body;
+
+    if (!email || !newPassword || !verificationToken) {
+      return res.status(400).json({
+        error: "email, newPassword et verificationToken sont requis.",
+      });
+    }
+
+    if (String(newPassword).length < 8) {
+      return res.status(400).json({
+        error: "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+      });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const otpVerified = verifyEmailVerificationToken({
+      verificationToken,
+      email: normalizedEmail,
+      purpose: "password_reset",
+    });
+
+    if (!otpVerified) {
+      return res.status(403).json({
+        error: "Vérification OTP invalide ou expirée.",
+      });
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, normalizedEmail),
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "Compte OMNIPAY introuvable." });
+    }
+
+    const passwordHash = await hashPassword(String(newPassword));
+
+    await db
+      .update(users)
+      .set({ passwordHash })
+      .where(eq(users.id, user.id));
+
+    return res.status(200).json({
+      success: true,
+      message: "Mot de passe modifié. Vous pouvez vous connecter.",
+    });
+  } catch (err) {
+    console.error("PASSWORD_RESET_ERROR", err);
+    return res.status(500).json({
+      error: "Erreur serveur lors de la modification du mot de passe.",
+    });
+  }
+}
+
+module.exports = { register, login, resetPassword };
