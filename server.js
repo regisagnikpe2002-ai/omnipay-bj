@@ -134,7 +134,7 @@ console.log("PAYDUNYA_MODE:", process.env.PAYDUNYA_MODE);
 console.log("DATABASE_URL:", !!process.env.DATABASE_URL);
 
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
 
   console.log('');
   console.log('================================');
