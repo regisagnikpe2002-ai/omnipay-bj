@@ -107,6 +107,8 @@ app.use("/api/email-otp", emailOtpRoutes);
 // Gestion erreurs
 // =========================
 
+
+
 app.use("/api/binance-pay", binancePayRoutes);
 
 app.use((req, res) => {
