@@ -1,3 +1,4 @@
+const binancePayRoutes = require("./routes/binancePay.js");
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -12,7 +13,11 @@ const app = express();
 
 app.use(cors());
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString("utf8");
+  },
+}));
 
 app.use(express.urlencoded({
   extended: true
@@ -102,6 +107,8 @@ app.use("/api/email-otp", emailOtpRoutes);
 // Gestion erreurs
 // =========================
 
+app.use("/api/binance-pay", binancePayRoutes);
+
 app.use((req, res) => {
 
   res.status(404).json({
@@ -123,6 +130,7 @@ console.log("ADMIN_KEY:", !!process.env.ADMIN_KEY);
 console.log("PAYDUNYA_PUBLIC_KEY:", !!process.env.PAYDUNYA_PUBLIC_KEY);
 console.log("PAYDUNYA_MODE:", process.env.PAYDUNYA_MODE);
 console.log("DATABASE_URL:", !!process.env.DATABASE_URL);
+
 
 app.listen(PORT, () => {
 
