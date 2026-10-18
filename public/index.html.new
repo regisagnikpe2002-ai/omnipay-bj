@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OMNIPAY — Nouvelle interface</title>
+<style>
+:root{--bg:#070b14;--card:#0e1628;--card2:#131d33;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--mint2:#1fb98a;--warn:#ffcc4d;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(1200px 600px at 20% -10%,#12234a 0,transparent 60%),var(--bg);color:var(--txt);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+.wrap{max-width:460px;margin:0 auto;padding:20px 16px 60px}
+.brand{display:flex;gap:12px;align-items:center;margin:8px 0 22px}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--mint),var(--mint2));display:grid;place-items:center;color:#06231a;font-weight:800;font-size:22px}
+.brand b{font-size:20px;letter-spacing:.5px}.brand small{display:block;color:var(--mut);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px}
+h1{font-size:24px;margin-bottom:4px}h2{font-size:18px;margin-bottom:10px}
+p.sub{color:var(--mut);margin-bottom:16px;font-size:14px}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 6px}
+input,select{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:#f4f7fb;color:#0b1426;font-size:16px}
+input:focus,select:focus{outline:2px solid var(--mint)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;width:100%;margin-top:16px}
+.pri{background:linear-gradient(135deg,var(--mint),var(--mint2));color:#05261c}
+.pri:disabled{opacity:.4;cursor:not-allowed}
+.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.lnk{background:none;color:var(--mint);width:auto;padding:6px 0;margin:10px 0 0;font-size:14px}
+.steps{display:flex;gap:6px;margin-bottom:16px}.steps i{flex:1;height:4px;border-radius:4px;background:var(--line)}.steps i.on{background:var(--mint)}
+.otp{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.otp input{width:48px;height:56px;text-align:center;font-size:24px;font-weight:700;padding:0}
+.badge{display:inline-flex;gap:6px;align-items:center;background:#0b2a26;color:var(--mint);border:1px solid #14574a;border-radius:99px;padding:5px 12px;font-size:12px;font-weight:700;margin-bottom:14px}
+.badge:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mint)}
+.bal{background:linear-gradient(135deg,#143a8a,#0f6b63);border-radius:20px;padding:22px;margin-bottom:16px}
+.bal small{color:#cfe0ff}.bal .v{font-size:34px;font-weight:800;margin:4px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.tile{color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;font-size:15px;margin:0}
+.tile span{display:block;font-size:22px;margin-bottom:6px}
+.msg{padding:10px 12px;border-radius:10px;font-size:14px;margin-top:12px;display:none}
+.msg.ok{display:block;background:#0b2a22;color:var(--mint);border:1px solid #14574a}
+.msg.er{display:block;background:#2b1216;color:var(--err);border:1px solid #6b2a33}
+.tx{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}.tx:last-child{border:0}
+.tx small{color:var(--mut);display:block}
+.neg{color:var(--err)}.pos{color:var(--mint)}
+.receipt{background:#fff;color:#0b1426;border-radius:16px;padding:20px;margin-top:6px}
+.receipt .h{display:flex;justify-content:space-between;align-items:center;border-bottom:2px dashed #cbd5e8;padding-bottom:12px;margin-bottom:12px}
+.receipt .h b{font-size:20px;color:#0b3d91}
+.receipt .l{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}.receipt .l span:first-child{color:#5b6b86}
+.receipt .tot{font-size:22px;font-weight:800;border-top:2px dashed #cbd5e8;margin-top:8px;padding-top:12px}
+.pend{color:#b7791f;font-weight:700}
+.demo{position:fixed;bottom:0;left:0;right:0;background:#2a2410;color:var(--warn);font-size:12px;text-align:center;padding:6px}
+.hide{display:none}
+.pwb{position:relative}.pwb input{padding-right:84px}.pwb button.eye{position:absolute;right:6px;top:6px;width:auto;margin:0;padding:8px 12px;font-size:13px;background:#dfe7f5;color:#0b1426;border-radius:8px}
+.svc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}.svc .tile small{display:block;color:var(--mut);font-size:12px;margin-top:2px}.tile .soon{font-size:11px;margin:0 0 0 4px;display:inline-block;background:#2a2410;color:var(--warn);border-radius:99px;font-size:11px;padding:1px 8px;margin-left:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="logo">O</div><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div></div>
+
+  <!-- CONNEXION -->
+  <section id="login" class="card">
+    <span class="badge">OMNICHECK ACTIF</span>
+    <h1>Connexion</h1><p class="sub">Accédez à votre espace financier.</p>
+    <label>Email ou téléphone</label><input id="l_id" autocomplete="username" placeholder="Ex : 0191467283">
+    <label>Mot de passe</label><input id="l_pw" type="password" autocomplete="current-password">
+    <button class="pri" onclick="doLogin()">Se connecter</button>
+    <div id="l_msg" class="msg"></div>
+    <button class="lnk" onclick="show('reg')">Créer un compte</button>
+  </section>
+
+  <!-- INSCRIPTION -->
+  <section id="reg" class="card hide">
+    <div class="steps"><i id="s1" class="on"></i><i id="s2"></i><i id="s3"></i></div>
+    <div id="r1">
+      <h1>Créer mon compte</h1><div id="r_ref" class="sub" style="color:var(--mint)"></div><p class="sub">Étape 1 sur 3 — vos informations.</p>
+      <div class="row"><div><label>Prénom</label><input id="r_fn"></div><div><label>Nom</label><input id="r_ln"></div></div>
+      <label>Adresse email</label><input id="r_em" type="email">
+      <label>Téléphone</label><input id="r_ph" placeholder="Ex : 0191467283">
+      <label>Mot de passe (8 caractères min.)</label><input id="r_pw" type="password">
+      
+      <button class="pri" onclick="sendOtp()">Recevoir le code par email</button>
+      <div id="r_msg" class="msg"></div>
+      <button class="lnk" onclick="show('login')">J'ai déjà un compte</button>
+    </div>
+    <div id="r2" class="hide">
+      <h1>Vérification</h1><p class="sub" id="otpTo"></p>
+      <div class="otp" id="otpBox"></div>
+      <button class="pri" id="btnVerify" onclick="verifyOtp()">Vérifier et créer mon compte</button>
+      <div id="o_msg" class="msg"></div>
+      <button class="lnk" id="btnResend" onclick="sendOtp(true)">Renvoyer le code</button>
+      <button class="lnk" onclick="step(1)">← Modifier mes informations</button>
+    </div>
+    <div id="r3" class="hide">
+      <h1>Compte créé ✅</h1><p class="sub">Votre identifiant OMNIPAY :</p>
+      <div class="card" style="text-align:center;font-size:26px;font-weight:800;color:var(--mint)" id="newId"></div>
+      <button class="pri" onclick="enter()">Accéder à mon tableau de bord</button>
+    </div>
+  </section>
+
+  <!-- TABLEAU DE BORD -->
+  <section id="dash" class="hide">
+    <div class="bal"><small>Solde OMNIPAY</small><div class="v" id="bal">0 FCFA</div><small id="who"></small></div>
+    <div class="grid">
+      <button class="tile" onclick="toast('Paiement chez un prestataire : bientôt disponible')"><span>💳</span>Payer un prestataire</button>
+      <button class="tile" onclick="openIO('in')"><span>⬇️</span>Dépôt (pay-in)</button>
+      <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retrait (pay-out)</button>
+      <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation (50 F)</button>
+      <button class="tile" onclick="show('xfer')" style="grid-column:1/-1;border-color:var(--mint)"><span>🔁</span>OMNIPAY → OMNIPAY <small style="color:var(--mut)">transfert instantané entre comptes</small></button>
+    </div>
+    <div class="svc">
+      <button class="tile" onclick="toast('Carte virtuelle : bientôt disponible')"><span>💳</span>Carte virtuelle<span class="soon">bientôt</span><small>Payez en ligne en quelques secondes</small></button>
+      <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<span class="soon">bientôt</span><small>Créez votre commerce</small></button>
+      <button class="tile" onclick="window.print()"><span>🧾</span>Reçus PDF<small>Imprimer / enregistrer en PDF</small></button>
+      <button class="tile" onclick="document.getElementById('txs').scrollIntoView({behavior:'smooth'})"><span>📊</span>Historique<small>Toutes vos opérations</small></button>
+    </div>
+    <div class="card" style="margin-bottom:16px"><h2>Réseau OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Un seul compte, tous vos prestataires.</p>
+      <div class="tx"><div>Mobile Money (MTN · Moov · Celtiis)<small>Dépôts et retraits</small></div><b class="pos">Actif</b></div>
+      <div class="tx"><div>Banques (Ecobank · UBA · BSIC)<small>PI-SPI, virements</small></div><b style="color:var(--warn)">En cours</b></div>
+      <div class="tx"><div>Crypto (Binance · wallets)<small>Option réservée aux clients vérifiés</small></div><b style="color:var(--warn)">En cours</b></div>
+      <div class="tx"><div>Prestataires (factures, transport, livraison)<small>Paiement depuis votre solde</small></div><b style="color:var(--warn)">En cours</b></div></div>
+    <div class="card"><h2>Dernières opérations</h2><div id="txs"></div></div>
+    <button class="sec" onclick="logout()">Se déconnecter</button>
+  </section>
+
+
+
+  <section id="aff" class="card hide">
+    <h1>Affiliation OMNIPAY</h1><p class="sub">Invitez des clients et gagnez <b>50 FCFA</b> pour chaque client parrainé qui rejoint OMNIPAY (un seul niveau : vos filleuls directs).</p>
+    <label>Votre lien de parrainage</label><input id="aff_link" readonly>
+    <button class="pri" onclick="copyAff()">Copier mon lien</button>
+    <button class="sec" onclick="shareAff()">Partager sur WhatsApp</button>
+    <div class="msg ok" style="display:block;background:#2a2410;color:var(--warn);border-color:#5a4a14">Le suivi des filleuls et le versement des gains seront activés prochainement. Gardez votre lien : il restera valable.</div>
+    <div id="aff_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="xfer" class="card hide">
+    <h1>OMNIPAY → OMNIPAY</h1><p class="sub">Envoyez de l'argent à un autre compte OMNIPAY, instantanément (commission 50 FCFA).</p>
+    <label>Téléphone du bénéficiaire (comme à son inscription)</label><input id="x_to" placeholder="Ex : 0191467283" onblur="lookup()"><div id="x_name" class="sub" style="margin:6px 0 0;color:var(--mint);min-height:22px"></div>
+    <label>Montant (FCFA)</label><input id="x_am" type="number" min="100" value="1000">
+    
+    <button class="pri" onclick="doXfer()">Envoyer</button>
+    <div id="x_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="io" class="card hide">
+    <div class="row"><button class="sec" id="tIn" onclick="openIO('in')" style="margin-top:0">Pay-in</button><button class="sec" id="tOut" onclick="openIO('out')" style="margin-top:0">Pay-out</button></div>
+    <h2 id="io_t" style="margin-top:16px"></h2><p class="sub" id="io_s"></p>
+    <label>Canal</label><select id="io_ch"></select>
+    <div id="io_accw"><label id="io_l">Numéro Mobile Money</label><input id="io_acc" placeholder="Ex : 0191467283"></div>
+    <label>Montant (FCFA)</label><input id="io_am" type="number" min="500" value="500">
+    <button class="pri" onclick="doIO()">Valider</button>
+    <div id="io_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <!-- PAYER -->
+  <section id="pay" class="card hide">
+    <h1>Payer un prestataire</h1><p class="sub">Le paiement est émis par OMNIPAY.</p>
+    <label>Prestataire</label><select id="p_pr"></select>
+    <label>Référence client / numéro</label><input id="p_ref" placeholder="Numéro de facture, compteur, téléphone…">
+    <label>Montant (FCFA)</label><input id="p_am" type="number" min="100" value="500">
+    <button class="pri" onclick="doPay()">Payer</button>
+    <div id="p_msg" class="msg"></div>
+    <div id="receipt" class="hide"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+</div>
+
+
+<script>
+const $=id=>document.getElementById(id);
+const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const S={token:LS.get('omnipayAccessToken'),user:null,wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
+const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
+function show(id){['login','reg','dash','xfer','io','aff'].forEach(s=>$(s).classList.toggle('hide',s!==id));window.scrollTo(0,0)}
+function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
+function toast(t){alert(t)}
+function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
+async function api(path,opt={}){
+  const h={'Content-Type':'application/json'};if(S.token)h.Authorization='Bearer '+S.token;
+  const r=await fetch(path,{method:opt.body?'POST':'GET',headers:h,body:opt.body?JSON.stringify(opt.body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401&&S.token){logout(true);throw new Error('Session expirée. Reconnectez-vous.')}
+  if(!r.ok)throw new Error(d.error||d.message||'Une erreur est survenue.');return d}
+
+/* champs mot de passe : afficher / masquer */
+document.querySelectorAll('input[type=password]').forEach(i=>{const w=document.createElement('div');w.className='pwb';i.parentNode.insertBefore(w,i);w.appendChild(i);
+ const b=document.createElement('button');b.type='button';b.className='eye';b.textContent='Afficher';b.onclick=()=>{const h=i.type==='password';i.type=h?'text':'password';b.textContent=h?'Masquer':'Afficher'};w.appendChild(b)});
+document.querySelectorAll('#l_pw').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
+
+/* OTP 6 cases */
+const boxes=[];
+(function(){const w=$('otpBox');for(let i=0;i<6;i++){const el=document.createElement('input');el.maxLength=1;el.inputMode='numeric';el.autocomplete=i?'off':'one-time-code';
+ el.addEventListener('input',()=>{el.value=el.value.replace(/\D/g,'');if(el.value&&i<5)boxes[i+1].focus()});
+ el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&i>0)boxes[i-1].focus()});
+ el.addEventListener('paste',e=>{const d=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(!d)return;e.preventDefault();d.split('').forEach((c,k)=>boxes[k].value=c);boxes[Math.min(d.length,5)].focus()});
+ boxes.push(el);w.appendChild(el)}})();
+const code=()=>boxes.map(b=>b.value).join('');
+let timer=null;
+function cooldown(){let s=60;const b=$('btnResend');b.disabled=true;clearInterval(timer);timer=setInterval(()=>{b.textContent=s>0?`Renvoyer le code (${s}s)`:'Renvoyer le code';if(s--<=0){clearInterval(timer);b.disabled=false}},1000)}
+
+async function sendOtp(resend){
+  const email=$('r_em').value.trim().toLowerCase();
+  if(!$('r_fn').value.trim()||!$('r_ln').value.trim())return msg('r_msg','Renseignez votre prénom et votre nom.');
+  if(!/^\S+@\S+\.\S+$/.test(email))return msg('r_msg','Adresse email invalide.');
+  if(!$('r_ph').value.trim())return msg('r_msg','Renseignez votre téléphone.');
+  if($('r_pw').value.length<8)return msg('r_msg','Mot de passe : 8 caractères minimum.');
+  try{
+    const d=await api('/api/email-otp/request',{body:{email,purpose:'register'}});
+    S.challengeId=d.challengeId;S.vToken='';S.vEmail='';
+    $('otpTo').textContent='Code à 6 chiffres envoyé à '+email.replace(/(.{2}).+(@.+)/,'$1•••$2')+'.';
+    boxes.forEach(b=>b.value='');step(2);boxes[0].focus();cooldown();
+    if(resend===true)msg('o_msg','Nouveau code envoyé.',true)
+  }catch(e){msg('r_msg',e.message)}
+}
+async function verifyOtp(){
+  const email=$('r_em').value.trim().toLowerCase();
+  if(!S.challengeId)return msg('o_msg','Demandez d\'abord un code.');
+  if(code().length<6)return msg('o_msg','Saisissez les 6 chiffres.');
+  const b=$('btnVerify');b.disabled=true;
+  try{
+    const v=await api('/api/email-otp/verify',{body:{challengeId:S.challengeId,email,purpose:'register',code:code()}});
+    S.vToken=v.verificationToken;S.vEmail=email;
+    const d=await api('/auth/register',{body:{firstName:$('r_fn').value.trim(),lastName:$('r_ln').value.trim(),email,phone:$('r_ph').value.trim(),password:$('r_pw').value,verificationToken:S.vToken,referralCode:LS.get('omnipayRef')||undefined}});
+    if(d.accessToken){S.token=d.accessToken;LS.set('omnipayAccessToken',d.accessToken)}
+    S.user=d.user||{};$('newId').textContent=($('r_ph').value.trim());step(3)
+  }catch(e){msg('o_msg',e.message)}finally{b.disabled=false}
+}
+async function doLogin(){
+  const id=$('l_id').value.trim(),pw=$('l_pw').value;
+  if(!id||!pw)return msg('l_msg','Renseignez vos identifiants.');
+  try{const d=await api('/auth/login',{body:{identifier:id,password:pw}});
+    if(!d.accessToken)throw new Error('Token de connexion absent.');
+    S.token=d.accessToken;LS.set('omnipayAccessToken',d.accessToken);S.user=d.user||{};await enter()
+  }catch(e){msg('l_msg',e.message)}
+}
+async function refresh(){
+  const w=await api('/wallet/me');S.wallet=w.wallet;
+  try{const t=await api('/wallet/transactions');S.txs=t.transactions||[]}catch(e){S.txs=[]}
+  render()
+}
+async function enter(){
+  try{await refresh()}catch(e){return msg('l_msg',e.message)}
+  const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.email||u.phone||'';
+  show('dash')
+}
+function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
+const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé'};
+const CREDIT=['deposit','transfer_in'];
+function render(){
+  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);
+  const el=$('txs');
+  if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
+  el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
+    const st=t.status==='pending'?' · en attente':t.status==='failed'?' · échoué':'';
+    return `<div class="tx"><div>${LABEL[t.type]||t.type}<small>${d}${st}</small></div><b class="${c?'pos':'neg'}">${c?'+':'-'}${fmt(t.amount)}</b></div>`}).join('')
+}
+
+/* TRANSFERT OMNIPAY -> OMNIPAY (par téléphone) */
+async function lookup(){
+  const p=$('x_to').value.trim();$('x_name').textContent='';if(!p)return;
+  try{const d=await api('/wallet/recipient/'+encodeURIComponent(p));$('x_name').textContent='✔ '+[d.firstName,d.lastName].join(' ').trim()}
+  catch(e){$('x_name').textContent='';$('x_name').style.color='var(--err)';$('x_name').textContent=e.message;setTimeout(()=>{$('x_name').style.color='var(--mint)'},0)}
+}
+async function doXfer(){
+  const to=$('x_to').value.trim(),am=parseInt($('x_am').value,10);
+  if(!to)return msg('x_msg','Saisissez le téléphone du bénéficiaire.');
+  if(!(am>0))return msg('x_msg','Montant invalide.');
+  if(!confirm(`Envoyer ${fmt(am)} à ${to} ? (+50 FCFA de commission)`))return;
+  try{const d=await api('/wallet/transfer',{body:{recipientPhone:to,amount:am}});
+    msg('x_msg',d.message||'Transfert effectué.',true);await refresh()}catch(e){msg('x_msg',e.message)}
+}
+
+/* DEPOT (pay-in via PayDunya) / RETRAIT (pay-out) */
+let ioMode='in';
+const OPS=[['mtn','MTN Mobile Money'],['moov','Moov Money'],['celtiis','Celtiis Cash']];
+function openIO(m){ioMode=m;$('io_msg').className='msg';
+  $('io_t').textContent=m==='in'?'Dépôt : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
+  $('io_s').textContent=m==='in'?'Vous serez redirigé vers la page de paiement sécurisée pour finaliser le dépôt.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
+  $('io_ch').innerHTML=m==='in'?'<option value="paydunya">Mobile Money / carte (paiement sécurisé)</option>':OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
+  $('io_accw').classList.toggle('hide',m==='in');
+  $('tIn').style.borderColor=m==='in'?'var(--mint)':'var(--line)';$('tOut').style.borderColor=m==='out'?'var(--mint)':'var(--line)';show('io')}
+async function doIO(){
+  const am=parseInt($('io_am').value,10);if(!(am>0))return msg('io_msg','Montant invalide.');
+  try{
+    if(ioMode==='in'){const d=await api('/wallet/deposit',{body:{amount:am}});if(d.paymentUrl){msg('io_msg','Redirection vers le paiement…',true);location.href=d.paymentUrl}else msg('io_msg',d.message||'Dépôt initié.',true)}
+    else{const ph=$('io_acc').value.trim();if(!ph)return msg('io_msg','Renseignez le numéro Mobile Money.');
+      if(!confirm(`Retirer ${fmt(am)} vers ${ph} ? (+50 FCFA de commission)`))return;
+      const d=await api('/wallet/withdraw',{body:{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
+  }catch(e){msg('io_msg',e.message)}
+}
+/* Session existante */
+if(S.token){enter().catch(()=>{})}
+
+function affLink(){const u=S.user||{};const code=encodeURIComponent(u.phone||u.email||'');return location.origin+'/?ref='+code}
+function openAff(){$('aff_link').value=affLink();$('aff_msg').className='msg';show('aff')}
+function copyAff(){const l=affLink();(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(()=>msg('aff_msg','Lien copié.',true)).catch(()=>{$('aff_link').select();msg('aff_msg','Copiez le lien ci-dessus.',true)})}
+function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un : '+affLink();window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
+(function(){try{const r=new URLSearchParams(location.search).get('ref');if(r){LS.set('omnipayRef',r.slice(0,80));$('r_ref').textContent='Vous êtes invité(e) par un membre OMNIPAY.';if(!S.token){show('reg')}}}catch(e){}})();
+</script>
+</body>
+</html>
