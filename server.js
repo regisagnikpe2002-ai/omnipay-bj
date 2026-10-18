@@ -105,7 +105,9 @@ function mount(urlPath, modulePath, label) {
 
 // Routes à chemin précis AVANT les routes montées sur /api
 mount("/auth", "./routes/auth", "Auth");
+mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
 mount("/wallet", "./routes/wallet", "Wallet");
+mount("/api/omnicheck", "./routes/omnicheck", "OMNICHECK");
 mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
 mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
 mount("/api/web3", "./routes/web3", "Web3");
@@ -151,4 +153,5 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("OMNIPAY BACKEND V2.0 DEMARRE");
   console.log(`PORT : ${PORT}`);
   console.log("================================");
+  try { require("./routes/omnicheck").startScheduler(); } catch (err) { console.error("[OMNICHECK] non démarré :", err.message); }
 });
