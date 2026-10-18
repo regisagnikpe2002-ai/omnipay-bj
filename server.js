@@ -1,4 +1,4 @@
-"use strict";
+
 
 /**
  * OMNIPAY — server.js (V2.0)
