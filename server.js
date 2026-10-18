@@ -1,4 +1,4 @@
-
+"use strict";
 
 /**
  * OMNIPAY — server.js (V2.0)
@@ -58,6 +58,7 @@ function limiter(max, message) {
 
 app.use("/auth/login", limiter(100, "Trop de tentatives de connexion. Réessayez dans quelques minutes."));
 app.use("/auth/register", limiter(60, "Trop de tentatives d'inscription. Réessayez dans quelques minutes."));
+app.use("/api/id/lookup", limiter(120, "Trop de recherches. Réessayez dans quelques minutes."));
 app.use("/api/email-otp/request", limiter(30, "Trop de demandes de code. Réessayez dans quelques minutes."));
 
 // =========================
@@ -112,6 +113,8 @@ mount("/wallet", "./routes/wallet", "Wallet");
 mount("/api/omnicheck", "./routes/omnicheck", "OMNICHECK");
 mount("/api/manual", "./routes/manualPayments", "Paiements manuels");
 mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
+mount("/api/admin", "./routes/adminDash", "Tableau de bord admin");
+mount("/api", "./routes/accountIds", "Identifiants et reçus");
 mount("/api/coingate", "./routes/coingate", "CoinGate");
 mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
 mount("/api/web3", "./routes/web3", "Web3");
