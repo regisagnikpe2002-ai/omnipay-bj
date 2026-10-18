@@ -1,0 +1,78 @@
+"use strict";
+// OMNIPAY — dépôt crypto via CoinGate (fichier AJOUTÉ). Aucune clé privée : CoinGate encaisse, OMNIPAY crédite le FCFA après confirmation.
+// Variables Render : COINGATE_API_TOKEN (obligatoire), COINGATE_ENV = "live" ou "sandbox" (défaut sandbox), PUBLIC_BASE_URL.
+// Le FCFA étant arrimé à l'euro (1 EUR = 655,957 FCFA), la commande est faite en EUR : aucun taux de change à deviner.
+const crypto = require("crypto");
+const axios = require("axios");
+const express = require("express");
+const { neon } = require("@neondatabase/serverless");
+const { requireAuth } = require("../authMiddleware");
+
+const router = express.Router();
+const sql = () => neon(process.env.DATABASE_URL);
+const XOF_PER_EUR = 655.957;
+const MIN = Number(process.env.COINGATE_MIN_XOF || 1000);
+const MAX = Number(process.env.COINGATE_MAX_XOF || 1000000);
+const api = () => (String(process.env.COINGATE_ENV || "sandbox").toLowerCase() === "live" ? "https://api.coingate.com/v2" : "https://api-sandbox.coingate.com/v2");
+const headers = () => ({ Authorization: `Token ${(process.env.COINGATE_API_TOKEN || "").trim()}` });
+const baseUrl = () => (process.env.PUBLIC_BASE_URL || "https://www.omnipay-bj.com").replace(/\/$/, "");
+const secret = () => process.env.OTP_SECRET || process.env.ADMIN_KEY || "";
+const tokenOf = (orderId) => crypto.createHmac("sha256", secret()).update("cg:" + orderId).digest("hex").slice(0, 40);
+
+router.post("/order", requireAuth, async (req, res) => {
+  try {
+    if (!process.env.COINGATE_API_TOKEN) return res.status(503).json({ error: "Dépôt crypto indisponible pour le moment." });
+    const xof = Math.floor(Number(req.body?.amountXof));
+    if (!Number.isFinite(xof) || xof < MIN || xof > MAX) return res.status(400).json({ error: `Montant entre ${MIN} et ${MAX} FCFA.` });
+    const eur = Math.ceil((xof / XOF_PER_EUR) * 100) / 100; // arrondi vers le haut : le client ne paie jamais moins que le crédit
+    const q = sql();
+    const w = await q`SELECT id, balance FROM wallets WHERE user_id = ${req.user.userId}`;
+    if (!w.length) return res.status(404).json({ error: "Wallet introuvable." });
+
+    const orderId = "OMPCG" + Date.now() + crypto.randomBytes(3).toString("hex");
+    const r = await axios.post(`${api()}/orders`, {
+      order_id: orderId, price_amount: eur, price_currency: "EUR",
+      title: "Dépôt OMNIPAY", description: `Dépôt ${xof} FCFA`,
+      callback_url: `${baseUrl()}/api/coingate/callback`, cancel_url: `${baseUrl()}/?coingate=cancelled`, success_url: `${baseUrl()}/?coingate=success`,
+      token: tokenOf(orderId),
+    }, { headers: headers(), timeout: 20000 });
+    const o = r.data || {};
+    if (!o.id || !o.payment_url) return res.status(502).json({ error: "CoinGate a refusé la commande." });
+
+    await q`INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
+            VALUES (${w[0].id}, 'deposit', ${xof}, ${w[0].balance}, 'pending', 'coingate', ${String(o.id)}, ${orderId},
+                    ${JSON.stringify({ orderId, eur, xof })}::jsonb)`;
+    res.status(201).json({ paymentUrl: o.payment_url, orderId, amountEur: eur, creditXof: xof });
+  } catch (e) {
+    console.error("COINGATE_ORDER", e.response?.data || e.message);
+    res.status(500).json({ error: "Impossible de créer le paiement crypto." });
+  }
+});
+
+// Callback CoinGate (formulaire). On ne croit JAMAIS le contenu : on relit la commande chez CoinGate.
+router.post("/callback", async (req, res) => {
+  try {
+    const orderId = String(req.body?.order_id || "");
+    const cgId = String(req.body?.id || "");
+    if (!orderId || !cgId || String(req.body?.token || "") !== tokenOf(orderId)) return res.status(403).send("INVALID");
+    const r = await axios.get(`${api()}/orders/${encodeURIComponent(cgId)}`, { headers: headers(), timeout: 20000 });
+    const o = r.data || {};
+    if (String(o.order_id) !== orderId) return res.status(400).send("MISMATCH");
+    const q = sql();
+    if (o.status === "paid") {
+      const t = await q`SELECT metadata FROM transactions WHERE idempotency_key = ${orderId} AND provider = 'coingate'`;
+      const eur = Number(t[0]?.metadata?.eur);
+      if (!t.length || !Number.isFinite(eur) || Number(o.price_amount) + 0.00001 < eur) return res.status(400).send("AMOUNT_MISMATCH");
+      await q`
+        WITH t AS (SELECT id, wallet_id, amount FROM transactions WHERE idempotency_key = ${orderId} AND provider = 'coingate' AND status = 'pending' FOR UPDATE),
+        w AS (UPDATE wallets SET balance = balance + t.amount, updated_at = now() FROM t WHERE wallets.id = t.wallet_id RETURNING wallets.balance, t.id AS tx_id),
+        u AS (UPDATE transactions SET status = 'completed', balance_after = w.balance FROM w WHERE transactions.id = w.tx_id AND transactions.status = 'pending' RETURNING transactions.id)
+        SELECT w.balance FROM w`;
+    } else if (["canceled", "expired", "invalid"].includes(o.status)) {
+      await q`UPDATE transactions SET status = 'cancelled' WHERE idempotency_key = ${orderId} AND provider = 'coingate' AND status = 'pending'`;
+    }
+    res.status(200).send("OK");
+  } catch (e) { console.error("COINGATE_CB", e.response?.data || e.message); res.status(500).send("ERROR"); }
+});
+
+module.exports = router;
