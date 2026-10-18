@@ -6,12 +6,10 @@
 <title>OMNIPAY</title>
 <meta name="description" content="OMNIPAY — votre quotidien financier tout-en-un : portefeuille, transferts, dépôts et retraits Mobile Money, parrainage.">
 <meta name="theme-color" content="#070b14">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<meta property="og:title" content="OMNIPAY"><meta property="og:description" content="Votre quotidien financier tout-en-un"><meta property="og:image" content="https://www.omnipay-bj.com/icon-512.png"><meta property="og:url" content="https://www.omnipay-bj.com/">
+<meta property="og:title" content="OMNIPAY"><meta property="og:description" content="Votre quotidien financier tout-en-un"><meta property="og:image" content="https://www.omnipay-bj.com/logo.svg"><meta property="og:url" content="https://www.omnipay-bj.com/">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="OMNIPAY">
 <style>
 :root{--bg:#070b14;--card:#0e1628;--card2:#131d33;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--mint2:#1fb98a;--warn:#ffcc4d;--err:#ff6b6b}
@@ -66,7 +64,7 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><img src="/icon-192.png" alt="OMNIPAY" width="44" height="44" style="border-radius:12px;display:block"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div></div>
+  <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="44" height="44" style="border-radius:12px;display:block"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div></div>
 
   <!-- CONNEXION -->
   <section id="login" class="card">
@@ -124,6 +122,12 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <div id="alias_msg" class="msg"></div>
       <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable aujourd'hui entre comptes OMNIPAY. Compatible PI-SPI : en cours d'homologation avec notre banque partenaire.</p></div>
     <div class="svc">
+      <button class="tile" onclick="openOps()" style="grid-column:1/-1"><span>📱</span>Mes numéros Mobile Money<small>MTN, Moov, Celtiis : enregistrez et choisissez pour vos retraits</small></button>
+    </div>
+    <div class="svc">
+      <button class="tile" onclick="openMan()" style="grid-column:1/-1;border-color:var(--mint)"><span>🏧</span>Dépôt &amp; retrait directs<small>USDT, virement, Mobile Money : avec votre référence</small></button>
+    </div>
+    <div class="svc">
       <button class="tile" onclick="$('ib_out').className='msg';show('iban')" style="grid-column:1/-1"><span>🏦</span>Vérificateur IBAN<small>Avant un virement bancaire</small></button>
     </div>
     <div class="svc">
@@ -165,6 +169,32 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="man" class="card hide">
+    <h1>Dépôt &amp; retrait directs</h1><p class="sub">Envoyez vers un compte OMNIPAY avec votre référence personnelle. OMNIPAY vérifie la réception, puis crédite votre solde.</p>
+    <div class="row"><button class="sec" id="mTabIn" onclick="manTab('in')" style="margin-top:0">Déposer</button><button class="sec" id="mTabOut" onclick="manTab('out')" style="margin-top:0">Retirer</button></div>
+    <div id="m_in">
+      <label>Votre référence (à indiquer avec le paiement)</label>
+      <div class="row"><input id="m_ref" readonly style="font-weight:800;letter-spacing:1px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('m_ref').value,'m_msg')">Copier</button></div>
+      <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
+      <div id="m_accs"><p class="sub">Chargement…</p></div>
+      <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
+      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
+      <div class="row"><div><label>Montant envoyé</label><input id="m_am" type="number" min="1" step="any"></div><div><label>Devise</label><select id="m_cur"><option>XOF</option><option>USDT</option><option>EUR</option><option>USD</option></select></div></div>
+      <label>Preuve (hash de transaction, n° de référence)</label><input id="m_tx" placeholder="Ex : 0x… ou n° de transaction">
+      <button class="pri" onclick="manDeposit()">Déclarer mon paiement</button>
+    </div>
+    <div id="m_out" class="hide">
+      <p class="sub">Le montant et la commission de 50 FCFA sont réservés tout de suite sur votre solde, puis le retrait est exécuté après validation.</p>
+      <label>Moyen de réception</label><select id="mo_meth"><option value="momo">Mobile Money</option><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option></select>
+      <label>Destination (numéro, adresse ou IBAN)</label><input id="mo_dst" autocomplete="off">
+      <label>Montant (FCFA)</label><input id="mo_am" type="number" min="500" value="1000">
+      <button class="pri" onclick="manPayout()">Demander le retrait</button>
+    </div>
+    <div id="m_msg" class="msg"></div>
+    <h2 style="margin-top:20px">Mes demandes</h2><div id="m_list"><p class="sub">Aucune demande.</p></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
   <section id="help" class="card hide">
     <span class="badge">OMNICHECK</span>
     <h1>Aide &amp; avis</h1><p class="sub">OMNICHECK suit les entrées, les sorties et les commissions, et fait un inventaire chaque jour pour détecter les opérations non abouties.</p>
@@ -181,6 +211,17 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <button class="pri" onclick="sendFb()">Envoyer</button>
     <div id="h_out" class="msg"></div>
     <button class="lnk" onclick="helpBack()">← Retour</button>
+  </section>
+
+  <section id="ops" class="card hide">
+    <h1>Mes numéros Mobile Money</h1><p class="sub">Enregistrez vos numéros MTN, Moov ou Celtiis. Vous les choisirez en un clic pour vos retraits.</p>
+    <div id="ops_list"></div>
+    <h2 style="margin-top:16px">Ajouter un numéro</h2>
+    <label>Opérateur</label><select id="op_new"><option value="mtn">MTN Mobile Money</option><option value="moov">Moov Money</option><option value="celtiis">Celtiis Cash</option></select>
+    <label>Numéro</label><input id="op_ph" inputmode="tel" placeholder="Numéro Mobile Money">
+    <button class="pri" onclick="opAdd()">Enregistrer</button>
+    <div id="ops_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
   <section id="fp" class="card hide">
@@ -212,6 +253,15 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <p class="sub" style="margin-bottom:8px">La personne qui scanne ouvre OMNIPAY, se connecte et obtient un transfert déjà rempli vers votre compte.</p>
     <div id="qr_pay" class="qrbox"></div>
     <button class="sec" onclick="dlQr('qr_pay','omnipay-recevoir')">Télécharger</button>
+    <h2 style="margin-top:22px">Demander un paiement</h2>
+    <p class="sub" style="margin-bottom:8px">Indiquez un montant et un libellé : le QR et le lien ouvrent un transfert déjà rempli vers votre compte.</p>
+    <label>Montant (FCFA)</label><input id="rq_am" type="number" min="100" placeholder="Ex. 5000">
+    <label>Libellé (facultatif)</label><input id="rq_note" maxlength="60" placeholder="Ex. Commande n° 12">
+    <button class="pri" onclick="makeReq()">Générer le QR et le lien</button>
+    <div id="rq_out" class="hide"><div id="qr_req" class="qrbox"></div>
+      <input id="rq_link" readonly style="margin-top:8px">
+      <div class="row"><button class="sec" onclick="copyReq()">Copier le lien</button><button class="sec" onclick="shareReq()">WhatsApp</button><button class="sec" onclick="dlQr('qr_req','omnipay-demande')">Télécharger</button></div></div>
+    <div id="rq_msg" class="msg"></div>
     <h2 style="margin-top:22px">Parrainage (50 F par filleul)</h2>
     <p class="sub" style="margin-bottom:8px">Un nouveau client qui scanne arrive sur l'inscription avec votre code de parrainage.</p>
     <div id="qr_aff" class="qrbox"></div>
@@ -224,7 +274,13 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <h1>Crypto &amp; P2P</h1><p class="sub">Alimentez votre compte avec des USDT, sous contrôle.</p>
     <button class="pri" onclick="window.open('https://p2p.binance.com/fr','_blank','noopener')">Ouvrir Binance P2P</button>
     <p class="sub" style="margin:8px 0 16px;font-size:12px">Achat/vente d'USDT entre particuliers, sur Binance. Les opérations P2P se font sur Binance, hors OMNIPAY.</p>
-    <div class="tx"><div>Dépôt USDT (Binance Pay)<small>Crédit automatique de votre solde</small></div><b style="color:var(--warn)">En cours</b></div>
+    <h2>Dépôt par crypto (CoinGate)</h2><p class="sub" style="margin-bottom:8px">BTC, ETH, USDT… Votre solde est crédité en FCFA après confirmation du réseau.</p>
+    <label>Montant à créditer (FCFA)</label><input id="cg_am" type="number" min="1000" value="5000">
+    <button class="pri" onclick="doCg()">Payer en crypto</button>
+    <h2 style="margin-top:18px">Dépôt USDT (Binance Pay)</h2><p class="sub" style="margin-bottom:8px">Payez avec votre application Binance. Crédit automatique au taux affiché.</p>
+    <label>Montant (USDT)</label><input id="bn_am" type="number" min="2" step="0.01" value="5">
+    <button class="pri" onclick="doBn()">Payer avec Binance Pay</button>
+    <div id="cry_msg" class="msg"></div>
     <div class="tx"><div>Mon adresse portefeuille<small>Adresse personnelle générée pour vous</small></div><b style="color:var(--warn)">En cours</b></div>
     <div class="tx"><div>Portefeuille local / bancaire<small>Lier un compte pour gérer vos fonds</small></div><b style="color:var(--warn)">En cours</b></div>
     <p class="sub" style="margin-top:14px;font-size:12px">Ces fonctions sont activées après validation de nos partenaires. Aucune adresse de dépôt n'est affichée tant que le suivi automatique n'est pas actif, pour protéger vos fonds.</p>
@@ -255,6 +311,7 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <div class="row"><button class="sec" id="tIn" onclick="openIO('in')" style="margin-top:0">Pay-in</button><button class="sec" id="tOut" onclick="openIO('out')" style="margin-top:0">Pay-out</button></div>
     <h2 id="io_t" style="margin-top:16px"></h2><p class="sub" id="io_s"></p>
     <label>Canal</label><select id="io_ch"></select>
+    <div id="io_savw" class="hide"><label>Numéro enregistré</label><select id="io_sav" onchange="savPick()"></select></div>
     <div id="io_accw"><label id="io_l">Numéro Mobile Money</label><input id="io_acc" placeholder="Votre numéro de téléphone"></div>
     <label>Montant (FCFA)</label><input id="io_am" type="number" min="500" value="500">
     <button class="pri" onclick="doIO()">Valider</button>
@@ -2586,13 +2643,13 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','help','iban'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','help','iban','man','ops'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
 async function api(path,opt={}){
   const h={'Content-Type':'application/json'};if(S.token)h.Authorization='Bearer '+S.token;
-  const r=await fetch(path,{method:opt.body?'POST':'GET',headers:h,body:opt.body?JSON.stringify(opt.body):undefined});
+  const r=await fetch(path,{method:opt.method||(opt.body?'POST':'GET'),headers:h,body:opt.body?JSON.stringify(opt.body):undefined});
   const d=await r.json().catch(()=>({}));
   if(r.status===401&&S.token){logout(true);throw new Error('Session expirée. Reconnectez-vous.')}
   if(!r.ok)throw new Error(d.error||d.message||'Une erreur est survenue.');return d}
@@ -2659,14 +2716,14 @@ async function enter(){
   show('dash');applyPendingTo()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
-const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé'};
-const CREDIT=['deposit','transfer_in'];
+const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
+const CREDIT=['deposit','transfer_in','refund'];
 function render(){
   $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();
   const el=$('txs');
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
   el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
-    const st=t.status==='pending'?' · en attente':t.status==='failed'?' · échoué':'';
+    const st=t.status==='pending'?' · en attente':t.status==='failed'?' · échoué':t.status==='processing'?' · en cours':t.status==='refunded'?' · remboursé':'';
     return `<div class="tx"><div>${LABEL[t.type]||t.type}<small>${d}${st}</small></div><b class="${c?'pos':'neg'}">${c?'+':'-'}${fmt(t.amount)}</b></div>`}).join('')
 }
 
@@ -2692,15 +2749,15 @@ function openIO(m){ioMode=m;$('io_msg').className='msg';
   $('io_t').textContent=m==='in'?'Dépôt : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
   $('io_s').textContent=m==='in'?'Vous serez redirigé vers la page de paiement sécurisée pour finaliser le dépôt.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
   $('io_ch').innerHTML=m==='in'?'<option value="paydunya">Mobile Money / carte (paiement sécurisé)</option>':OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
-  $('io_accw').classList.toggle('hide',m==='in');
+  $('io_accw').classList.toggle('hide',m==='in');$('io_savw').classList.add('hide');if(m==='out')loadSav();
   $('tIn').style.borderColor=m==='in'?'var(--mint)':'var(--line)';$('tOut').style.borderColor=m==='out'?'var(--mint)':'var(--line)';show('io')}
 async function doIO(){
   const am=parseInt($('io_am').value,10);if(!(am>0))return msg('io_msg','Montant invalide.');
   try{
     if(ioMode==='in'){const d=await api('/wallet/deposit',{body:{amount:am}});if(d.paymentUrl){msg('io_msg','Redirection vers le paiement…',true);location.href=d.paymentUrl}else msg('io_msg',d.message||'Dépôt initié.',true)}
-    else{const ph=$('io_acc').value.trim();if(!ph)return msg('io_msg','Renseignez le numéro Mobile Money.');
-      if(!confirm(`Retirer ${fmt(am)} vers ${ph} ? (+50 FCFA de commission)`))return;
-      const d=await api('/wallet/withdraw',{body:{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
+    else{const sv=$('io_sav').value,ph=$('io_acc').value.trim();if(!sv&&!ph)return msg('io_msg','Renseignez le numéro Mobile Money.');
+      if(!confirm(`Retirer ${fmt(am)} vers ${sv?$('io_sav').selectedOptions[0].textContent:ph} ? (+50 FCFA de commission)`))return;
+      const d=await api('/wallet/withdraw',{body:sv?{amount:am,operatorId:sv}:{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
   }catch(e){msg('io_msg',e.message)}
 }
 
@@ -2721,10 +2778,43 @@ function dlQr(id,name){const svg=$(id).querySelector('svg');if(!svg)return;
   const url=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));
   const a=document.createElement('a');a.href=url;a.download=name+'.svg';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 /* lien ?to= : transfert prérempli après connexion */
-(function(){try{const t=new URLSearchParams(location.search).get('to');if(t)LS.set('omnipayTo',t.slice(0,30))}catch(e){}})();
+(function(){try{const P=new URLSearchParams(location.search),t=P.get('to');if(t){LS.set('omnipayTo',t.slice(0,30));const a=parseInt(P.get('amt'),10);LS.set('omnipayAmt',a>0?String(a):'');LS.set('omnipayNote',(P.get('note')||'').slice(0,60))}}catch(e){}})();
 function applyPendingTo(){const t=LS.get('omnipayTo');if(!t)return;LS.del('omnipayTo');
   const own=String((S.user&&S.user.phone)||'');if(own&&own===t)return;
-  $('x_to').value=t;$('x_name').textContent='';show('xfer');lookup()}
+  $('x_to').value=t;$('x_name').textContent='';const am=LS.get('omnipayAmt'),nt=LS.get('omnipayNote');LS.del('omnipayAmt');LS.del('omnipayNote');if(am)$('x_am').value=am;show('xfer');lookup();if(nt)msg('x_msg','Demande de paiement : '+nt.replace(/[<>]/g,''),true)}
+
+/* ===== Demander un paiement ===== */
+function reqLink(){const p=String((S.user&&S.user.phone)||'').trim(),a=parseInt($('rq_am').value,10),n=$('rq_note').value.trim().slice(0,60);
+  if(!p||!(a>0))return '';return location.origin+'/?to='+encodeURIComponent(p)+'&amt='+a+(n?'&note='+encodeURIComponent(n):'')}
+function makeReq(){const l=reqLink();if(!l)return msg('rq_msg','Saisissez un montant valide (et reconnectez-vous si besoin).');
+  $('rq_msg').className='msg';$('qr_req').innerHTML=qrSvg(l);$('rq_link').value=l;$('rq_out').classList.remove('hide')}
+function copyReq(){const l=$('rq_link').value;(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(()=>msg('rq_msg','Lien copié.',true)).catch(()=>{$('rq_link').select();msg('rq_msg','Copiez le lien ci-dessus.',true)})}
+function shareReq(){const l=$('rq_link').value;if(l)window.open('https://wa.me/?text='+encodeURIComponent('Paiement OMNIPAY : '+l),'_blank','noopener')}
+
+/* ===== Mes numéros Mobile Money ===== */
+const OPN={mtn:'MTN',moov:'Moov',celtiis:'Celtiis'};
+async function opsFetch(){const d=await api('/api/operators');return d.operators||[]}
+async function openOps(){show('ops');$('ops_msg').className='msg';await renderOps()}
+async function renderOps(){try{const L=await opsFetch();
+  $('ops_list').innerHTML=L.length?L.map(o=>`<div class="tx"><div>${OPN[o.operator]||escH(o.operator)} · ${escH(o.phone)}<small>${o.isDefault?'Par défaut':''}</small></div><span>${o.isDefault?'':`<button class="sec" style="width:auto;margin:0 6px 0 0;padding:6px 10px" onclick="opDef('${o.id}')">Défaut</button>`}<button class="sec" style="width:auto;margin:0;padding:6px 10px" onclick="opDel('${o.id}')">Supprimer</button></span></div>`).join(''):'<p class="sub">Aucun numéro enregistré.</p>'}catch(e){msg('ops_msg',e.message)}}
+async function opAdd(){const phone=$('op_ph').value.trim();if(!phone)return msg('ops_msg','Saisissez un numéro.');
+  try{await api('/api/operators',{body:{operator:$('op_new').value,phone}});$('op_ph').value='';msg('ops_msg','Numéro enregistré.',true);await renderOps()}catch(e){msg('ops_msg',e.message)}}
+async function opDef(id){try{await api('/api/operators/'+id+'/default',{body:{}});await renderOps()}catch(e){msg('ops_msg',e.message)}}
+async function opDel(id){if(!confirm('Supprimer ce numéro ?'))return;try{await api('/api/operators/'+id,{method:'DELETE'});await renderOps()}catch(e){msg('ops_msg',e.message)}}
+let savList=[];
+async function loadSav(){try{savList=await opsFetch()}catch(e){savList=[]}
+  const w=$('io_savw'),s=$('io_sav');if(!savList.length){w.classList.add('hide');s.innerHTML='';$('io_accw').classList.remove('hide');return}
+  s.innerHTML=savList.map(o=>`<option value="${o.id}">${OPN[o.operator]||o.operator} · ${escH(o.phone)}</option>`).join('')+'<option value="">Autre numéro…</option>';
+  const d=savList.find(o=>o.isDefault);if(d)s.value=d.id;w.classList.remove('hide');savPick()}
+function savPick(){const v=$('io_sav').value;$('io_accw').classList.toggle('hide',!!v);$('io_ch').style.display=v?'none':'';$('io_ch').previousElementSibling.style.display=v?'none':''}
+
+/* ===== Dépôt crypto ===== */
+async function doCg(){const am=parseInt($('cg_am').value,10);if(!(am>=1000))return msg('cry_msg','Montant minimum : 1000 FCFA.');
+  try{const d=await api('/api/coingate/order',{body:{amountXof:am}});msg('cry_msg','Redirection vers le paiement crypto…',true);location.href=d.paymentUrl}catch(e){msg('cry_msg',e.message)}}
+async function doBn(){const am=parseFloat($('bn_am').value);if(!(am>0))return msg('cry_msg','Montant invalide.');
+  try{const d=await api('/api/binance-pay/order',{body:{amount:am,currency:'USDT'}});
+    if(!confirm(`Payer ${d.amount} USDT pour être crédité de ${fmt(d.creditXof)} (taux ${d.rate}) ?`))return;
+    const u=d.checkoutUrl||d.universalUrl||d.deeplink;if(u){msg('cry_msg','Ouverture de Binance Pay…',true);location.href=u}else msg('cry_msg','Commande créée.',true)}catch(e){msg('cry_msg',e.message)}}
 
 /* ===== Mot de passe oublié ===== */
 const fBoxes=[];
@@ -2782,6 +2872,38 @@ function ibanOk(raw){
 }
 function checkIban(){const r=ibanOk($('ib_v').value);
   if(r.ok){$('ib_v').value=r.fmt;msg('ib_out','✔ IBAN valide ('+r.cc+') : '+r.fmt,true)}else msg('ib_out',r.why)}
+
+/* ===== Dépôt / retrait directs (validés par OMNIPAY) ===== */
+const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function copyTxt(t,out){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>msg(out,'Copié.',true)).catch(()=>msg(out,'Copiez manuellement : '+t,true))}
+function manTab(t){$('m_in').classList.toggle('hide',t!=='in');$('m_out').classList.toggle('hide',t!=='out');
+  $('mTabIn').style.borderColor=t==='in'?'var(--mint)':'var(--line)';$('mTabOut').style.borderColor=t==='out'?'var(--mint)':'var(--line)'}
+const MAN_STATUS={pending:'en attente',credited:'crédité',paid:'payé',rejected:'refusé'};
+async function openMan(){$('m_msg').className='msg';manTab('in');show('man');
+  try{const d=await api('/api/manual/instructions');$('m_ref').value=d.reference;
+    const acc=d.accounts||[];
+    $('m_accs').innerHTML=acc.length?acc.map((a,i)=>`<div class="tx" style="display:block"><div><b>${escH(a.label)}</b>${a.network?`<small>Réseau : ${escH(a.network)}</small>`:''}</div>
+      <div style="word-break:break-all;margin:6px 0;font-weight:600">${escH(a.detail)}</div>
+      <div class="row"><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="copy">Copier</button><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="qr">QR</button></div>
+      <div id="qra${i}" class="qrbox hide" style="margin-top:8px"></div></div>`).join('')
+      +'<p class="sub" style="font-size:12px;margin-top:8px">Pour l\'USDT, vérifiez le réseau avant d\'envoyer : un mauvais réseau peut faire perdre vos fonds.</p>'
+      :'<p class="sub">Les comptes de réception ne sont pas encore affichés. Réessayez plus tard.</p>';
+    $('m_accs').onclick=e=>{const b=e.target.closest('button[data-a]');if(!b)return;const a=acc[+b.dataset.i];
+      if(b.dataset.a==='copy')copyTxt(a.detail,'m_msg');else{const q=$('qra'+b.dataset.i);if(q.classList.contains('hide')){q.innerHTML=qrSvg(a.detail);q.classList.remove('hide')}else q.classList.add('hide')}};
+  }catch(e){msg('m_msg',e.message)}
+  manList()}
+async function manList(){try{const d=await api('/api/manual/mine');
+  const rows=[...(d.deposits||[]).map(x=>({t:'Dépôt '+x.method,a:x.amount+' '+x.currency+(x.credited_xof?' → '+fmt(x.credited_xof):''),s:x.status,d:x.created_at,n:x.decided_note})),
+    ...(d.payouts||[]).map(x=>({t:'Retrait '+x.method,a:fmt(x.amount),s:x.status,d:x.created_at,n:x.decided_note}))].sort((a,b)=>new Date(b.d)-new Date(a.d));
+  $('m_list').innerHTML=rows.length?rows.map(r=>`<div class="tx"><div>${escH(r.t)}<small>${new Date(r.d).toLocaleString('fr-FR')} · ${escH(MAN_STATUS[r.s]||r.s)}${r.n?' · '+escH(r.n):''}</small></div><b>${escH(r.a)}</b></div>`).join(''):'<p class="sub">Aucune demande.</p>'}catch(e){}}
+async function manDeposit(){const am=Number($('m_am').value);if(!(am>0))return msg('m_msg','Indiquez le montant envoyé.');
+  if(!$('m_tx').value.trim())return msg('m_msg','Indiquez la preuve (hash ou n° de transaction).');
+  try{const d=await api('/api/manual/deposit',{body:{method:$('m_meth').value,currency:$('m_cur').value,amount:am,txRef:$('m_tx').value.trim()}});
+    msg('m_msg',d.message,true);$('m_am').value='';$('m_tx').value='';manList()}catch(e){msg('m_msg',e.message)}}
+async function manPayout(){const am=parseInt($('mo_am').value,10),ds=$('mo_dst').value.trim();
+  if(!(am>0)||ds.length<5)return msg('m_msg','Renseignez le montant et la destination.');
+  if(!confirm(`Retirer ${fmt(am)} vers ${ds} ? (+50 FCFA de commission, réservés maintenant)`))return;
+  try{const d=await api('/api/manual/payout',{body:{amount:am,method:$('mo_meth').value,destination:ds}});msg('m_msg',d.message,true);await refresh();manList()}catch(e){msg('m_msg',e.message)}}
 /* Session existante */
 if(S.token){enter().catch(()=>{})}
 
