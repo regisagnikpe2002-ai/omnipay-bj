@@ -30,6 +30,7 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 .pri{background:linear-gradient(135deg,var(--mint),var(--mint2));color:#05261c}
 .pri:disabled{opacity:.4;cursor:not-allowed}
 .sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+@media print{body *{visibility:hidden}#rcd,#rcd *{visibility:visible}#rcd{position:absolute;left:0;top:0;width:100%;background:#fff!important;color:#000!important;border:0}.no-print{display:none!important}#rcd .tx{border-color:#ccc!important}#rcd small,#rcd .sub{color:#333!important}}
 .lnk{background:none;color:var(--mint);width:auto;padding:6px 0;margin:10px 0 0;font-size:14px}
 .steps{display:flex;gap:6px;margin-bottom:16px}.steps i{flex:1;height:4px;border-radius:4px;background:var(--line)}.steps i.on{background:var(--mint)}
 .otp{display:flex;gap:8px;justify-content:center;margin:14px 0}
@@ -117,6 +118,11 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation (50 F)</button>
       <button class="tile" onclick="show('xfer')" style="grid-column:1/-1;border-color:var(--mint)"><span>🔁</span>OMNIPAY → OMNIPAY <small style="color:var(--mut)">transfert instantané entre comptes</small></button>
     </div>
+    <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
+      <div class="row"><input id="id_v" readonly style="font-weight:800;font-size:16px;letter-spacing:1px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyId()">Copier</button></div>
+      <div id="id_msg" class="msg"></div>
+      <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable uniquement entre clients OMNIPAY. Ce n'est pas un IBAN bancaire.</p></div>
+    <div class="svc"><button class="tile" onclick="openRc()" style="grid-column:1/-1"><span>🧾</span>Mes reçus<small>Chaque opération a une référence</small></button></div>
     <div class="card" style="margin-bottom:16px"><h2>Mon alias OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre adresse de paiement unique : partagez-la pour recevoir de l'argent sans donner d'IBAN.</p>
       <div class="row"><input id="alias_v" readonly style="font-weight:700;font-size:14px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyAlias()">Copier</button></div>
       <div id="alias_msg" class="msg"></div>
@@ -213,6 +219,18 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <button class="lnk" onclick="helpBack()">← Retour</button>
   </section>
 
+  <section id="rc" class="card hide">
+    <h1>Mes reçus</h1><p class="sub">Touchez une opération pour voir son reçu et sa référence.</p>
+    <div id="rc_list"></div><div id="rc_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+  <section id="rcd" class="card hide">
+    <div id="rc_body"></div>
+    <div class="row no-print"><button class="sec" onclick="window.print()">Imprimer / PDF</button><button class="sec" onclick="shareRc()">WhatsApp</button></div>
+    <div id="rcd_msg" class="msg no-print"></div>
+    <button class="lnk no-print" onclick="openRc()">← Mes reçus</button>
+  </section>
+
   <section id="ops" class="card hide">
     <h1>Mes numéros Mobile Money</h1><p class="sub">Enregistrez vos numéros MTN, Moov ou Celtiis. Vous les choisirez en un clic pour vos retraits.</p>
     <div id="ops_list"></div>
@@ -299,9 +317,9 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 
   <section id="xfer" class="card hide">
     <h1>OMNIPAY → OMNIPAY</h1><p class="sub">Envoyez de l'argent à un autre compte OMNIPAY, instantanément (commission 50 FCFA).</p>
-    <label>Téléphone du bénéficiaire (comme à son inscription)</label><input id="x_to" placeholder="Votre numéro de téléphone" onblur="lookup()"><div id="x_name" class="sub" style="margin:6px 0 0;color:var(--mint);min-height:22px"></div>
+    <label>Téléphone ou identifiant OMNIPAY (OM…) du bénéficiaire</label><input id="x_to" placeholder="Votre numéro de téléphone" onblur="lookup()"><div id="x_name" class="sub" style="margin:6px 0 0;color:var(--mint);min-height:22px"></div>
     <label>Montant (FCFA)</label><input id="x_am" type="number" min="100" value="1000">
-    
+    <label>Libellé (facultatif, identifiant OM… seulement)</label><input id="x_note" maxlength="60" placeholder="Ex. Loyer">
     <button class="pri" onclick="doXfer()">Envoyer</button>
     <div id="x_msg" class="msg"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
@@ -2643,7 +2661,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','help','iban','man','ops'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2713,7 +2731,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.email||u.phone||'';
-  show('dash');applyPendingTo()
+  show('dash');loadId();applyPendingTo()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -2724,13 +2742,13 @@ function render(){
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
   el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
     const st=t.status==='pending'?' · en attente':t.status==='failed'?' · échoué':t.status==='processing'?' · en cours':t.status==='refunded'?' · remboursé':'';
-    return `<div class="tx"><div>${LABEL[t.type]||t.type}<small>${d}${st}</small></div><b class="${c?'pos':'neg'}">${c?'+':'-'}${fmt(t.amount)}</b></div>`}).join('')
+    return `<div class="tx" style="cursor:pointer" onclick="openReceipt('${refOf(t.id)}')"><div>${LABEL[t.type]||t.type}<small>${d}${st}</small></div><b class="${c?'pos':'neg'}">${c?'+':'-'}${fmt(t.amount)}</b></div>`}).join('')
 }
 
 /* TRANSFERT OMNIPAY -> OMNIPAY (par téléphone) */
 async function lookup(){
   const p=$('x_to').value.trim();$('x_name').textContent='';if(!p)return;
-  try{const d=await api('/wallet/recipient/'+encodeURIComponent(p));$('x_name').textContent='✔ '+[d.firstName,d.lastName].join(' ').trim()}
+  try{if(/^om/i.test(p)){const d=await api('/api/id/lookup/'+encodeURIComponent(p.replace(/\s/g,'').toUpperCase()));$('x_name').textContent='✔ '+d.name}else{const d=await api('/wallet/recipient/'+encodeURIComponent(p));$('x_name').textContent='✔ '+[d.firstName,d.lastName].join(' ').trim()}}
   catch(e){$('x_name').textContent='';$('x_name').style.color='var(--err)';$('x_name').textContent=e.message;setTimeout(()=>{$('x_name').style.color='var(--mint)'},0)}
 }
 async function doXfer(){
@@ -2738,8 +2756,8 @@ async function doXfer(){
   if(!to)return msg('x_msg','Saisissez le téléphone du bénéficiaire.');
   if(!(am>0))return msg('x_msg','Montant invalide.');
   if(!confirm(`Envoyer ${fmt(am)} à ${to} ? (+50 FCFA de commission)`))return;
-  try{const d=await api('/wallet/transfer',{body:{recipientPhone:to,amount:am}});
-    msg('x_msg',d.message||'Transfert effectué.',true);await refresh()}catch(e){msg('x_msg',e.message)}
+  try{const byId=/^om/i.test(to);const d=byId?await api('/api/id/transfer',{body:{code:to.replace(/\s/g,'').toUpperCase(),amount:am,note:$('x_note').value.trim()}}):await api('/wallet/transfer',{body:{recipientPhone:to,amount:am}});
+    msg('x_msg',(d.message||'Transfert effectué.')+(d.receiptRef?' Reçu : '+d.receiptRef:''),true);await refresh()}catch(e){msg('x_msg',e.message)}
 }
 
 /* DEPOT (pay-in via PayDunya) / RETRAIT (pay-out) */
@@ -2782,6 +2800,23 @@ function dlQr(id,name){const svg=$(id).querySelector('svg');if(!svg)return;
 function applyPendingTo(){const t=LS.get('omnipayTo');if(!t)return;LS.del('omnipayTo');
   const own=String((S.user&&S.user.phone)||'');if(own&&own===t)return;
   $('x_to').value=t;$('x_name').textContent='';const am=LS.get('omnipayAmt'),nt=LS.get('omnipayNote');LS.del('omnipayAmt');LS.del('omnipayNote');if(am)$('x_am').value=am;show('xfer');lookup();if(nt)msg('x_msg','Demande de paiement : '+nt.replace(/[<>]/g,''),true)}
+
+/* ===== Identifiant OMNIPAY + reçus ===== */
+const refOf=id=>'OMP-R'+String(id||'').replace(/-/g,'').slice(0,10).toUpperCase();
+async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}}
+function copyId(){const v=$('id_v').value;if(!/^OM\d+/.test(v))return;(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>msg('id_msg','Identifiant copié.',true)).catch(()=>{$('id_v').select();msg('id_msg','Copiez l\'identifiant ci-dessus.',true)})}
+async function openRc(){show('rc');$('rc_msg').className='msg';try{const d=await api('/api/receipts');
+  $('rc_list').innerHTML=d.receipts.length?d.receipts.map(r=>`<div class="tx" style="cursor:pointer" onclick="openReceipt('${r.ref}')"><div>${escH(r.label)}<small>${new Date(r.date).toLocaleString('fr-FR')} · ${escH(r.ref)}</small></div><b>${fmt(r.amount)}</b></div>`).join(''):'<p class="sub">Aucune opération.</p>'}catch(e){msg('rc_msg',e.message)}}
+let rcLast=null;
+async function openReceipt(ref){try{const r=await api('/api/receipts/'+encodeURIComponent(ref));rcLast=r;
+  const st={completed:'Réussie',pending:'En attente',failed:'Échouée',processing:'En cours',refunded:'Remboursée',cancelled:'Annulée'}[r.status]||r.status;
+  const row=(a,b)=>b?`<div class="tx"><div>${a}</div><b style="font-weight:600">${escH(b)}</b></div>`:'';
+  $('rc_body').innerHTML=`<h1>Reçu OMNIPAY</h1><p class="sub">${escH(r.issuer)}</p>`+row('Référence',r.reference)+row('Opération',r.label)+row('Statut',st)+row('Date',new Date(r.date).toLocaleString('fr-FR'))
+   +row('Montant',fmt(r.amount))+(r.fee?row('Commission',fmt(r.fee)):'')+row('Total',fmt(r.total))+row('Solde après',fmt(r.balanceAfter))
+   +(r.counterparty?row('Contrepartie',r.counterparty.name+(r.counterparty.accountId?' · '+r.counterparty.accountId:'')):'')+row('Canal',r.channel)+row('Destination',r.destination)+row('Libellé',r.note)
+   +'<p class="sub" style="font-size:12px;margin-top:10px">Conservez cette référence pour toute réclamation auprès d\'OMNIPAY.</p>';
+  $('rcd_msg').className='msg';show('rcd')}catch(e){toast(e.message)}}
+function shareRc(){if(!rcLast)return;window.open('https://wa.me/?text='+encodeURIComponent(`Reçu OMNIPAY ${rcLast.reference} : ${rcLast.label} de ${fmt(rcLast.amount)} (${rcLast.status}).`),'_blank','noopener')}
 
 /* ===== Demander un paiement ===== */
 function reqLink(){const p=String((S.user&&S.user.phone)||'').trim(),a=parseInt($('rq_am').value,10),n=$('rq_note').value.trim().slice(0,60);
