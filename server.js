@@ -106,8 +106,11 @@ function mount(urlPath, modulePath, label) {
 // Routes à chemin précis AVANT les routes montées sur /api
 mount("/auth", "./routes/auth", "Auth");
 mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
+// walletOps remplace /wallet/withdraw et /wallet/deposit/callback (versions atomiques) ; le reste de /wallet est inchangé.
+mount("/", "./routes/walletOps", "Opérations portefeuille V2");
 mount("/wallet", "./routes/wallet", "Wallet");
 mount("/api/omnicheck", "./routes/omnicheck", "OMNICHECK");
+mount("/api/manual", "./routes/manualPayments", "Paiements manuels");
 mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
 mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
 mount("/api/web3", "./routes/web3", "Web3");
