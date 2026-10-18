@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OMNIPAY</title>
+<meta name="description" content="OMNIPAY — votre quotidien financier tout-en-un : portefeuille, transferts, dépôts et retraits Mobile Money, parrainage.">
+<meta name="theme-color" content="#070b14">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<meta property="og:title" content="OMNIPAY"><meta property="og:description" content="Votre quotidien financier tout-en-un"><meta property="og:image" content="https://www.omnipay-bj.com/icon-512.png"><meta property="og:url" content="https://www.omnipay-bj.com/">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="OMNIPAY">
 <style>
 :root{--bg:#070b14;--card:#0e1628;--card2:#131d33;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--mint2:#1fb98a;--warn:#ffcc4d;--err:#ff6b6b}
 *{box-sizing:border-box;margin:0}
@@ -57,7 +66,7 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><div class="logo">O</div><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div></div>
+  <div class="brand"><img src="/icon-192.png" alt="OMNIPAY" width="44" height="44" style="border-radius:12px;display:block"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div></div>
 
   <!-- CONNEXION -->
   <section id="login" class="card">
@@ -115,6 +124,9 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <div id="alias_msg" class="msg"></div>
       <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable aujourd'hui entre comptes OMNIPAY. Compatible PI-SPI : en cours d'homologation avec notre banque partenaire.</p></div>
     <div class="svc">
+      <button class="tile" onclick="$('ib_out').className='msg';show('iban')" style="grid-column:1/-1"><span>🏦</span>Vérificateur IBAN<small>Avant un virement bancaire</small></button>
+    </div>
+    <div class="svc">
       <button class="tile" onclick="openHelp()" style="grid-column:1/-1"><span>🛟</span>Aide &amp; avis OMNICHECK<small>Questions, critiques et suggestions</small></button>
     </div>
     <div class="svc">
@@ -143,6 +155,15 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 
 
 
+
+  <section id="iban" class="card hide">
+    <h1>Vérificateur IBAN</h1><p class="sub">Contrôlez un IBAN avant un virement (structure et clé de contrôle). Le contrôle se fait sur votre appareil, rien n'est envoyé.</p>
+    <label>IBAN</label><input id="ib_v" placeholder="Ex : FR76 3000 6000 0112 3456 7890 189" autocapitalize="characters" autocomplete="off">
+    <button class="pri" onclick="checkIban()">Vérifier</button>
+    <div id="ib_out" class="msg"></div>
+    <p class="sub" style="margin-top:12px;font-size:12px">Un IBAN valide a la bonne structure, mais cela ne prouve pas que le compte existe ni qu'il appartient à la bonne personne.</p>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
 
   <section id="help" class="card hide">
     <span class="badge">OMNICHECK</span>
@@ -2565,7 +2586,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','help'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','help','iban'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2746,6 +2767,21 @@ async function sendFb(){
   try{const d=await api('/api/omnicheck/feedback',{body:{category:$('h_cat').value,rating:parseInt($('h_rate').value,10),message:m,contact:$('h_ct').value.trim()}});
     msg('h_out',d.message||'Merci pour votre retour.',true);$('h_msg').value=''}catch(e){msg('h_out',e.message)}
 }
+
+/* ===== Vérificateur IBAN (ISO 13616, modulo 97) ===== */
+const IBAN_LEN={AD:24,AE:23,AL:28,AT:20,AZ:28,BA:20,BE:16,BG:22,BH:22,BR:29,BY:28,CH:21,CR:22,CY:28,CZ:24,DE:22,DK:18,DO:28,EE:20,EG:29,ES:24,FI:18,FO:18,FR:27,GB:22,GE:22,GI:23,GL:18,GR:27,GT:28,HR:21,HU:28,IE:22,IL:23,IQ:23,IS:26,IT:27,JO:30,KW:30,KZ:20,LB:28,LC:32,LI:21,LT:20,LU:20,LV:21,MC:27,MD:24,ME:22,MK:19,MR:27,MT:31,MU:30,NL:18,NO:15,PK:24,PL:28,PS:29,PT:25,QA:29,RO:24,RS:22,SA:24,SC:31,SE:24,SI:19,SK:24,SM:27,ST:25,SV:28,TL:23,TN:24,TR:26,UA:29,VA:22,VG:24,XK:20};
+function ibanOk(raw){
+  const s=String(raw||'').replace(/\s+/g,'').toUpperCase();
+  if(!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(s))return {ok:false,why:'Format invalide : 2 lettres, 2 chiffres, puis le numéro de compte.'};
+  const cc=s.slice(0,2);if(!IBAN_LEN[cc])return {ok:false,why:'Pays « '+cc+' » non reconnu pour les IBAN.'};
+  if(s.length!==IBAN_LEN[cc])return {ok:false,why:'Longueur incorrecte pour '+cc+' : '+s.length+' caractères au lieu de '+IBAN_LEN[cc]+'.'};
+  const r=(s.slice(4)+s.slice(0,4)).replace(/[A-Z]/g,c=>c.charCodeAt(0)-55);
+  let m=0;for(const ch of r)m=(m*10+ +ch)%97;
+  if(m!==1)return {ok:false,why:'Clé de contrôle invalide : il y a une erreur de saisie.'};
+  return {ok:true,cc,fmt:s.replace(/(.{4})/g,'$1 ').trim()}
+}
+function checkIban(){const r=ibanOk($('ib_v').value);
+  if(r.ok){$('ib_v').value=r.fmt;msg('ib_out','✔ IBAN valide ('+r.cc+') : '+r.fmt,true)}else msg('ib_out',r.why)}
 /* Session existante */
 if(S.token){enter().catch(()=>{})}
 
