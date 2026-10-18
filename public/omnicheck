@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>OMNICHECK — Administration</title>
+<style>
+:root{--bg:#070b14;--card:#0e1628;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--warn:#ffcc4d;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,sans-serif;padding:20px}
+.w{max-width:760px;margin:0 auto}h1{font-size:22px;margin-bottom:4px}h2{font-size:16px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#f4f7fb;color:#0b1426;font-size:15px}
+button{cursor:pointer;border:0;border-radius:10px;padding:12px 16px;font-weight:700;background:var(--mint);color:#05261c;margin:10px 8px 0 0}
+.sec{background:#131d33;color:var(--txt);border:1px solid var(--line)}.mut{color:var(--mut);font-size:13px}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.k div{background:#131d33;border-radius:12px;padding:12px}.k b{display:block;font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+.ok{color:var(--mint)}.bad{color:var(--warn)}.hide{display:none}
+</style></head><body><div class="w">
+<h1>OMNICHECK — Administration</h1><p class="mut">Inventaire, opérations non abouties, avis clients. La clé n'est jamais enregistrée.</p>
+<div class="card"><input id="key" type="password" placeholder="Clé administrateur (ADMIN_KEY)" autocomplete="off">
+<button onclick="load()">Afficher le rapport</button><button class="sec" onclick="run()">Lancer l'inventaire maintenant</button><div id="err" class="bad"></div></div>
+<div id="out" class="hide">
+<div class="card"><h2>État : <span id="st"></span></h2><div id="al" class="bad"></div><div class="k" id="kp"></div><p class="mut" id="gen" style="margin-top:8px"></p></div>
+<div class="card"><h2>Mouvements des dernières 24 h</h2><table id="fl"></table></div>
+<div class="card"><h2>Opérations non abouties (&gt; 30 min)</h2><p class="mut">Signalées pour vérification : OMNICHECK n'exécute aucun paiement automatiquement.</p><table id="nc"></table></div>
+<div class="card"><h2>Avis, critiques et limites des clients</h2><table id="fb"></table></div>
+</div>
+<script>
+const $=i=>document.getElementById(i),f=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function call(p,m){const r=await fetch(p,{method:m||'GET',headers:{'x-admin-key':$('key').value}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
+function show(r){$('out').classList.remove('hide');$('st').textContent=r.status;$('st').className=r.status==='OK'?'ok':'bad';
+$('al').innerHTML=(r.alerts||[]).map(a=>'⚠ '+esc(a)).join('<br>');
+$('kp').innerHTML=[['Clients',r.users.total],['Nouveaux 24 h',r.users.new_24h],['Soldes cumulés (FCFA)',f(r.wallets.total_balance)],['Commissions 24 h',f(r.commissions.commissions_24h)],['Commissions totales',f(r.commissions.commissions_total)],['Avis reçus',r.feedback.total+' (moy. '+r.feedback.avg_rating+')']].map(x=>'<div>'+x[0]+'<b>'+esc(x[1])+'</b></div>').join('');
+$('gen').textContent='Généré le '+new Date(r.generatedAt).toLocaleString('fr-FR');
+$('fl').innerHTML='<tr><th>Type</th><th>Statut</th><th>Nb</th><th>Total</th></tr>'+(r.flows24h||[]).map(x=>`<tr><td>${esc(x.type)}</td><td>${esc(x.status)}</td><td>${x.n}</td><td>${f(x.total)}</td></tr>`).join('');
+$('nc').innerHTML='<tr><th>Type</th><th>Montant</th><th>Fournisseur</th><th>Statut</th><th>Âge</th></tr>'+((r.notCompleted||[]).map(x=>`<tr><td>${esc(x.type)}</td><td>${f(x.amount)}</td><td>${esc(x.provider)}</td><td>${esc(x.status)}</td><td>${x.age_minutes} min</td></tr>`).join('')||'<tr><td colspan=5 class="ok">Aucune</td></tr>')}
+async function load(){$('err').textContent='';try{const d=await call('/api/omnicheck/report');show(d.live);const fb=await call('/api/omnicheck/feedback');
+$('fb').innerHTML='<tr><th>Date</th><th>Type</th><th>Note</th><th>Message</th><th>Contact</th></tr>'+(fb.feedback.map(x=>`<tr><td>${new Date(x.created_at).toLocaleDateString('fr-FR')}</td><td>${esc(x.category)}</td><td>${esc(x.rating)}</td><td>${esc(x.message)}</td><td>${esc(x.contact)}</td></tr>`).join('')||'<tr><td colspan=5 class="mut">Aucun avis pour le moment</td></tr>')}catch(e){$('err').textContent=e.message}}
+async function run(){$('err').textContent='';try{const d=await call('/api/omnicheck/run','POST');show(d.report)}catch(e){$('err').textContent=e.message}}
+</script></div></body></html>
