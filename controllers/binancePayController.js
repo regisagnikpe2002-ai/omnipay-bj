@@ -1,71 +1,53 @@
+"use strict";
+// OMNIPAY — Binance Pay (remplace l'ancien fichier, mêmes exports).
+// Correctif majeur : le montant payé en USDT est CONVERTI en FCFA (USDT_XOF_RATE) avant crédit.
+// Sans USDT_XOF_RATE, aucune commande n'est créée (impossible de créditer au mauvais taux).
 const crypto = require("crypto");
-const { eq } = require("drizzle-orm");
-const { db } = require("../db/index.js");
-const { wallets, transactions } = require("../db/schema.js");
+const { neon } = require("@neondatabase/serverless");
 const binancePay = require("../integrations/binance/payClient.js");
 
-function baseUrl() {
-  return (process.env.PUBLIC_BASE_URL || "https://www.omnipay-bj.com").replace(/\/$/, "");
-}
+const sql = () => neon(process.env.DATABASE_URL);
+const MIN_USDT = Number(process.env.BINANCE_MIN_USDT || 2);
+const MAX_USDT = Number(process.env.BINANCE_MAX_USDT || 2000);
 
-function merchantTradeNo() {
-  return `OMP${Date.now()}${crypto.randomBytes(4).toString("hex")}`.slice(0, 32);
-}
+const baseUrl = () => (process.env.PUBLIC_BASE_URL || "https://www.omnipay-bj.com").replace(/\/$/, "");
+const rate = () => Number(process.env.USDT_XOF_RATE);
+const merchantTradeNo = () => `OMP${Date.now()}${crypto.randomBytes(4).toString("hex")}`.slice(0, 32);
 
 async function createBinancePayOrder(req, res) {
   try {
-    if (!binancePay.configured()) {
-      return res.status(503).json({ error: "Binance Pay n'est pas configuré." });
+    if (!binancePay.configured()) return res.status(503).json({ error: "Binance Pay n'est pas configuré." });
+    const r = rate();
+    if (!Number.isFinite(r) || r < 100) return res.status(503).json({ error: "Dépôt USDT indisponible : taux de conversion non configuré." });
+    const usdt = Math.round(Number(req.body.amount) * 100) / 100;
+    if (!Number.isFinite(usdt) || usdt < MIN_USDT || usdt > MAX_USDT) {
+      return res.status(400).json({ error: `Montant USDT entre ${MIN_USDT} et ${MAX_USDT}.` });
     }
-    const amount = Number(req.body.amount);
-    const currency = String(req.body.currency || "USDT").toUpperCase();
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ error: "Montant invalide." });
-    }
+    const xof = Math.floor(usdt * r); // crédit en FCFA, arrondi vers le bas
 
-    const wallet = await db.query.wallets.findFirst({
-      where: eq(wallets.userId, req.user.userId),
-    });
-    if (!wallet) return res.status(404).json({ error: "Wallet introuvable." });
+    const q = sql();
+    const w = await q`SELECT id, balance FROM wallets WHERE user_id = ${req.user.userId}`;
+    if (!w.length) return res.status(404).json({ error: "Wallet introuvable." });
 
     const tradeNo = merchantTradeNo();
     const root = baseUrl();
     const result = await binancePay.createOrder({
-      merchantTradeNo: tradeNo,
-      amount,
-      currency,
-      returnUrl: `${root}/?binance=success`,
-      cancelUrl: `${root}/?binance=cancelled`,
+      merchantTradeNo: tradeNo, amount: usdt, currency: "USDT",
+      returnUrl: `${root}/?binance=success`, cancelUrl: `${root}/?binance=cancelled`,
       webhookUrl: `${root}/api/binance-pay/webhook`,
     });
-
     if (result.status !== "SUCCESS" || !result.data?.prepayId) {
       return res.status(502).json({ error: result.errorMessage || "Création Binance Pay refusée." });
     }
 
-    await db.insert(transactions).values({
-      walletId: wallet.id,
-      type: "deposit",
-      amount: amount.toFixed(2),
-      balanceAfter: wallet.balance,
-      status: "pending",
-      provider: "binance_pay",
-      providerRef: String(result.data.prepayId),
-      idempotencyKey: tradeNo,
-      metadata: { merchantTradeNo: tradeNo, currency },
-    });
+    await q`INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
+            VALUES (${w[0].id}, 'deposit', ${xof}, ${w[0].balance}, 'pending', 'binance_pay', ${String(result.data.prepayId)}, ${tradeNo},
+                    ${JSON.stringify({ merchantTradeNo: tradeNo, currency: "USDT", usdtAmount: usdt, rate: r })}::jsonb)`;
 
     return res.status(201).json({
-      omnipayId: tradeNo,
-      status: "pending",
-      currency: result.data.currency || currency,
-      amount: result.data.totalFee || amount,
-      prepayId: result.data.prepayId,
-      qrcodeLink: result.data.qrcodeLink,
-      qrContent: result.data.qrContent,
-      checkoutUrl: result.data.checkoutUrl,
-      deeplink: result.data.deeplink,
-      universalUrl: result.data.universalUrl,
+      omnipayId: tradeNo, status: "pending", currency: "USDT", amount: usdt, creditXof: xof, rate: r,
+      prepayId: result.data.prepayId, qrcodeLink: result.data.qrcodeLink, qrContent: result.data.qrContent,
+      checkoutUrl: result.data.checkoutUrl, deeplink: result.data.deeplink, universalUrl: result.data.universalUrl,
       expireTime: result.data.expireTime,
     });
   } catch (err) {
@@ -78,11 +60,8 @@ async function binancePayWebhook(req, res) {
   try {
     const rawBody = req.rawBody || JSON.stringify(req.body || {});
     const valid = await binancePay.verifyWebhook({
-      timestamp: req.get("BinancePay-Timestamp"),
-      nonce: req.get("BinancePay-Nonce"),
-      signature: req.get("BinancePay-Signature"),
-      certificateSN: req.get("BinancePay-Certificate-SN"),
-      rawBody,
+      timestamp: req.get("BinancePay-Timestamp"), nonce: req.get("BinancePay-Nonce"),
+      signature: req.get("BinancePay-Signature"), certificateSN: req.get("BinancePay-Certificate-SN"), rawBody,
     });
     if (!valid) return res.status(401).send("INVALID_SIGNATURE");
 
@@ -92,49 +71,37 @@ async function binancePayWebhook(req, res) {
     data = data || {};
 
     const tradeNo = data.merchantTradeNo || event.merchantTradeNo;
-    const tx = tradeNo
-      ? await db.query.transactions.findFirst({ where: eq(transactions.idempotencyKey, tradeNo) })
-      : null;
-
-    if (!tx) return res.status(200).send("SUCCESS");
-    if (tx.status === "completed" || tx.status === "cancelled") {
-      return res.status(200).send("SUCCESS");
-    }
+    if (!tradeNo) return res.status(200).send("SUCCESS");
+    const q = sql();
+    const rows = await q`SELECT id, status, metadata FROM transactions WHERE idempotency_key = ${tradeNo}`;
+    const tx = rows[0];
+    if (!tx || ["completed", "cancelled"].includes(tx.status)) return res.status(200).send("SUCCESS");
 
     if (event.bizStatus === "PAY_CLOSED") {
-      await db.update(transactions)
-        .set({ status: "cancelled", metadata: { ...(tx.metadata || {}), binance: data } })
-        .where(eq(transactions.id, tx.id));
+      await q`UPDATE transactions SET status = 'cancelled' WHERE id = ${tx.id} AND status = 'pending'`;
       return res.status(200).send("SUCCESS");
     }
-
     if (event.bizStatus !== "PAY_SUCCESS") return res.status(200).send("SUCCESS");
 
-    const expectedCurrency = String(tx.metadata?.currency || "").toUpperCase();
-    const paidCurrency = String(data.currency || "").toUpperCase();
-    const expectedAmount = Number(tx.amount);
-    const paidAmount = Number(data.totalFee);
-    if (expectedCurrency && paidCurrency !== expectedCurrency) {
-      return res.status(400).send("CURRENCY_MISMATCH");
+    const meta = tx.metadata || {};
+    // Anciennes commandes (sans taux enregistré) : jamais créditées automatiquement.
+    if (!meta.usdtAmount || !meta.rate) {
+      await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || '{"needsReview":true}'::jsonb WHERE id = ${tx.id}`;
+      return res.status(200).send("SUCCESS");
     }
-    if (!Number.isFinite(paidAmount) || Math.abs(paidAmount - expectedAmount) > 0.00000001) {
+    if (String(data.currency || "").toUpperCase() !== "USDT") return res.status(400).send("CURRENCY_MISMATCH");
+    if (!Number.isFinite(Number(data.totalFee)) || Math.abs(Number(data.totalFee) - Number(meta.usdtAmount)) > 0.00000001) {
       return res.status(400).send("AMOUNT_MISMATCH");
     }
 
-    const wallet = await db.query.wallets.findFirst({ where: eq(wallets.id, tx.walletId) });
-    if (!wallet) return res.status(500).send("WALLET_NOT_FOUND");
-    const newBalance = (Number(wallet.balance) + expectedAmount).toFixed(2);
-
-    // State claim first: only a pending row may enter processing.
-    await db.update(transactions)
-      .set({ status: "processing", metadata: { ...(tx.metadata || {}), binance: data } })
-      .where(eq(transactions.id, tx.id));
-
-    await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
-    await db.update(transactions)
-      .set({ status: "completed", balanceAfter: newBalance })
-      .where(eq(transactions.id, tx.id));
-
+    // Crédit atomique : si la ligne n'est plus 'pending', rien n'est ajouté.
+    await q`
+      WITH t AS (SELECT id, wallet_id, amount FROM transactions WHERE id = ${tx.id} AND status = 'pending' FOR UPDATE),
+      w AS (UPDATE wallets SET balance = balance + t.amount, updated_at = now() FROM t WHERE wallets.id = t.wallet_id RETURNING wallets.balance, t.id AS tx_id),
+      u AS (UPDATE transactions SET status = 'completed', balance_after = w.balance,
+              metadata = coalesce(transactions.metadata,'{}'::jsonb) || ${JSON.stringify({ binance: { orderStatus: data.status || event.bizStatus, paidAt: new Date().toISOString() } })}::jsonb
+            FROM w WHERE transactions.id = w.tx_id AND transactions.status = 'pending' RETURNING transactions.id)
+      SELECT w.balance FROM w`;
     return res.status(200).send("SUCCESS");
   } catch (err) {
     console.error("BINANCE_PAY_WEBHOOK", err.response?.data || err.message || err);
