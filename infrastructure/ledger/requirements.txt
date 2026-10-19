@@ -1,0 +1,7 @@
+# API requirements for Omnipay ledger demo
+
+fastapi
+uvicorn
+psycopg2-binary
+python-dotenv
+requests
