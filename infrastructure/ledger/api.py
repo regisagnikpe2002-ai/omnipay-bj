@@ -1,20 +1,7 @@
 """
-FastAPI small service to handle virtual-card purchases and provider webhooks for Omnipay-bj.
+Updated API: adds SMS delivery of OTP via Twilio when client has phone and no email.
 
-Endpoints:
-- POST /virtual-cards/purchase  -> { client_id }
-- POST /webhooks/provider       -> provider webhook (HMAC signed)
-- POST /virtual-cards/issue-manual -> admin to force issuance (requires ADMIN_TOKEN)
-
-Environment variables (no secrets in repo):
-- DATABASE_URL  (postgres connection)
-- WEBHOOK_SECRET (shared secret used to verify provider webhooks)
-- ADMIN_TOKEN (simple token to protect manual issuance endpoint)
-- BASE_URL (default https://www.omnipay-bj.com) used in OTP/login/receipt links
-
-Notes:
-- This is a demo/prototype. Do not run this in production without proper security hardening (connection pooling, secret management, rate limiting, TLS, authentication, audit, etc.).
-- The service uses the existing SQL schema (transactions, virtual_cards, clients) created by earlier migrations.
+No secrets are stored here. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER in env to enable SMS.
 """
 
 from fastapi import FastAPI, Request, HTTPException, Header
@@ -28,6 +15,7 @@ import random
 from datetime import datetime, timedelta
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import logging
 
 # import the local virtual card creator utility
 from .virtual_card_generator import create_virtual_card
@@ -41,8 +29,15 @@ BASE_URL = os.getenv('BASE_URL', 'https://www.omnipay-bj.com')
 ISSUANCE_PRICE = float(os.getenv('ISSUANCE_PRICE', '500'))
 CURRENCY = os.getenv('CURRENCY', 'XOF')
 
+# Twilio envs
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_FROM_NUMBER = os.getenv('TWILIO_FROM_NUMBER')
+
 if DATABASE_URL is None:
     raise RuntimeError('DATABASE_URL must be set in environment')
+
+logging.basicConfig(level=logging.INFO)
 
 
 def get_conn():
@@ -68,6 +63,21 @@ def create_payment_instruction(provider, amount, currency, order_id):
     }
 
 
+def send_sms(to_number, message):
+    if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER):
+        logging.info('Twilio credentials not set, skipping SMS send (to=%s, message=%s)', to_number, message)
+        return False
+    try:
+        from twilio.rest import Client
+        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        msg = client.messages.create(body=message, from_=TWILIO_FROM_NUMBER, to=to_number)
+        logging.info('SMS sent sid=%s to=%s', getattr(msg, 'sid', None), to_number)
+        return True
+    except Exception as e:
+        logging.exception('Failed to send SMS')
+        return False
+
+
 def create_otp(conn, client_id, order_id, purpose='login', ttl_minutes=10):
     code = '{:06d}'.format(random.randint(0, 999999))
     expires = datetime.utcnow() + timedelta(minutes=ttl_minutes)
@@ -81,6 +91,26 @@ def create_otp(conn, client_id, order_id, purpose='login', ttl_minutes=10):
     cur.close()
     login_url = f"{BASE_URL}/login?otp={code}&client_id={client_id}"
     receipt_url = f"{BASE_URL}/receipt?order_id={order_id}"
+
+    # Attempt to send SMS if client has phone and no email
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('SELECT * FROM clients WHERE id = %s', (client_id,))
+        client = cur.fetchone()
+        phone = None
+        email = None
+        if client:
+            email = client.get('email')
+            meta = client.get('metadata') or {}
+            if isinstance(meta, dict):
+                phone = meta.get('phone') or meta.get('telephone')
+        # If client has phone and no email, send SMS with OTP and links
+        if phone and not email:
+            sms_message = f"Omnipay: votre code OTP {code}. Accedez: {login_url}"
+            send_sms(phone, sms_message)
+    except Exception:
+        logging.exception('Failed to lookup client for SMS send')
+
     return code, login_url, receipt_url
 
 
@@ -238,7 +268,7 @@ def issue_card_after_payment(order_id, conn):
 
     # create internal revenue record (optional)
     cur.execute("INSERT INTO transactions (order_id, provider, type, direction, gross_amount, net_amount, currency, status, metadata, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,now()) RETURNING id",
-                (order_id || '-REV', 'omnipay_internal', 'issuance_revenue', 'in', gross, tx.get('net_amount') or gross, tx.get('currency') or CURRENCY, 'reconciled', json.dumps({'virtual_card_id': card['id']})))
+                (order_id + '-REV', 'omnipay_internal', 'issuance_revenue', 'in', gross, tx.get('net_amount') or gross, tx.get('currency') or CURRENCY, 'reconciled', json.dumps({'virtual_card_id': card['id']})))
     conn.commit()
 
     # prepare client-facing response including links to platform (BASE_URL)

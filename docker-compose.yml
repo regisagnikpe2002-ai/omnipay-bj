@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-omnipay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omnipaypass}
+      POSTGRES_DB: ${POSTGRES_DB:-omnipaydb}
+    volumes:
+      - omndb_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/ledger/Dockerfile
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-omnipay}:${POSTGRES_PASSWORD:-omnipaypass}@db:5432/${POSTGRES_DB:-omnipaydb}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - BASE_URL=${BASE_URL:-https://www.omnipay-bj.com}
+      - ISSUANCE_PRICE=${ISSUANCE_PRICE:-500}
+      - CURRENCY=${CURRENCY:-XOF}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+volumes:
+  omndb_data:
