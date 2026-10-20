@@ -184,7 +184,7 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
       <div id="m_accs"><p class="sub">Chargement…</p></div>
       <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
-      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
+      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="p2p">Binance P2P (n° d'ordre)</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
       <div class="row"><div><label>Montant envoyé</label><input id="m_am" type="number" min="1" step="any"></div><div><label>Devise</label><select id="m_cur"><option>XOF</option><option>USDT</option><option>EUR</option><option>USD</option></select></div></div>
       <label>Preuve (hash de transaction, n° de référence)</label><input id="m_tx" placeholder="Ex : 0x… ou n° de transaction">
       <button class="pri" onclick="manDeposit()">Déclarer mon paiement</button>
@@ -298,6 +298,10 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <h2 style="margin-top:18px">Dépôt USDT (Binance Pay)</h2><p class="sub" style="margin-bottom:8px">Payez avec votre application Binance. Crédit automatique au taux affiché.</p>
     <label>Montant (USDT)</label><input id="bn_am" type="number" min="2" step="0.01" value="5">
     <button class="pri" onclick="doBn()">Payer avec Binance Pay</button>
+    <h2 style="margin-top:18px">Dépôt par PayPal</h2><p class="sub" style="margin-bottom:8px">Payez avec PayPal ou carte. Les frais PayPal sont ajoutés au prix affiché avant paiement.</p>
+    <label>Montant à créditer (FCFA)</label><input id="pp_am" type="number" min="1000" value="5000">
+    <button class="pri" onclick="doPp()">Payer avec PayPal</button>
+    <h2 style="margin-top:18px">Dépôt Binance P2P</h2><p class="sub" style="margin-bottom:8px">Vous avez payé OMNIPAY par P2P ? Déclarez le n° d'ordre Binance dans « Dépôt &amp; retrait directs » (moyen « Binance P2P »). Crédit après vérification.</p>
     <div id="cry_msg" class="msg"></div>
     <div class="tx"><div>Mon adresse portefeuille<small>Adresse personnelle générée pour vous</small></div><b style="color:var(--warn)">En cours</b></div>
     <div class="tx"><div>Portefeuille local / bancaire<small>Lier un compte pour gérer vos fonds</small></div><b style="color:var(--warn)">En cours</b></div>
@@ -2731,7 +2735,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.email||u.phone||'';
-  show('dash');loadId();applyPendingTo()
+  show('dash');loadId();applyPendingTo();ppReturn()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -2846,6 +2850,12 @@ function savPick(){const v=$('io_sav').value;$('io_accw').classList.toggle('hide
 /* ===== Dépôt crypto ===== */
 async function doCg(){const am=parseInt($('cg_am').value,10);if(!(am>=1000))return msg('cry_msg','Montant minimum : 1000 FCFA.');
   try{const d=await api('/api/coingate/order',{body:{amountXof:am}});msg('cry_msg','Redirection vers le paiement crypto…',true);location.href=d.paymentUrl}catch(e){msg('cry_msg',e.message)}}
+async function doPp(){const am=parseInt($('pp_am').value,10);if(!(am>=1000))return msg('cry_msg','Montant minimum : 1000 FCFA.');
+  try{const d=await api('/api/paypal/order',{body:{amountXof:am}});
+    if(!confirm(`Vous paierez ${d.amountEur.toFixed(2)} EUR (frais PayPal ${d.feePct}% inclus) pour être crédité de ${fmt(d.creditXof)}. Continuer ?`))return;
+    msg('cry_msg','Redirection vers PayPal…',true);location.href=d.approveUrl}catch(e){msg('cry_msg',e.message)}}
+async function ppReturn(){try{const P=new URLSearchParams(location.search),st=P.get('paypal'),tk=P.get('token');if(!st)return;history.replaceState(null,'',location.pathname);
+  if(st==='success'&&tk&&S.token){const d=await api('/api/paypal/capture',{body:{orderId:tk}});alert(d.message)}}catch(e){alert(e.message)}}
 async function doBn(){const am=parseFloat($('bn_am').value);if(!(am>0))return msg('cry_msg','Montant invalide.');
   try{const d=await api('/api/binance-pay/order',{body:{amount:am,currency:'USDT'}});
     if(!confirm(`Payer ${d.amount} USDT pour être crédité de ${fmt(d.creditXof)} (taux ${d.rate}) ?`))return;
