@@ -1,5 +1,8 @@
 from fastapi import FastAPI
-from app.admin.payment_admin import router as payment_admin_router
+from app.api.payments import router as payments_router
+from app.api.webhooks import router as webhooks_router
 
-app = FastAPI(title="Omnipay")
-app.include_router(payment_admin_router, prefix="/api")
+app = FastAPI(title="Omnipay Core")
+
+app.include_router(payments_router, prefix="/api")
+app.include_router(webhooks_router, prefix="/api")
