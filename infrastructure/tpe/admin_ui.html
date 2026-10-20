@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Omnipay - Admin TPE</title>
+  <style>body{font-family:Arial;background:#f6f8fa;padding:20px}h1{color:#102a43}label{display:block;margin-top:10px}input,select,button{padding:8px;margin-top:6px}</style>
+</head>
+<body>
+  <h1>Admin TPE - Mandats & Abonnements</h1>
+  <section>
+    <h2>Ajouter IBAN</h2>
+    <form id="addIban">
+      <label>user_id<input name="user_id" /></label>
+      <label>IBAN<input name="iban" /></label>
+      <label>BIC<input name="bic" /></label>
+      <button type="submit">Ajouter</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Créer abonnement</h2>
+    <form id="createSub">
+      <label>user_id<input name="user_id" /></label>
+      <label>mandate_id<input name="mandate_id" /></label>
+      <label>amount<input name="amount" /></label>
+      <label>currency<input name="currency" value="XOF" /></label>
+      <button type="submit">Créer</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Actions</h2>
+    <button id="runScheduler">Run Scheduler (admin)</button>
+  </section>
+
+  <script>
+    const ADMIN_TOKEN = prompt('Admin token (X-Admin-Token)') || '';
+    async function post(path, body){
+      const res = await fetch(path, {method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':ADMIN_TOKEN},body:JSON.stringify(body)});
+      return res.json();
+    }
+    document.getElementById('addIban').addEventListener('submit', async e=>{e.preventDefault(); const fd=new FormData(e.target); const obj={user_id:fd.get('user_id'),iban:fd.get('iban'),bic:fd.get('bic')}; const r=await post('/tpe/bank_accounts/add',obj); alert(JSON.stringify(r));});
+    document.getElementById('createSub').addEventListener('submit', async e=>{e.preventDefault(); const fd=new FormData(e.target); const obj={user_id:fd.get('user_id'),mandate_id:fd.get('mandate_id'),amount:Number(fd.get('amount')),currency:fd.get('currency')}; const r=await post('/tpe/subscriptions/create',obj); alert(JSON.stringify(r));});
+    document.getElementById('runScheduler').addEventListener('click', async ()=>{ const r=await post('/tpe/scheduler/run',{}); alert(JSON.stringify(r));});
+  </script>
+</body>
+</html>
