@@ -1,143 +1,192 @@
-<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex"><title>OMNICHECK — Administration</title>
-<style>
-:root{--bg:#070b14;--card:#0e1628;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--warn:#ffcc4d;--err:#ff6b6b}
-*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,sans-serif;padding:20px}
-.w{max-width:760px;margin:0 auto}h1{font-size:22px;margin-bottom:4px}h2{font-size:16px;margin:0 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#f4f7fb;color:#0b1426;font-size:15px}
-button{cursor:pointer;border:0;border-radius:10px;padding:12px 16px;font-weight:700;background:var(--mint);color:#05261c;margin:10px 8px 0 0}
-.sec{background:#131d33;color:var(--txt);border:1px solid var(--line)}.mut{color:var(--mut);font-size:13px}
-.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.k div{background:#131d33;border-radius:12px;padding:12px}.k b{display:block;font-size:20px}
-table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
-.ok{color:var(--mint)}.bad{color:var(--warn)}.hide{display:none}
-</style><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body><div class="w">
-<h1>OMNICHECK — Administration</h1><p class="mut">Inventaire, opérations non abouties, avis clients. La clé n'est jamais enregistrée.</p>
-<div class="card"><input id="key" type="password" placeholder="Clé administrateur (ADMIN_KEY)" autocomplete="off"><input id="otp" inputmode="numeric" maxlength="6" placeholder="Code 2FA à 6 chiffres (si activé)" autocomplete="one-time-code" style="margin-top:8px">
-<button onclick="load()">Afficher le rapport</button><button class="sec" onclick="run()">Lancer l'inventaire maintenant</button><div id="err" class="bad"></div></div>
-<div id="out" class="hide">
-<div class="card"><h2>Tableau de bord</h2>
-<div class="k" id="dk"></div>
-<p class="mut" style="margin-top:12px">Entrées (dépôts) en vert, sorties (retraits) en jaune, par jour.</p><div id="ch"></div>
-<div class="mut" id="chl"></div>
-<button onclick="exportXlsx()">Exporter en Excel</button><button class="sec" onclick="backfillIds()">Attribuer un identifiant OM à tous les clients</button><button class="sec" onclick="loadDash()">Actualiser</button></div>
-<div class="card"><h2>Demandes à traiter</h2><div class="k" id="rq"></div></div>
-<div class="card"><h2>Fonds réels &amp; couverture</h2><p class="mut">Déclarez ici le solde réel de chaque compte (banque, Mobile Money, PayDunya, hot/cold wallet), converti en FCFA. OMNIPAY vérifie que vos fonds couvrent les soldes de vos clients. Adresses publiques uniquement : jamais de clé privée.</p>
-<div class="k" id="cv"></div><div id="cva" class="bad" style="margin-top:8px"></div><div style="overflow-x:auto"><table id="fd"></table></div>
-<h2 style="margin-top:14px">Ajouter / modifier un compte</h2>
-<input id="fc" placeholder="Code (ex. ECOBANK, HOT_BSC, COLD_1)"><input id="fl" placeholder="Libellé" style="margin-top:6px">
-<select id="fk" style="width:100%;padding:12px;margin-top:6px;border-radius:10px"><option value="bank">Banque (fiat)</option><option value="momo">Mobile Money</option><option value="psp">Prestataire (PayDunya…)</option><option value="hot">Hot wallet</option><option value="cold">Cold wallet</option></select>
-<input id="fa" placeholder="Adresse publique / IBAN / numéro" style="margin-top:6px"><input id="fh" type="number" placeholder="Plafond hot wallet en FCFA (facultatif)" style="margin-top:6px">
-<button onclick="saveFund()">Enregistrer le compte</button>
-<h2 style="margin-top:14px">Déclarer un solde</h2><input id="bc" placeholder="Code du compte"><input id="bv" type="number" placeholder="Solde en FCFA équivalent" style="margin-top:6px"><button onclick="saveBal()">Enregistrer le solde</button></div>
-<div class="card"><h2>Ledger central</h2><p class="mut">Journal inviolable : chaque opération et chaque changement de statut, avec référence, order_id, origine, frais et tx hash.</p>
-<div id="lg" class="mut"></div><input id="lq" placeholder="Rechercher un order_id / une référence de réconciliation" style="margin-top:8px"><button onclick="lgSearch()">Rechercher</button><button class="sec" onclick="lgVerify()">Vérifier l'intégrité</button><button class="sec" onclick="lgSync()">Synchroniser maintenant</button>
-<div style="overflow-x:auto"><table id="le"></table></div></div>
-<div class="card"><h2>Alertes conformité (LAB/FT)</h2><p class="mut">Signaux à examiner : rien n'est bloqué ni déclaré automatiquement. Les limites et le niveau KYC se règlent ci-dessous.</p>
-<table id="am"></table><button class="sec" onclick="amlScan()">Analyser maintenant</button>
-<h2 style="margin-top:14px">Niveau KYC d'un client</h2><input id="ke" placeholder="E-mail du client"><select id="ks" style="width:100%;padding:12px;margin-top:6px;border-radius:10px"><option value="verified">Vérifié (pièce contrôlée)</option><option value="pending">En cours</option><option value="rejected">Refusé</option><option value="unverified">Non vérifié</option></select><button onclick="setKyc()">Mettre à jour</button><div id="pol" class="mut"></div></div>
-<div class="card"><h2>Alertes et vulnérabilités</h2><div id="an" class="bad"></div><table id="sec"></table><h2 style="margin-top:14px">Écarts solde / journal</h2><table id="gp"></table></div>
-<div class="card"><h2>Clients : entrées, sorties, transferts</h2><div style="overflow-x:auto"><table id="tp"></table></div></div>
-<div class="card"><h2>Mes comptes de réception (adresses publiques)</h2><p class="mut">Affichés aux clients dans « Dépôt &amp; retrait directs ». Aucune clé privée n'est stockée : pour modifier, changez OMNIPAY_PAYIN_ACCOUNTS dans Render.</p><table id="ac"></table></div>
-<div class="card"><h2>État : <span id="st"></span></h2><div id="al" class="bad"></div><div class="k" id="kp"></div><p class="mut" id="gen" style="margin-top:8px"></p></div>
-<div class="card"><h2>Mouvements des dernières 24 h</h2><table id="fl"></table></div>
-<div class="card"><h2>Opérations non abouties (&gt; 30 min)</h2><p class="mut">Signalées pour vérification : OMNICHECK n'exécute aucun paiement automatiquement.</p><table id="nc"></table></div>
-<div class="card"><h2>Dépôts à valider</h2><p class="mut">Vérifiez la réception réelle (relevé, MetaMask, Mobile Money) avant de créditer. Un seul crédit possible par demande.</p><table id="md"></table></div>
-<div class="card"><h2>Retraits à exécuter</h2><p class="mut">Le solde du client est déjà réservé. Payez, puis cliquez « Payé » ; ou « Refuser » pour rembourser.</p><table id="mp"></table></div>
-<div class="card"><h2>Remise à niveau (anciens clients)</h2><p class="mut">Un seul bouton : identifiants OM, ledger, re-vérification PayDunya des dépôts en attente, analyse conformité. <b>Aucun remboursement n'est fait automatiquement</b> : vous les validez ligne par ligne dans « Retraits bloqués ».</p><button onclick="upgrade()">Remettre à niveau maintenant</button><div id="up" class="mut" style="margin-top:8px"></div></div>
-<div class="card"><h2>Retraits bloqués (ancien système inclus)</h2><p class="mut">Argent débité au client mais jamais livré. <b>Vérifiez d'abord dans votre Mobile Money si vous l'avez déjà payé</b> : « Déjà payé » ferme la ligne sans rembourser ; « Rembourser » recrédite le client (montant + commission) une seule fois.</p>
-<div id="auto" class="mut"></div><table id="sk"></table>
-<button onclick="sendBatch()">Envoyer la sélection (lot)</button><button onclick="refundSel()">Rembourser la sélection</button><button class="sec" onclick="selAll()">Tout sélectionner</button><button class="sec" onclick="reverify()">Re-vérifier les dépôts PayDunya</button></div>
-<div class="card"><h2>Avis, critiques et limites des clients</h2><table id="fb"></table></div>
-</div>
-<script>
-const $=i=>document.getElementById(i),f=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
-const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const H=()=>({'x-admin-key':$('key').value,'x-admin-otp':($('otp').value||'').trim()});
-async function call(p,m){const r=await fetch(p,{method:m||'GET',headers:H()});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error((d.error||d.message||'Erreur')+' [HTTP '+r.status+' '+p.split('?')[0]+']');return d}
-function show(r){$('out').classList.remove('hide');$('st').textContent=r.status;$('st').className=r.status==='OK'?'ok':'bad';
-$('al').innerHTML=(r.alerts||[]).map(a=>'⚠ '+esc(a)).join('<br>');
-$('kp').innerHTML=[['Clients',r.users.total],['Nouveaux 24 h',r.users.new_24h],['Soldes cumulés (FCFA)',f(r.wallets.total_balance)],['Commissions 24 h',f(r.commissions.commissions_24h)],['Commissions totales',f(r.commissions.commissions_total)],['Avis reçus',r.feedback.total+' (moy. '+r.feedback.avg_rating+')']].map(x=>'<div>'+x[0]+'<b>'+esc(x[1])+'</b></div>').join('');
-$('gen').textContent='Généré le '+new Date(r.generatedAt).toLocaleString('fr-FR');
-$('fl').innerHTML='<tr><th>Type</th><th>Statut</th><th>Nb</th><th>Total</th></tr>'+(r.flows24h||[]).map(x=>`<tr><td>${esc(x.type)}</td><td>${esc(x.status)}</td><td>${x.n}</td><td>${f(x.total)}</td></tr>`).join('');
-$('nc').innerHTML='<tr><th>Type</th><th>Montant</th><th>Fournisseur</th><th>Statut</th><th>Âge</th></tr>'+((r.notCompleted||[]).map(x=>`<tr><td>${esc(x.type)}</td><td>${f(x.amount)}</td><td>${esc(x.provider)}</td><td>${esc(x.status)}</td><td>${x.age_minutes} min</td></tr>`).join('')||'<tr><td colspan=5 class="ok">Aucune</td></tr>')}
-let errs=[];
-async function sec(name,fn){try{await fn();return true}catch(e){errs.push(name+' : '+e.message);return false}}
-async function load(){$('err').textContent='';errs=[];
- await sec('rapport',async()=>{const d=await call('/api/omnicheck/report');show(d.live)});
- await sec('tableau de bord (/api/admin)',loadDash);await sec('fonds (/api/ledger)',loadFunds);await sec('conformité (/api/compliance)',loadAml);await sec('ledger (/api/ledger)',lgSearch);
- await sec('dépôts directs (/api/manual)',loadManual);await sec('retraits bloqués (/api/ops)',loadStuck);
- await sec('avis',async()=>{const fb=await call('/api/omnicheck/feedback');
-$('fb').innerHTML='<tr><th>Date</th><th>Type</th><th>Note</th><th>Message</th><th>Contact</th></tr>'+(fb.feedback.map(x=>`<tr><td>${new Date(x.created_at).toLocaleDateString('fr-FR')}</td><td>${esc(x.category)}</td><td>${esc(x.rating)}</td><td>${esc(x.message)}</td><td>${esc(x.contact)}</td></tr>`).join('')||'<tr><td colspan=5 class="mut">Aucun avis pour le moment</td></tr>')});
- if(errs.length)$('err').innerHTML='Sections indisponibles (les autres fonctionnent) :<br>'+errs.map(esc).join('<br>')+'<br><span class="mut">« Route introuvable » = fichier pas encore déposé sur GitHub ou non chargé : voir les logs Render ("NON chargées").</span>'}
-async function upgrade(){const o=$('up');o.textContent='';const log=t=>{o.innerHTML+=esc(t)+'<br>'};
- const step=async(n,fn)=>{try{log('✔ '+n+' : '+await fn())}catch(e){log('✖ '+n+' : '+e.message)}};
- await step('Identifiants OM',async()=>{const d=await post('/api/id/backfill');return d.created+' créé(s)'});
- await step('Synchronisation du ledger',async()=>{const d=await post('/api/ledger/sync');return JSON.stringify(d).slice(0,120)});
- await step('Re-vérification des dépôts PayDunya',async()=>{const d=await post('/api/ops/deposits/reverify');return `vérifiés ${d.checked}, crédités ${d.credited}, non payés ${d.unpaid}, erreurs ${d.errors}`});
- await step('Analyse conformité',async()=>{const d=await post('/api/compliance/scan');return JSON.stringify(d).slice(0,120)});
- log('Terminé. Remboursez ensuite ligne par ligne dans « Retraits bloqués » (après vérification dans votre Mobile Money).');await load()}
-async function post(p,b){const r=await fetch(p,{method:'POST',headers:{...H(),'content-type':'application/json'},body:JSON.stringify(b||{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error((d.error||d.message||'Erreur')+' [HTTP '+r.status+' '+p.split('?')[0]+']');return d}
-const LV={ok:'<span class="ok">✔ OK</span>',warn:'<span class="bad">⚠ À voir</span>',bad:'<span style="color:var(--err)">✖ À corriger</span>'};
-function chart(sr){const W=640,H=180,pad=24,n=sr.length,max=Math.max(1,...sr.map(x=>Math.max(x.entrees,x.sorties))),bw=(W-pad)/n;
- let g='';sr.forEach((x,i)=>{const x0=pad+i*bw,h1=x.entrees/max*(H-30),h2=x.sorties/max*(H-30);
-  g+=`<rect x="${x0+bw*.1}" y="${H-20-h1}" width="${bw*.38}" height="${h1}" fill="#34e8b0"><title>${x.day} entrées ${f(x.entrees)}</title></rect><rect x="${x0+bw*.5}" y="${H-20-h2}" width="${bw*.38}" height="${h2}" fill="#ffcc4d"><title>${x.day} sorties ${f(x.sorties)}</title></rect>`});
- return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:#0b1426;border-radius:10px"><text x="4" y="12" fill="#8fa0bf" font-size="10">${f(max)}</text><line x1="${pad}" x2="${W}" y1="${H-20}" y2="${H-20}" stroke="#22304d"/>${g}<text x="${pad}" y="${H-4}" fill="#8fa0bf" font-size="10">${sr[0].day}</text><text x="${W-60}" y="${H-4}" fill="#8fa0bf" font-size="10">${sr[n-1].day}</text></svg>`}
-async function loadDash(){const d=await call('/api/admin/dash?days=30');const k=d.kpi;
- $('dk').innerHTML=[['Clients',k.clients],['Soldes cumulés',f(k.soldes)+' F'],['Entrées totales',f(k.entrees_total)+' F'],['Sorties totales',f(k.sorties_total)+' F'],['Commissions',f(k.commissions_total)+' F']].map(x=>`<div>${x[0]}<b>${x[1]}</b></div>`).join('');
- $('ch').innerHTML=chart(d.series);const t=d.series.reduce((a,x)=>({e:a.e+x.entrees,s:a.s+x.sorties,t:a.t+x.transferts,c:a.c+x.commissions}),{e:0,s:0,t:0,c:0});
- $('chl').textContent=`30 jours : entrées ${f(t.e)} F · sorties ${f(t.s)} F · transferts internes ${f(t.t)} F · commissions ${f(t.c)} F`;
- const r=d.requests;$('rq').innerHTML=[['Retraits bloqués',r.stuckWithdrawals],['Dépôts PayDunya en attente',r.pendingDeposits],['Dépôts directs à valider',r.manualDeposits],['Retraits directs à payer',r.manualPayouts]].map(x=>`<div>${x[0]}<b class="${x[1]?'bad':'ok'}">${x[1]}</b></div>`).join('');
- $('an').innerHTML=(d.anomalies.length?d.anomalies.map(a=>'⚠ '+esc(a)).join('<br>'):'<span class="ok">Aucune anomalie détectée.</span>')+(d.accountsWithoutId?'<br>⚠ '+d.accountsWithoutId+' client(s) sans identifiant OM (bouton ci-dessus).':'');
- $('sec').innerHTML='<tr><th>Contrôle</th><th>État</th><th>Détail</th></tr>'+d.security.map(x=>`<tr><td>${esc(x.item)}</td><td>${LV[x.level]||''}</td><td class="mut">${esc(x.note)}</td></tr>`).join('');
- $('gp').innerHTML=d.gaps.length?'<tr><th>Client</th><th>Solde</th><th>Attendu (journal)</th></tr>'+d.gaps.map(g=>`<tr><td>${esc(g.email)}</td><td>${f(g.solde)}</td><td>${f(g.attendu)}</td></tr>`).join(''):'<tr><td class="ok">Aucun écart.</td></tr>';
- $('tp').innerHTML='<tr><th>Client</th><th>Solde</th><th>Entrées</th><th>Sorties</th><th>Envoyés</th><th>Reçus</th><th>Op.</th></tr>'+d.top.map(x=>`<tr><td>${esc(x.email)}</td><td>${f(x.solde)}</td><td>${f(x.entrees)}</td><td>${f(x.sorties)}</td><td>${f(x.envoyes)}</td><td>${f(x.recus)}</td><td>${x.operations}</td></tr>`).join('');
- $('ac').innerHTML=d.accounts.length?'<tr><th>Compte</th><th>Réseau</th><th>Adresse / numéro</th></tr>'+d.accounts.map(a=>`<tr><td>${esc(a.label)}</td><td>${esc(a.network)}</td><td style="word-break:break-all">${esc(a.detail)}</td></tr>`).join(''):'<tr><td class="bad">Aucun compte défini.</td></tr>'}
-async function backfillIds(){try{const d=await post('/api/id/backfill');alert(d.created+' identifiant(s) créé(s).');await loadDash()}catch(x){$('err').textContent=x.message}}
-async function exportXlsx(){try{const d=await call('/api/admin/export?days=90');if(!window.XLSX)return alert('Bibliothèque Excel non chargée (connexion ?).');
- const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a.length?a:[{info:'aucune donnée'}]),n);
- const le=await call('/api/ledger/entries?limit=5000');add('Ledger',le.entries);add('Transactions',d.transactions);add('Clients',d.clients);add('Depots directs',d.deposits);add('Retraits directs',d.payouts);
- XLSX.writeFile(wb,'omnipay-export-'+new Date().toISOString().slice(0,10)+'.xlsx')}catch(x){$('err').textContent=x.message}}
-async function loadFunds(){const c=await call('/api/ledger/coverage'),f=await call('/api/ledger/funds');
- $('cv').innerHTML=[['Dû aux clients',f0(c.liabilities)+' F'],['Fonds déclarés',f0(c.held)+' F'],['Couverture',c.ratio==null?'—':(c.ratio*100).toFixed(1)+' %']].map(x=>`<div>${x[0]}<b class="${x[0]==='Couverture'&&c.ratio!=null&&c.ratio<1?'bad':''}">${x[1]}</b></div>`).join('');
- $('cva').innerHTML=c.alerts.map(a=>'⚠ '+esc(a)).join('<br>');
- $('fd').innerHTML='<tr><th>Code</th><th>Type</th><th>Libellé</th><th>Solde déclaré</th><th>Mouvement ledger</th><th>Date</th></tr>'+(f.funds.length?f.funds.map(x=>`<tr><td>${esc(x.code)}</td><td>${esc(x.kind)}</td><td>${esc(x.label)}</td><td>${x.balance_xof==null?'—':f0(x.balance_xof)}</td><td>${f0(x.net_movement)}</td><td>${x.declared_at?new Date(x.declared_at).toLocaleDateString('fr-FR'):''}</td></tr>`).join(''):'<tr><td colspan="6" class="bad">Aucun compte : ajoutez vos comptes réels ci-dessous.</td></tr>')}
-const f0=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
-async function saveFund(){try{await post('/api/ledger/funds',{code:$('fc').value,label:$('fl').value,kind:$('fk').value,address:$('fa').value,hotMaxXof:$('fh').value});await loadFunds()}catch(x){$('err').textContent=x.message}}
-async function saveBal(){try{await post('/api/ledger/funds/'+encodeURIComponent($('bc').value)+'/balance',{balanceXof:$('bv').value});await loadFunds()}catch(x){$('err').textContent=x.message}}
-function lgTable(rows){$('le').innerHTML='<tr><th>#</th><th>Réf.</th><th>order_id</th><th>Type</th><th>Sens</th><th>Origine</th><th>Montant</th><th>Frais</th><th>Statut</th><th>tx hash</th></tr>'+rows.map(e=>`<tr><td>${e.seq}</td><td>${esc(e.ref)}</td><td style="word-break:break-all">${esc(e.order_id)}</td><td>${esc(e.kind)}</td><td>${esc(e.direction)}</td><td>${esc(e.origin)}</td><td>${f0(e.amount)}</td><td>${f0(e.fee)}</td><td>${esc(e.status)}</td><td style="word-break:break-all">${esc(e.tx_hash||'')}</td></tr>`).join('')}
-async function lgSearch(){try{const q=$('lq').value.trim();const d=await call('/api/ledger/entries?limit=100'+(q?'&order_id='+encodeURIComponent(q):''));lgTable(d.entries)}catch(x){$('err').textContent=x.message}}
-async function lgVerify(){try{const d=await call('/api/ledger/verify');$('lg').innerHTML=d.ok?`<span class="ok">✔ Journal intègre (${d.count} lignes).</span>`:`<span style="color:var(--err)">✖ ALTÉRATION détectée à la ligne ${d.brokenAtSeq}.</span>`}catch(x){$('err').textContent=x.message}}
-async function lgSync(){try{const d=await post('/api/ledger/sync');$('lg').textContent=d.added+' ligne(s) ajoutée(s).';await lgSearch()}catch(x){$('err').textContent=x.message}}
-async function loadAml(){const d=await call('/api/compliance/alerts');const p=await call('/api/compliance/policy');
- $('am').innerHTML='<tr><th>Règle</th><th>Client</th><th>Détail</th><th></th></tr>'+(d.alerts.length?d.alerts.map(a=>`<tr><td>${esc(a.rule)}</td><td>${esc(a.email||'')} <span class="mut">(${esc(a.kyc_status||'')})</span></td><td>${esc(a.detail)}</td><td><button class="sec" data-a="amlrev" data-id="${esc(a.id)}">Examinée</button></td></tr>`).join(''):'<tr><td colspan="4" class="ok">Aucune alerte ouverte.</td></tr>');
- $('pol').textContent=`Limites : non vérifié ${f0(p.unverified.perTx)} / ${f0(p.unverified.perDay)} F par retrait / 24 h ; vérifié ${f0(p.verified.perTx)} / ${f0(p.verified.perDay)} F. Validation manuelle dès ${f0(p.approvalXof)} F.`}
-async function amlScan(){try{const d=await post('/api/compliance/scan');alert(d.created+' nouvelle(s) alerte(s).');await loadAml()}catch(x){$('err').textContent=x.message}}
-async function setKyc(){try{await post('/api/compliance/kyc',{email:$('ke').value,status:$('ks').value});alert('Statut KYC mis à jour.')}catch(x){$('err').textContent=x.message}}
-async function sendBatch(){const ids=[...document.querySelectorAll('.sel:checked')].map(c=>c.value);if(!ids.length)return alert('Sélectionnez au moins une ligne.');
- if(!confirm(`Envoyer ${ids.length} retrait(s) vers les opérateurs ? Chaque retrait ne peut partir qu'une seule fois.`))return;
- try{const d=await post('/api/ops/batch/send',{ids});alert(d.sent+' envoyé(s) sur '+ids.length+'.');await loadStuck()}catch(x){$('err').textContent=x.message}}
-async function loadStuck(){const d=await call('/api/ops/stuck');$('auto').textContent='Envoi automatique PayDunya : '+(d.autoPayout?'ACTIVÉ':'désactivé (traitement manuel)');
- $('sk').innerHTML='<tr><th></th><th>Client</th><th>Opérateur</th><th>Numéro</th><th>FCFA</th><th>Statut</th><th>Âge</th><th></th></tr>'+(d.withdrawals.length?d.withdrawals.map(x=>`<tr><td><input type="checkbox" class="sel" value="${esc(x.id)}" style="width:auto"></td><td>${esc(x.email)}</td><td>${esc(x.operator)}</td><td>${esc(x.phone)}</td><td>${f(x.amount)}+${f(x.fee)}</td><td>${esc(x.status)}</td><td>${Math.round((Date.now()-new Date(x.created_at))/86400000)} j</td><td>${x.status==='pending'?`<button data-a="wsend" data-id="${esc(x.id)}">Envoyer${x.amount>=d.approvalXof?' (validation)':''}</button>`:''}<button class="sec" data-a="wpaid" data-id="${esc(x.id)}">Déjà payé</button></td></tr>`).join(''):'<tr><td colspan="8" class="ok">Aucun retrait bloqué.</td></tr>');}
-function selAll(){document.querySelectorAll('.sel').forEach(c=>c.checked=true)}
-async function refundSel(){const ids=[...document.querySelectorAll('.sel:checked')].map(c=>c.value);if(!ids.length)return alert('Sélectionnez au moins une ligne.');
- if(!confirm(`Rembourser ${ids.length} retrait(s) ? Chaque client est recrédité (montant + commission) UNE seule fois. Vérifiez que vous ne les avez pas déjà payés.`))return;
- try{const d=await post('/api/ops/refund',{ids,includeFee:true,note:'Remboursement administrateur'});alert(`${d.refundedCount} remboursé(s), total ${f(d.totalRefunded)} FCFA. Ignorés : ${d.skipped.length}.`);await loadStuck()}catch(x){$('err').textContent=x.message}}
-async function reverify(){try{const d=await post('/api/ops/deposits/reverify');alert(`Vérifiés : ${d.checked}, crédités : ${d.credited}, non payés : ${d.unpaid}, erreurs : ${d.errors}.`)}catch(x){$('err').textContent=x.message}}
-async function loadManual(){const d=await call('/api/manual/admin/pending');
- $('md').innerHTML='<tr><th>Réf.</th><th>Client</th><th>Moyen</th><th>Montant</th><th>Preuve</th><th></th></tr>'+(d.deposits.map(x=>`<tr><td>${esc(x.reference)}</td><td>${esc(x.email||x.phone)}</td><td>${esc(x.method)}</td><td>${esc(x.amount)} ${esc(x.currency)}</td><td style="word-break:break-all">${esc(x.tx_ref)}</td><td><button class="sec" data-a="credit" data-id="${esc(x.id)}" data-cur="${esc(x.currency)}" data-amt="${esc(x.amount)}">Créditer</button>${/^\d{12,25}$/.test(String(x.tx_ref||'').trim())?`<button class="sec" data-a="p2pv" data-id="${esc(String(x.tx_ref).trim())}">Vérifier Binance</button>`:''}<button class="sec" data-a="drej" data-id="${esc(x.id)}">Refuser</button></td></tr>`).join('')||'<tr><td colspan=6 class="ok">Aucun dépôt en attente</td></tr>');
- $('mp').innerHTML='<tr><th>Réf.</th><th>Client</th><th>Moyen</th><th>Destination</th><th>FCFA</th><th></th></tr>'+(d.payouts.map(x=>`<tr><td>${esc(x.reference)}</td><td>${esc(x.email||x.phone)}</td><td>${esc(x.method)}</td><td style="word-break:break-all">${esc(x.destination)}</td><td>${f(x.amount)}</td><td><button class="sec" data-a="paid" data-id="${esc(x.id)}">Payé</button><button class="sec" data-a="prej" data-id="${esc(x.id)}">Refuser</button></td></tr>`).join('')||'<tr><td colspan=6 class="ok">Aucun retrait en attente</td></tr>')}
-document.addEventListener('click',async e=>{const b=e.target.closest('button[data-a]');if(!b)return;const id=b.dataset.id,a=b.dataset.a;$('err').textContent='';
- try{
-  if(a==='credit'){const v=prompt(`Montant en FCFA à créditer (le client a déclaré ${b.dataset.amt} ${b.dataset.cur}) :`);if(!v)return;if(!confirm(`Créditer ${v} FCFA ? Cette action ne peut pas être répétée.`))return;await post(`/api/manual/admin/deposit/${id}/credit`,{amountXof:Number(v)})}
-  else if(a==='p2pv'){const r=await call('/api/p2p/verify/'+encodeURIComponent(id));alert(r.found?`Ordre ${r.order.orderNumber} : ${r.completed?'TERMINÉ':'statut '+r.order.status}\n${r.order.tradeType} ${r.order.amount} ${r.order.asset} = ${r.order.totalPrice} ${r.order.fiat}\nContrepartie : ${r.order.counterparty||'?'}\nCréditez seulement si TERMINÉ et si le sens et le montant correspondent.`:r.message);return}
-  else if(a==='drej'){const n=prompt('Motif du refus (facultatif) :');if(n===null)return;await post(`/api/manual/admin/deposit/${id}/reject`,{note:n})}
-  else if(a==='amlrev'){const n=prompt('Note d\'examen (facultatif) :');if(n===null)return;await post(`/api/compliance/alerts/${id}/review`,{note:n});await loadAml();return}
-  else if(a==='wsend'){if(!confirm('Envoyer ce retrait maintenant ? Il ne pourra partir qu\'une seule fois.'))return;const r=await post(`/api/ops/withdraw/${id}/send`);alert('Résultat : '+r.result+(r.detail?' — '+r.detail:''));await loadStuck();return}
-  else if(a==='wpaid'){if(!confirm('Confirmez-vous avoir déjà payé ce retrait ? La ligne sera fermée sans remboursement.'))return;await post(`/api/ops/withdraw/${id}/paid`);await loadStuck();return}
-  else if(a==='paid'){if(!confirm('Confirmez-vous avoir effectué ce paiement ?'))return;await post(`/api/manual/admin/payout/${id}/paid`)}
-  else if(a==='prej'){const n=prompt('Motif du refus (facultatif) : le client sera remboursé.');if(n===null)return;await post(`/api/manual/admin/payout/${id}/reject`,{note:n})}
-  await loadManual()}catch(x){$('err').textContent=x.message}});
-async function run(){$('err').textContent='';try{const d=await call('/api/omnicheck/run','POST');show(d.report)}catch(e){$('err').textContent=e.message}}
-</script></div></body></html>
+"use strict";
+// OMNIPAY — dépôts / retraits MANUELS validés par l'administrateur (fichier AJOUTÉ).
+// Principe : le client voit les comptes de réception d'OMNIPAY + sa référence personnelle (OMP-XXXXXXXX),
+// déclare son paiement ; l'administrateur vérifie la réception réelle, puis crédite / marque payé.
+// Aucune clé privée n'est jamais stockée ici. Aucun crédit automatique.
+const crypto = require("crypto");
+const express = require("express");
+const { neon } = require("@neondatabase/serverless");
+const { requireAuth } = require("../authMiddleware");
+
+const router = express.Router();
+const sql = () => neon(process.env.DATABASE_URL);
+const COMMISSION = 50;
+const MIN = 500;
+const MAX = Number(process.env.MANUAL_MAX_XOF || 500000);
+const MAX_OPEN = 3;
+let ready = false;
+
+async function ensureTables() {
+  if (ready) return;
+  const q = sql();
+  await q`CREATE TABLE IF NOT EXISTS manual_deposits (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, reference varchar(20) NOT NULL,
+    method varchar(30) NOT NULL, currency varchar(10) NOT NULL, declared_amount numeric(18,2) NOT NULL,
+    tx_ref varchar(200), note varchar(500), status varchar(12) NOT NULL DEFAULT 'pending',
+    credited_xof numeric(18,2), decided_note varchar(300),
+    created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz)`;
+  await q`CREATE TABLE IF NOT EXISTS manual_payouts (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, reference varchar(20) NOT NULL,
+    method varchar(30) NOT NULL, destination varchar(200) NOT NULL, amount_xof numeric(18,2) NOT NULL,
+    status varchar(12) NOT NULL DEFAULT 'pending', decided_note varchar(300),
+    created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz)`;
+  ready = true;
+}
+
+const refOf = (userId) => "OMP-" + String(userId).replace(/-/g, "").slice(0, 8).toUpperCase();
+const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
+const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(k && process.env.ADMIN_KEY && k === process.env.ADMIN_KEY); };
+const adminOnly = (req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." }));
+
+function accountsFromEnv() {
+  try {
+    const list = JSON.parse(process.env.OMNIPAY_PAYIN_ACCOUNTS || "[]");
+    return (Array.isArray(list) ? list : []).slice(0, 12).map((a) => ({
+      label: clean(a.label, 80), type: clean(a.type, 20), network: clean(a.network, 40),
+      detail: clean(a.detail || a.address, 200),
+    })).filter((a) => a.label && a.detail);
+  } catch { return []; }
+}
+
+// ---------- Client ----------
+router.get("/instructions", requireAuth, (req, res) => {
+  res.json({
+    reference: refOf(req.user.userId),
+    accounts: accountsFromEnv(),
+    limits: { min: MIN, max: MAX, openRequests: MAX_OPEN },
+    notice: "Indiquez toujours votre référence. Le crédit est effectué après vérification de la réception par OMNIPAY.",
+  });
+});
+
+router.post("/deposit", requireAuth, async (req, res) => {
+  try {
+    const amount = Number(req.body?.amount);
+    const currency = clean(req.body?.currency || "XOF", 10).toUpperCase();
+    const method = clean(req.body?.method || "autre", 30);
+    if (!["XOF", "USDT", "EUR", "USD"].includes(currency)) return res.status(400).json({ error: "Devise non acceptée." });
+    if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "Montant invalide." });
+    if (currency === "XOF" && (amount < MIN || amount > MAX)) return res.status(400).json({ error: `Montant : entre ${MIN} et ${MAX} FCFA.` });
+    await ensureTables();
+    const q = sql();
+    const [open] = await q`SELECT count(*)::int AS n FROM manual_deposits WHERE user_id = ${req.user.userId} AND status = 'pending'`;
+    if (open.n >= MAX_OPEN) return res.status(429).json({ error: "Vous avez déjà des demandes en attente. Patientez leur validation." });
+    const [row] = await q`INSERT INTO manual_deposits (user_id, reference, method, currency, declared_amount, tx_ref, note)
+      VALUES (${req.user.userId}, ${refOf(req.user.userId)}, ${method}, ${currency}, ${amount.toFixed(2)}, ${clean(req.body?.txRef, 200) || null}, ${clean(req.body?.note, 500) || null})
+      RETURNING id`;
+    res.status(201).json({ id: row.id, message: "Demande enregistrée. Elle sera créditée après vérification." });
+  } catch (e) { console.error("MANUAL_DEPOSIT", e.message); res.status(500).json({ error: "Impossible d'enregistrer la demande." }); }
+});
+
+router.post("/payout", requireAuth, async (req, res) => {
+  try {
+    const amount = Math.round(Number(req.body?.amount));
+    const destination = clean(req.body?.destination, 200);
+    const method = clean(req.body?.method || "autre", 30);
+    if (!Number.isFinite(amount) || amount < MIN || amount > MAX) return res.status(400).json({ error: `Montant : entre ${MIN} et ${MAX} FCFA.` });
+    if (destination.length < 5) return res.status(400).json({ error: "Indiquez la destination (numéro Mobile Money, adresse ou compte)." });
+    await ensureTables();
+    const q = sql();
+    const [open] = await q`SELECT count(*)::int AS n FROM manual_payouts WHERE user_id = ${req.user.userId} AND status = 'pending'`;
+    if (open.n >= MAX_OPEN) return res.status(429).json({ error: "Vous avez déjà des retraits en attente." });
+    const total = amount + COMMISSION;
+    const key = "mp-" + crypto.randomUUID();
+    // Débit immédiat (réservation) + demande + ligne d'historique, en UNE seule instruction atomique.
+    const rows = await q`
+      WITH w AS (UPDATE wallets SET balance = balance - ${total} WHERE user_id = ${req.user.userId} AND balance >= ${total} RETURNING id, balance),
+      p AS (INSERT INTO manual_payouts (user_id, reference, method, destination, amount_xof)
+            SELECT ${req.user.userId}, ${refOf(req.user.userId)}, ${method}, ${destination}, ${amount} FROM w RETURNING id),
+      t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key)
+            SELECT w.id, 'withdrawal', ${amount}, w.balance, 'pending', 'manual', p.id::text, ${key} FROM w, p RETURNING id)
+      SELECT p.id, w.balance FROM p, w`;
+    if (!rows.length) return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
+    res.status(201).json({ id: rows[0].id, newBalance: Number(rows[0].balance), message: "Demande de retrait enregistrée. Elle sera exécutée après validation." });
+  } catch (e) { console.error("MANUAL_PAYOUT", e.message); res.status(500).json({ error: "Impossible d'enregistrer le retrait." }); }
+});
+
+router.get("/mine", requireAuth, async (req, res) => {
+  try {
+    await ensureTables();
+    const q = sql();
+    const deposits = await q`SELECT id, method, currency, declared_amount::float AS amount, status, credited_xof::float AS credited_xof, decided_note, created_at FROM manual_deposits WHERE user_id = ${req.user.userId} ORDER BY created_at DESC LIMIT 20`;
+    const payouts = await q`SELECT id, method, destination, amount_xof::float AS amount, status, decided_note, created_at FROM manual_payouts WHERE user_id = ${req.user.userId} ORDER BY created_at DESC LIMIT 20`;
+    res.json({ deposits, payouts });
+  } catch (e) { console.error("MANUAL_MINE", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// ---------- Administrateur (en-tête x-admin-key) ----------
+router.get("/admin/pending", adminOnly, async (req, res) => {
+  try {
+    await ensureTables();
+    const q = sql();
+    const deposits = await q`SELECT d.id, d.reference, d.method, d.currency, d.declared_amount::float AS amount, d.tx_ref, d.note, d.created_at, u.email, u.phone
+      FROM manual_deposits d LEFT JOIN users u ON u.id = d.user_id WHERE d.status = 'pending' ORDER BY d.created_at ASC LIMIT 100`;
+    const payouts = await q`SELECT p.id, p.reference, p.method, p.destination, p.amount_xof::float AS amount, p.created_at, u.email, u.phone
+      FROM manual_payouts p LEFT JOIN users u ON u.id = p.user_id WHERE p.status = 'pending' ORDER BY p.created_at ASC LIMIT 100`;
+    res.json({ deposits, payouts });
+  } catch (e) { console.error("MANUAL_PENDING", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// Créditer : un seul crédit possible (la condition status='pending' est dans l'instruction elle-même)
+router.post("/admin/deposit/:id/credit", adminOnly, async (req, res) => {
+  try {
+    const amountXof = Math.round(Number(req.body?.amountXof));
+    if (!Number.isFinite(amountXof) || amountXof <= 0 || amountXof > 5000000) return res.status(400).json({ error: "Montant FCFA à créditer invalide." });
+    await ensureTables();
+    const key = "md-" + req.params.id;
+    const rows = await sql()`
+      WITH m AS (UPDATE manual_deposits SET status = 'credited', credited_xof = ${amountXof}, decided_at = now(), decided_note = ${clean(req.body?.note, 300) || null}
+                 WHERE id = ${req.params.id} AND status = 'pending'
+                   AND NOT EXISTS (SELECT 1 FROM manual_deposits d2 WHERE d2.status = 'credited' AND d2.id <> manual_deposits.id
+                                   AND coalesce(manual_deposits.tx_ref, '') <> '' AND lower(d2.tx_ref) = lower(manual_deposits.tx_ref))
+                 RETURNING user_id),
+      w AS (UPDATE wallets SET balance = balance + ${amountXof} FROM m WHERE wallets.user_id = m.user_id RETURNING wallets.id, wallets.balance),
+      t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key)
+            SELECT w.id, 'deposit', ${amountXof}, w.balance, 'completed', 'manual', ${req.params.id}, ${key} FROM w RETURNING id)
+      SELECT w.balance FROM w`;
+    if (!rows.length) return res.status(409).json({ error: "Demande introuvable, déjà traitée, ou ce tx hash a déjà été crédité (anti-doublon)." });
+    res.json({ message: "Crédité.", newBalance: Number(rows[0].balance) });
+  } catch (e) { console.error("MANUAL_CREDIT", e.message); res.status(500).json({ error: "Erreur lors du crédit." }); }
+});
+
+router.post("/admin/deposit/:id/reject", adminOnly, async (req, res) => {
+  try {
+    await ensureTables();
+    const rows = await sql()`UPDATE manual_deposits SET status = 'rejected', decided_at = now(), decided_note = ${clean(req.body?.note, 300) || null}
+      WHERE id = ${req.params.id} AND status = 'pending' RETURNING id`;
+    if (!rows.length) return res.status(409).json({ error: "Demande introuvable ou déjà traitée." });
+    res.json({ message: "Rejetée." });
+  } catch (e) { console.error("MANUAL_DREJECT", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// Retrait payé : la commission est enregistrée ici
+router.post("/admin/payout/:id/paid", adminOnly, async (req, res) => {
+  try {
+    await ensureTables();
+    const rows = await sql()`
+      WITH p AS (UPDATE manual_payouts SET status = 'paid', decided_at = now(), decided_note = ${clean(req.body?.note, 300) || null}
+                 WHERE id = ${req.params.id} AND status = 'pending' RETURNING user_id),
+      t AS (UPDATE transactions SET status = 'completed' WHERE provider = 'manual' AND provider_ref = ${req.params.id} AND type = 'withdrawal' AND EXISTS (SELECT 1 FROM p) RETURNING wallet_id, balance_after),
+      c AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, idempotency_key)
+            SELECT wallet_id, 'commission', ${COMMISSION}, balance_after, 'completed', 'internal', ${"mpc-" + req.params.id} FROM t RETURNING id)
+      SELECT id FROM c`;
+    if (!rows.length) return res.status(409).json({ error: "Demande introuvable ou déjà traitée." });
+    res.json({ message: "Marqué payé." });
+  } catch (e) { console.error("MANUAL_PAID", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// Retrait refusé : remboursement du montant + commission réservés
+router.post("/admin/payout/:id/reject", adminOnly, async (req, res) => {
+  try {
+    await ensureTables();
+    const rows = await sql()`
+      WITH p AS (UPDATE manual_payouts SET status = 'rejected', decided_at = now(), decided_note = ${clean(req.body?.note, 300) || null}
+                 WHERE id = ${req.params.id} AND status = 'pending' RETURNING user_id, amount_xof),
+      w AS (UPDATE wallets SET balance = balance + (p.amount_xof + ${COMMISSION}) FROM p WHERE wallets.user_id = p.user_id RETURNING wallets.balance),
+      t AS (UPDATE transactions SET status = 'failed' WHERE provider = 'manual' AND provider_ref = ${req.params.id} AND type = 'withdrawal' AND EXISTS (SELECT 1 FROM p) RETURNING id)
+      SELECT balance FROM w`;
+    if (!rows.length) return res.status(409).json({ error: "Demande introuvable ou déjà traitée." });
+    res.json({ message: "Rejeté et remboursé." });
+  } catch (e) { console.error("MANUAL_PREJECT", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+module.exports = router;
