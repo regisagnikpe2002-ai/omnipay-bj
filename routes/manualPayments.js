@@ -1,323 +1,143 @@
-"use strict";
-// OMNIPAY — opérations portefeuille V2 (fichier AJOUTÉ, aucune migration destructive).
-//  - Opérateurs Mobile Money par client (MTN / Moov / Celtiis)
-//  - Retrait : débit atomique, puis envoi PayDunya si AUTO_PAYOUT=on (sinon file d'attente admin)
-//  - Callback dépôt PayDunya atomique (aucun double crédit) + re-vérification admin des dépôts en attente
-//  - Remboursement ADMIN des retraits bloqués/échoués, ligne par ligne, une seule fois
-// Toute opération d'argent = UNE seule requête SQL gardée par le statut courant.
-const crypto = require("crypto");
-const express = require("express");
-const { neon } = require("@neondatabase/serverless");
-const { requireAuth } = require("../authMiddleware");
-
-const router = express.Router();
-const sql = () => neon(process.env.DATABASE_URL);
-const COMMISSION = 50;
-const MIN_OUT = 500;
-const MAX_OUT = Number(process.env.MAX_WITHDRAW_XOF || 500000);
-const MODES = { mtn: "mtn-benin", moov: "moov-benin", celtiis: "celtiis-cash" };
-let ready = false;
-
-const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(k && process.env.ADMIN_KEY && k === process.env.ADMIN_KEY); };
-const adminOnly = (req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." }));
-const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const autoPayout = () => String(process.env.AUTO_PAYOUT || "off").toLowerCase() === "on";
-const baseUrl = () => (process.env.PUBLIC_BASE_URL || "https://www.omnipay-bj.com").replace(/\/$/, "");
-const secret = () => process.env.OTP_SECRET || process.env.ADMIN_KEY || "";
-const sig = (id) => crypto.createHmac("sha256", secret()).update("wd:" + id).digest("hex").slice(0, 32);
-
-async function ensureTables() {
-  if (ready) return;
-  const q = sql();
-  await q`CREATE TABLE IF NOT EXISTS user_operators (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, operator varchar(10) NOT NULL,
-    phone varchar(20) NOT NULL, is_default boolean NOT NULL DEFAULT false,
-    created_at timestamptz NOT NULL DEFAULT now(), UNIQUE (user_id, operator, phone))`;
-  ready = true;
-}
-
-// Numéro au format international Bénin (229…) pour PayDunya.
-function intlPhone(p) {
-  let d = String(p || "").replace(/\D/g, "");
-  if (d.startsWith("00")) d = d.slice(2);
-  if (!d.startsWith("229")) d = "229" + d;
-  return d;
-}
-const validLocal = (p) => { const d = String(p || "").replace(/\D/g, ""); return d.length >= 8 && d.length <= 15; };
-
-const approvalXof = () => { const v = Number(process.env.APPROVAL_XOF); return Number.isFinite(v) && v > 0 ? v : 200000; };
-
-// Envoi d'UN retrait vers le canal choisi pour l'opérateur. Le statut 'pending' est « réservé » (→ 'processing') AVANT l'appel,
-// donc un même retrait ne peut jamais partir deux fois (clic double, lot + validation, etc.).
-async function dispatchPayout(q, txId, operator, phone, amount) {
-  const claim = await q`UPDATE transactions SET status = 'processing' WHERE id = ${txId}::uuid AND type = 'withdrawal' AND status = 'pending' RETURNING id`;
-  if (!claim.length) return { status: "skipped" };
-  let r;
-  try {
-    const router = require("../providers/payoutRouter.js");
-    r = await router.payout({ txId, operator, phone, amount, callbackUrl: `${baseUrl()}/wallet/withdraw/callback?id=${txId}&sig=${sig(txId)}` });
-  } catch (e) { r = { status: "uncertain", detail: String(e.response?.data?.response_text || e.message).slice(0, 160), route: "?" }; }
-  const meta = JSON.stringify({ payout: { route: r.route, result: r.status, detail: r.detail || null, at: new Date().toISOString() } });
-  if (r.status === "sent" || r.status === "uncertain") {
-    // sent : en attente de confirmation ; uncertain : reste 'processing' pour vérification humaine (jamais de renvoi automatique)
-    await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${meta}::jsonb WHERE id = ${txId}::uuid`;
-  } else {
-    // refused / unavailable : rien n'est parti -> la demande redevient 'pending'
-    await q`UPDATE transactions SET status = 'pending', metadata = coalesce(metadata,'{}'::jsonb) || ${meta}::jsonb WHERE id = ${txId}::uuid AND status = 'processing'`;
-  }
-  return r;
-}
-
-// ---------- Opérateurs du client ----------
-router.get("/api/operators", requireAuth, async (req, res) => {
-  try {
-    await ensureTables();
-    const rows = await sql()`SELECT id, operator, phone, is_default FROM user_operators WHERE user_id = ${req.user.userId} ORDER BY is_default DESC, created_at`;
-    res.json({ operators: rows.map((r) => ({ id: r.id, operator: r.operator, phone: r.phone, isDefault: r.is_default })) });
-  } catch (e) { console.error("OPS_LIST", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-router.post("/api/operators", requireAuth, async (req, res) => {
-  try {
-    await ensureTables();
-    const operator = String(req.body?.operator || "").toLowerCase();
-    const phone = String(req.body?.phone || "").replace(/[^\d+]/g, "").slice(0, 20);
-    if (!MODES[operator]) return res.status(400).json({ error: "Opérateur invalide (mtn, moov ou celtiis)." });
-    if (!validLocal(phone)) return res.status(400).json({ error: "Numéro invalide." });
-    const q = sql();
-    const n = await q`SELECT count(*)::int AS n FROM user_operators WHERE user_id = ${req.user.userId}`;
-    if (n[0].n >= 6) return res.status(400).json({ error: "Maximum 6 numéros enregistrés." });
-    const rows = await q`INSERT INTO user_operators (user_id, operator, phone, is_default)
-      VALUES (${req.user.userId}, ${operator}, ${phone}, ${n[0].n === 0})
-      ON CONFLICT (user_id, operator, phone) DO NOTHING RETURNING id`;
-    if (!rows.length) return res.status(409).json({ error: "Ce numéro est déjà enregistré." });
-    res.status(201).json({ message: "Numéro enregistré.", id: rows[0].id });
-  } catch (e) { console.error("OPS_ADD", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-router.post("/api/operators/:id/default", requireAuth, async (req, res) => {
-  try {
-    await ensureTables();
-    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const rows = await sql()`WITH x AS (UPDATE user_operators SET is_default = (id = ${req.params.id}) WHERE user_id = ${req.user.userId} RETURNING id, is_default)
-      SELECT id FROM x WHERE is_default`;
-    if (!rows.length) return res.status(404).json({ error: "Numéro introuvable." });
-    res.json({ message: "Numéro par défaut mis à jour." });
-  } catch (e) { console.error("OPS_DEF", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-router.delete("/api/operators/:id", requireAuth, async (req, res) => {
-  try {
-    await ensureTables();
-    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const rows = await sql()`DELETE FROM user_operators WHERE id = ${req.params.id} AND user_id = ${req.user.userId} RETURNING id`;
-    if (!rows.length) return res.status(404).json({ error: "Numéro introuvable." });
-    res.json({ message: "Numéro supprimé." });
-  } catch (e) { console.error("OPS_DEL", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// ---------- Retrait (remplace l'ancien /wallet/withdraw ; même réponse {message,newBalance}) ----------
-router.post("/wallet/withdraw", requireAuth, async (req, res) => {
-  try {
-    await ensureTables();
-    const amount = Math.floor(Number(req.body?.amount));
-    if (!Number.isFinite(amount) || amount < MIN_OUT) return res.status(400).json({ error: `Montant minimum : ${MIN_OUT} FCFA.` });
-    if (amount > MAX_OUT) return res.status(400).json({ error: `Montant maximum : ${MAX_OUT} FCFA par retrait.` });
-    const q = sql();
-    let operator = String(req.body?.operator || "").toLowerCase();
-    let phone = String(req.body?.phone || "").replace(/[^\d+]/g, "").slice(0, 20);
-    if (req.body?.operatorId) { // numéro enregistré par le client
-      if (!UUID.test(String(req.body.operatorId))) return res.status(400).json({ error: "Numéro enregistré invalide." });
-      const o = await q`SELECT operator, phone FROM user_operators WHERE id = ${req.body.operatorId} AND user_id = ${req.user.userId}`;
-      if (!o.length) return res.status(404).json({ error: "Numéro enregistré introuvable." });
-      operator = o[0].operator; phone = o[0].phone;
-    }
-    if (!MODES[operator]) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
-    if (!validLocal(phone)) return res.status(400).json({ error: "Numéro Mobile Money invalide." });
-    // Limites par niveau KYC (voir routes/compliance.js). Si le module est absent, aucune limite supplémentaire n'est appliquée.
-    try {
-      const comp = require("./compliance.js");
-      const kyc = (await q`SELECT kyc_status FROM users WHERE id = ${req.user.userId}::uuid`)[0]?.kyc_status;
-      const lim = comp.limitsFor(kyc);
-      if (amount > lim.perTx) return res.status(400).json({ error: `Limite par retrait : ${lim.perTx} FCFA. Faites vérifier votre identité pour relever vos limites.` });
-      const day = await q`SELECT coalesce(sum(t.amount), 0)::float AS v FROM transactions t JOIN wallets w ON w.id = t.wallet_id
-        WHERE w.user_id = ${req.user.userId}::uuid AND t.type = 'withdrawal' AND t.status NOT IN ('cancelled','refunded','failed') AND t.created_at > now() - interval '24 hours'`;
-      if (day[0].v + amount > lim.perDay) return res.status(400).json({ error: `Limite sur 24 h atteinte (${lim.perDay} FCFA). Réessayez plus tard ou faites vérifier votre identité.` });
-    } catch (e) { if (e && e.code !== "MODULE_NOT_FOUND") console.error("LIMITS", e.message); }
-
-    const total = amount + COMMISSION;
-    const key = crypto.randomUUID();
-    // Débit + écriture du retrait + commission : tout ou rien, solde vérifié dans la même requête.
-    const rows = await q`
-      WITH w AS (UPDATE wallets SET balance = balance - ${total}, updated_at = now()
-                 WHERE user_id = ${req.user.userId} AND balance >= ${total} RETURNING id, balance),
-      t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key)
-            SELECT w.id, 'withdrawal', ${amount}, w.balance, 'pending', ${operator}, ${phone}, ${key} FROM w RETURNING id),
-      c AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, idempotency_key)
-            SELECT w.id, 'commission', ${COMMISSION}, w.balance, 'completed', 'internal', ${key + "-fee"} FROM w RETURNING id)
-      SELECT t.id AS tx_id, w.balance FROM w, t`;
-    if (!rows.length) return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
-    const txId = rows[0].tx_id;
-    const newBalance = Number(rows[0].balance).toFixed(2);
-
-    let message = "Demande de retrait enregistrée. Traitement sous 24h.";
-    const needsApproval = amount >= approvalXof();
-    if (autoPayout() && !needsApproval) {
-      const r = await dispatchPayout(q, txId, operator, phone, amount);
-      if (r.status === "sent") message = "Retrait envoyé vers votre Mobile Money. Confirmation en cours.";
-    } else if (needsApproval) {
-      message = "Demande enregistrée : ce montant est soumis à validation avant envoi (sous 24h).";
-    }
-    try { await require("../lib/mailer.js").sendAdminNotification("Nouvelle demande de retrait OMNIPAY", `<p>Montant : <b>${amount} XOF</b></p><p>Numéro : <b>${phone}</b> (${operator})</p>`); } catch (_) { /* e-mail facultatif */ }
-    res.json({ message, newBalance });
-  } catch (e) { console.error("WITHDRAW", e.message); res.status(500).json({ error: "Erreur serveur lors du retrait." }); }
-});
-
-// Callback retrait PayDunya : URL signée. Ne rembourse jamais ; marque seulement 'completed' ou 'failed' (à rembourser par l'admin).
-router.post("/wallet/withdraw/callback", async (req, res) => {
-  try {
-    const id = String(req.query.id || req.body?.disburse_id || "");
-    if (!UUID.test(id) || String(req.query.sig || "") !== sig(id)) return res.status(403).json({ error: "Signature invalide." });
-    const st = String(req.body?.status || "").toLowerCase();
-    const next = st === "success" ? "completed" : st === "failed" ? "failed" : null;
-    if (next) await sql()`UPDATE transactions SET status = ${next} WHERE id = ${id} AND type = 'withdrawal' AND status IN ('pending','processing')`;
-    res.json({ message: "OK" });
-  } catch (e) { console.error("WD_CB", e.message); res.status(500).json({ error: "Erreur callback retrait." }); }
-});
-
-// ---------- Dépôt PayDunya : crédit atomique ----------
-async function creditDeposit(token) {
-  // Une seule instruction : si le dépôt n'est plus 'pending', rien n'est crédité.
-  return sql()`
-    WITH t AS (SELECT id, wallet_id, amount FROM transactions WHERE provider_ref = ${token} AND type = 'deposit' AND provider = 'paydunya' AND status = 'pending' FOR UPDATE),
-    w AS (UPDATE wallets SET balance = balance + t.amount, updated_at = now() FROM t WHERE wallets.id = t.wallet_id RETURNING wallets.balance, t.id AS tx_id),
-    u AS (UPDATE transactions SET status = 'completed', balance_after = w.balance FROM w WHERE transactions.id = w.tx_id AND transactions.status = 'pending' RETURNING transactions.id)
-    SELECT w.balance FROM w`;
-}
-
-router.post("/wallet/deposit/callback", async (req, res) => {
-  try {
-    const token = req.body?.data?.invoice?.token || req.body?.data?.token || req.body?.token;
-    if (!token) return res.status(400).json({ error: "Token manquant." });
-    const confirmation = await require("../providers/paydunya.js").confirmInvoice(token); // vérifié auprès de PayDunya, jamais cru sur parole
-    if (confirmation.status !== "completed") return res.status(200).json({ message: "Paiement non confirmé." });
-    const rows = await creditDeposit(token);
-    res.json({ message: rows.length ? "Dépôt confirmé et crédité." : "Déjà traité ou introuvable." });
-  } catch (e) { console.error("DEP_CB", e.response?.data || e.message); res.status(500).json({ error: "Erreur lors de la confirmation du dépôt." }); }
-});
-
-// ---------- Administration ----------
-// Retraits en attente / échoués (argent débité, jamais livré ou statut non résolu).
-router.get("/api/ops/stuck", adminOnly, async (req, res) => {
-  try {
-    const rows = await sql()`
-      SELECT t.id, t.status, t.amount::float AS amount, t.provider AS operator, t.provider_ref AS phone, t.created_at,
-             u.email, u.first_name, u.last_name, t.metadata,
-             coalesce((SELECT sum(c.amount) FROM transactions c WHERE c.idempotency_key = t.idempotency_key || '-fee' AND c.type = 'commission' AND c.status = 'completed'),0)::float AS fee
-      FROM transactions t JOIN wallets w ON w.id = t.wallet_id JOIN users u ON u.id = w.user_id
-      WHERE t.type = 'withdrawal' AND t.status IN ('pending','failed','processing')
-      ORDER BY t.created_at`;
-    res.json({ autoPayout: autoPayout(), approvalXof: approvalXof(), withdrawals: rows });
-  } catch (e) { console.error("STUCK", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// Remboursement atomique d'UN retrait : montant (+ commission si includeFee). Rejouer = refusé (409).
-async function refundOne(id, includeFee, note) {
-  return sql()`
-    WITH t AS (UPDATE transactions SET status = 'refunded', metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object('refundedAt', now()::text, 'refundNote', ${note}::text)
-               WHERE id = ${id}::uuid AND type = 'withdrawal' AND status IN ('pending','failed','processing') RETURNING wallet_id, amount, idempotency_key),
-    f AS (UPDATE transactions SET status = 'refunded' FROM t
-          WHERE ${includeFee}::boolean AND transactions.idempotency_key = t.idempotency_key || '-fee' AND transactions.type = 'commission' AND transactions.status = 'completed'
-          RETURNING transactions.amount AS fee),
-    w AS (UPDATE wallets SET balance = balance + t.amount + coalesce((SELECT sum(fee) FROM f),0), updated_at = now()
-          FROM t WHERE wallets.id = t.wallet_id RETURNING wallets.id AS wid, wallets.balance, t.amount + coalesce((SELECT sum(fee) FROM f),0) AS refunded),
-    r AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key)
-          SELECT wid, 'refund', refunded, balance, 'completed', 'internal', ${id}::text, ${"refund-" + id}::text FROM w RETURNING id)
-    SELECT w.balance, w.refunded FROM w`;
-}
-
-router.post("/api/ops/refund", adminOnly, async (req, res) => {
-  try {
-    const ids = Array.isArray(req.body?.ids) ? [...new Set(req.body.ids.map(String))].slice(0, 200) : [];
-    if (!ids.length || ids.some((i) => !UUID.test(i))) return res.status(400).json({ error: "Liste d'identifiants invalide." });
-    const includeFee = req.body?.includeFee !== false;
-    const note = clean(req.body?.note, 200) || "Remboursement administrateur";
-    const done = [], skipped = [];
-    for (const id of ids) {
-      try {
-        const r = await refundOne(id, includeFee, note);
-        if (r.length) done.push({ id, refunded: Number(r[0].refunded) }); else skipped.push({ id, reason: "déjà traité ou introuvable" });
-      } catch (e) { console.error("REFUND", id, e.message); skipped.push({ id, reason: "erreur" }); }
-    }
-    res.json({ refundedCount: done.length, totalRefunded: done.reduce((s, d) => s + d.refunded, 0), done, skipped });
-  } catch (e) { console.error("REFUND_ALL", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// Retrait déjà payé à la main par l'administrateur : on ferme la ligne SANS rembourser.
-router.post("/api/ops/withdraw/:id/paid", adminOnly, async (req, res) => {
-  try {
-    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const rows = await sql()`UPDATE transactions SET status = 'completed' WHERE id = ${req.params.id} AND type = 'withdrawal' AND status IN ('pending','failed','processing') RETURNING id`;
-    if (!rows.length) return res.status(409).json({ error: "Introuvable ou déjà traité." });
-    res.json({ message: "Marqué comme payé." });
-  } catch (e) { console.error("WD_PAID", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// Re-vérifie auprès de PayDunya les dépôts 'pending' (jusqu'à 50) et crédite ceux réellement payés.
-router.post("/api/ops/deposits/reverify", adminOnly, async (req, res) => {
-  try {
-    const pd = require("../providers/paydunya.js");
-    const pend = await sql()`SELECT provider_ref FROM transactions WHERE type = 'deposit' AND provider = 'paydunya' AND status = 'pending' AND provider_ref IS NOT NULL ORDER BY created_at LIMIT 50`;
-    let credited = 0, unpaid = 0, errors = 0;
-    for (const p of pend) {
-      try {
-        const c = await pd.confirmInvoice(p.provider_ref);
-        if (c.status === "completed") { const r = await creditDeposit(p.provider_ref); if (r.length) credited++; } else unpaid++;
-      } catch (e) { errors++; }
-    }
-    res.json({ checked: pend.length, credited, unpaid, errors });
-  } catch (e) { console.error("REVERIFY", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// Valide et envoie UN retrait en attente (montants élevés compris).
-router.post("/api/ops/withdraw/:id/send", adminOnly, async (req, res) => {
-  try {
-    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const q = sql();
-    const t = await q`SELECT provider AS operator, provider_ref AS phone, amount::float AS amount FROM transactions WHERE id = ${req.params.id}::uuid AND type = 'withdrawal' AND status = 'pending'`;
-    if (!t.length) return res.status(409).json({ error: "Retrait introuvable ou déjà traité." });
-    const r = await dispatchPayout(q, req.params.id, t[0].operator, t[0].phone, t[0].amount);
-    res.json({ result: r.status, route: r.route, detail: r.detail || null });
-  } catch (e) { console.error("WD_SEND", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// Envoi par LOT (20 retraits maximum, un à la fois, avec une courte pause) ; uniquement des identifiants choisis par l'administrateur.
-router.post("/api/ops/batch/send", adminOnly, async (req, res) => {
-  try {
-    const ids = Array.isArray(req.body?.ids) ? [...new Set(req.body.ids.map(String))].slice(0, 20) : [];
-    if (!ids.length || ids.some((i) => !UUID.test(i))) return res.status(400).json({ error: "Liste d'identifiants invalide (20 maximum)." });
-    const q = sql();
-    const out = [];
-    for (const id of ids) {
-      const t = await q`SELECT provider AS operator, provider_ref AS phone, amount::float AS amount FROM transactions WHERE id = ${id}::uuid AND type = 'withdrawal' AND status = 'pending'`;
-      if (!t.length) { out.push({ id, result: "ignoré" }); continue; }
-      const r = await dispatchPayout(q, id, t[0].operator, t[0].phone, t[0].amount);
-      out.push({ id, result: r.status, detail: r.detail || null });
-      await new Promise((ok) => setTimeout(ok, 400));
-    }
-    res.json({ results: out, sent: out.filter((o) => o.result === "sent").length });
-  } catch (e) { console.error("WD_BATCH", e.message); res.status(500).json({ error: "Erreur serveur." }); }
-});
-
-// Interroge MTN pour un retrait envoyé par le canal MoMo direct, et met à jour le statut (jamais de remboursement automatique).
-router.post("/api/ops/withdraw/:id/check", adminOnly, async (req, res) => {
-  try {
-    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const st = await require("../providers/payoutRouter.js").momoStatus(req.params.id);
-    if (st !== "pending") await sql()`UPDATE transactions SET status = ${st} WHERE id = ${req.params.id}::uuid AND type = 'withdrawal' AND status IN ('processing','pending')`;
-    res.json({ status: st });
-  } catch (e) { console.error("WD_CHECK", e.message); res.status(502).json({ error: "Vérification impossible : " + String(e.message).slice(0, 100) }); }
-});
-
-module.exports = router;
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>OMNICHECK — Administration</title>
+<style>
+:root{--bg:#070b14;--card:#0e1628;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--warn:#ffcc4d;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,sans-serif;padding:20px}
+.w{max-width:760px;margin:0 auto}h1{font-size:22px;margin-bottom:4px}h2{font-size:16px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#f4f7fb;color:#0b1426;font-size:15px}
+button{cursor:pointer;border:0;border-radius:10px;padding:12px 16px;font-weight:700;background:var(--mint);color:#05261c;margin:10px 8px 0 0}
+.sec{background:#131d33;color:var(--txt);border:1px solid var(--line)}.mut{color:var(--mut);font-size:13px}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.k div{background:#131d33;border-radius:12px;padding:12px}.k b{display:block;font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+.ok{color:var(--mint)}.bad{color:var(--warn)}.hide{display:none}
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body><div class="w">
+<h1>OMNICHECK — Administration</h1><p class="mut">Inventaire, opérations non abouties, avis clients. La clé n'est jamais enregistrée.</p>
+<div class="card"><input id="key" type="password" placeholder="Clé administrateur (ADMIN_KEY)" autocomplete="off"><input id="otp" inputmode="numeric" maxlength="6" placeholder="Code 2FA à 6 chiffres (si activé)" autocomplete="one-time-code" style="margin-top:8px">
+<button onclick="load()">Afficher le rapport</button><button class="sec" onclick="run()">Lancer l'inventaire maintenant</button><div id="err" class="bad"></div></div>
+<div id="out" class="hide">
+<div class="card"><h2>Tableau de bord</h2>
+<div class="k" id="dk"></div>
+<p class="mut" style="margin-top:12px">Entrées (dépôts) en vert, sorties (retraits) en jaune, par jour.</p><div id="ch"></div>
+<div class="mut" id="chl"></div>
+<button onclick="exportXlsx()">Exporter en Excel</button><button class="sec" onclick="backfillIds()">Attribuer un identifiant OM à tous les clients</button><button class="sec" onclick="loadDash()">Actualiser</button></div>
+<div class="card"><h2>Demandes à traiter</h2><div class="k" id="rq"></div></div>
+<div class="card"><h2>Fonds réels &amp; couverture</h2><p class="mut">Déclarez ici le solde réel de chaque compte (banque, Mobile Money, PayDunya, hot/cold wallet), converti en FCFA. OMNIPAY vérifie que vos fonds couvrent les soldes de vos clients. Adresses publiques uniquement : jamais de clé privée.</p>
+<div class="k" id="cv"></div><div id="cva" class="bad" style="margin-top:8px"></div><div style="overflow-x:auto"><table id="fd"></table></div>
+<h2 style="margin-top:14px">Ajouter / modifier un compte</h2>
+<input id="fc" placeholder="Code (ex. ECOBANK, HOT_BSC, COLD_1)"><input id="fl" placeholder="Libellé" style="margin-top:6px">
+<select id="fk" style="width:100%;padding:12px;margin-top:6px;border-radius:10px"><option value="bank">Banque (fiat)</option><option value="momo">Mobile Money</option><option value="psp">Prestataire (PayDunya…)</option><option value="hot">Hot wallet</option><option value="cold">Cold wallet</option></select>
+<input id="fa" placeholder="Adresse publique / IBAN / numéro" style="margin-top:6px"><input id="fh" type="number" placeholder="Plafond hot wallet en FCFA (facultatif)" style="margin-top:6px">
+<button onclick="saveFund()">Enregistrer le compte</button>
+<h2 style="margin-top:14px">Déclarer un solde</h2><input id="bc" placeholder="Code du compte"><input id="bv" type="number" placeholder="Solde en FCFA équivalent" style="margin-top:6px"><button onclick="saveBal()">Enregistrer le solde</button></div>
+<div class="card"><h2>Ledger central</h2><p class="mut">Journal inviolable : chaque opération et chaque changement de statut, avec référence, order_id, origine, frais et tx hash.</p>
+<div id="lg" class="mut"></div><input id="lq" placeholder="Rechercher un order_id / une référence de réconciliation" style="margin-top:8px"><button onclick="lgSearch()">Rechercher</button><button class="sec" onclick="lgVerify()">Vérifier l'intégrité</button><button class="sec" onclick="lgSync()">Synchroniser maintenant</button>
+<div style="overflow-x:auto"><table id="le"></table></div></div>
+<div class="card"><h2>Alertes conformité (LAB/FT)</h2><p class="mut">Signaux à examiner : rien n'est bloqué ni déclaré automatiquement. Les limites et le niveau KYC se règlent ci-dessous.</p>
+<table id="am"></table><button class="sec" onclick="amlScan()">Analyser maintenant</button>
+<h2 style="margin-top:14px">Niveau KYC d'un client</h2><input id="ke" placeholder="E-mail du client"><select id="ks" style="width:100%;padding:12px;margin-top:6px;border-radius:10px"><option value="verified">Vérifié (pièce contrôlée)</option><option value="pending">En cours</option><option value="rejected">Refusé</option><option value="unverified">Non vérifié</option></select><button onclick="setKyc()">Mettre à jour</button><div id="pol" class="mut"></div></div>
+<div class="card"><h2>Alertes et vulnérabilités</h2><div id="an" class="bad"></div><table id="sec"></table><h2 style="margin-top:14px">Écarts solde / journal</h2><table id="gp"></table></div>
+<div class="card"><h2>Clients : entrées, sorties, transferts</h2><div style="overflow-x:auto"><table id="tp"></table></div></div>
+<div class="card"><h2>Mes comptes de réception (adresses publiques)</h2><p class="mut">Affichés aux clients dans « Dépôt &amp; retrait directs ». Aucune clé privée n'est stockée : pour modifier, changez OMNIPAY_PAYIN_ACCOUNTS dans Render.</p><table id="ac"></table></div>
+<div class="card"><h2>État : <span id="st"></span></h2><div id="al" class="bad"></div><div class="k" id="kp"></div><p class="mut" id="gen" style="margin-top:8px"></p></div>
+<div class="card"><h2>Mouvements des dernières 24 h</h2><table id="fl"></table></div>
+<div class="card"><h2>Opérations non abouties (&gt; 30 min)</h2><p class="mut">Signalées pour vérification : OMNICHECK n'exécute aucun paiement automatiquement.</p><table id="nc"></table></div>
+<div class="card"><h2>Dépôts à valider</h2><p class="mut">Vérifiez la réception réelle (relevé, MetaMask, Mobile Money) avant de créditer. Un seul crédit possible par demande.</p><table id="md"></table></div>
+<div class="card"><h2>Retraits à exécuter</h2><p class="mut">Le solde du client est déjà réservé. Payez, puis cliquez « Payé » ; ou « Refuser » pour rembourser.</p><table id="mp"></table></div>
+<div class="card"><h2>Remise à niveau (anciens clients)</h2><p class="mut">Un seul bouton : identifiants OM, ledger, re-vérification PayDunya des dépôts en attente, analyse conformité. <b>Aucun remboursement n'est fait automatiquement</b> : vous les validez ligne par ligne dans « Retraits bloqués ».</p><button onclick="upgrade()">Remettre à niveau maintenant</button><div id="up" class="mut" style="margin-top:8px"></div></div>
+<div class="card"><h2>Retraits bloqués (ancien système inclus)</h2><p class="mut">Argent débité au client mais jamais livré. <b>Vérifiez d'abord dans votre Mobile Money si vous l'avez déjà payé</b> : « Déjà payé » ferme la ligne sans rembourser ; « Rembourser » recrédite le client (montant + commission) une seule fois.</p>
+<div id="auto" class="mut"></div><table id="sk"></table>
+<button onclick="sendBatch()">Envoyer la sélection (lot)</button><button onclick="refundSel()">Rembourser la sélection</button><button class="sec" onclick="selAll()">Tout sélectionner</button><button class="sec" onclick="reverify()">Re-vérifier les dépôts PayDunya</button></div>
+<div class="card"><h2>Avis, critiques et limites des clients</h2><table id="fb"></table></div>
+</div>
+<script>
+const $=i=>document.getElementById(i),f=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const H=()=>({'x-admin-key':$('key').value,'x-admin-otp':($('otp').value||'').trim()});
+async function call(p,m){const r=await fetch(p,{method:m||'GET',headers:H()});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error((d.error||d.message||'Erreur')+' [HTTP '+r.status+' '+p.split('?')[0]+']');return d}
+function show(r){$('out').classList.remove('hide');$('st').textContent=r.status;$('st').className=r.status==='OK'?'ok':'bad';
+$('al').innerHTML=(r.alerts||[]).map(a=>'⚠ '+esc(a)).join('<br>');
+$('kp').innerHTML=[['Clients',r.users.total],['Nouveaux 24 h',r.users.new_24h],['Soldes cumulés (FCFA)',f(r.wallets.total_balance)],['Commissions 24 h',f(r.commissions.commissions_24h)],['Commissions totales',f(r.commissions.commissions_total)],['Avis reçus',r.feedback.total+' (moy. '+r.feedback.avg_rating+')']].map(x=>'<div>'+x[0]+'<b>'+esc(x[1])+'</b></div>').join('');
+$('gen').textContent='Généré le '+new Date(r.generatedAt).toLocaleString('fr-FR');
+$('fl').innerHTML='<tr><th>Type</th><th>Statut</th><th>Nb</th><th>Total</th></tr>'+(r.flows24h||[]).map(x=>`<tr><td>${esc(x.type)}</td><td>${esc(x.status)}</td><td>${x.n}</td><td>${f(x.total)}</td></tr>`).join('');
+$('nc').innerHTML='<tr><th>Type</th><th>Montant</th><th>Fournisseur</th><th>Statut</th><th>Âge</th></tr>'+((r.notCompleted||[]).map(x=>`<tr><td>${esc(x.type)}</td><td>${f(x.amount)}</td><td>${esc(x.provider)}</td><td>${esc(x.status)}</td><td>${x.age_minutes} min</td></tr>`).join('')||'<tr><td colspan=5 class="ok">Aucune</td></tr>')}
+let errs=[];
+async function sec(name,fn){try{await fn();return true}catch(e){errs.push(name+' : '+e.message);return false}}
+async function load(){$('err').textContent='';errs=[];
+ await sec('rapport',async()=>{const d=await call('/api/omnicheck/report');show(d.live)});
+ await sec('tableau de bord (/api/admin)',loadDash);await sec('fonds (/api/ledger)',loadFunds);await sec('conformité (/api/compliance)',loadAml);await sec('ledger (/api/ledger)',lgSearch);
+ await sec('dépôts directs (/api/manual)',loadManual);await sec('retraits bloqués (/api/ops)',loadStuck);
+ await sec('avis',async()=>{const fb=await call('/api/omnicheck/feedback');
+$('fb').innerHTML='<tr><th>Date</th><th>Type</th><th>Note</th><th>Message</th><th>Contact</th></tr>'+(fb.feedback.map(x=>`<tr><td>${new Date(x.created_at).toLocaleDateString('fr-FR')}</td><td>${esc(x.category)}</td><td>${esc(x.rating)}</td><td>${esc(x.message)}</td><td>${esc(x.contact)}</td></tr>`).join('')||'<tr><td colspan=5 class="mut">Aucun avis pour le moment</td></tr>')});
+ if(errs.length)$('err').innerHTML='Sections indisponibles (les autres fonctionnent) :<br>'+errs.map(esc).join('<br>')+'<br><span class="mut">« Route introuvable » = fichier pas encore déposé sur GitHub ou non chargé : voir les logs Render ("NON chargées").</span>'}
+async function upgrade(){const o=$('up');o.textContent='';const log=t=>{o.innerHTML+=esc(t)+'<br>'};
+ const step=async(n,fn)=>{try{log('✔ '+n+' : '+await fn())}catch(e){log('✖ '+n+' : '+e.message)}};
+ await step('Identifiants OM',async()=>{const d=await post('/api/id/backfill');return d.created+' créé(s)'});
+ await step('Synchronisation du ledger',async()=>{const d=await post('/api/ledger/sync');return JSON.stringify(d).slice(0,120)});
+ await step('Re-vérification des dépôts PayDunya',async()=>{const d=await post('/api/ops/deposits/reverify');return `vérifiés ${d.checked}, crédités ${d.credited}, non payés ${d.unpaid}, erreurs ${d.errors}`});
+ await step('Analyse conformité',async()=>{const d=await post('/api/compliance/scan');return JSON.stringify(d).slice(0,120)});
+ log('Terminé. Remboursez ensuite ligne par ligne dans « Retraits bloqués » (après vérification dans votre Mobile Money).');await load()}
+async function post(p,b){const r=await fetch(p,{method:'POST',headers:{...H(),'content-type':'application/json'},body:JSON.stringify(b||{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error((d.error||d.message||'Erreur')+' [HTTP '+r.status+' '+p.split('?')[0]+']');return d}
+const LV={ok:'<span class="ok">✔ OK</span>',warn:'<span class="bad">⚠ À voir</span>',bad:'<span style="color:var(--err)">✖ À corriger</span>'};
+function chart(sr){const W=640,H=180,pad=24,n=sr.length,max=Math.max(1,...sr.map(x=>Math.max(x.entrees,x.sorties))),bw=(W-pad)/n;
+ let g='';sr.forEach((x,i)=>{const x0=pad+i*bw,h1=x.entrees/max*(H-30),h2=x.sorties/max*(H-30);
+  g+=`<rect x="${x0+bw*.1}" y="${H-20-h1}" width="${bw*.38}" height="${h1}" fill="#34e8b0"><title>${x.day} entrées ${f(x.entrees)}</title></rect><rect x="${x0+bw*.5}" y="${H-20-h2}" width="${bw*.38}" height="${h2}" fill="#ffcc4d"><title>${x.day} sorties ${f(x.sorties)}</title></rect>`});
+ return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:#0b1426;border-radius:10px"><text x="4" y="12" fill="#8fa0bf" font-size="10">${f(max)}</text><line x1="${pad}" x2="${W}" y1="${H-20}" y2="${H-20}" stroke="#22304d"/>${g}<text x="${pad}" y="${H-4}" fill="#8fa0bf" font-size="10">${sr[0].day}</text><text x="${W-60}" y="${H-4}" fill="#8fa0bf" font-size="10">${sr[n-1].day}</text></svg>`}
+async function loadDash(){const d=await call('/api/admin/dash?days=30');const k=d.kpi;
+ $('dk').innerHTML=[['Clients',k.clients],['Soldes cumulés',f(k.soldes)+' F'],['Entrées totales',f(k.entrees_total)+' F'],['Sorties totales',f(k.sorties_total)+' F'],['Commissions',f(k.commissions_total)+' F']].map(x=>`<div>${x[0]}<b>${x[1]}</b></div>`).join('');
+ $('ch').innerHTML=chart(d.series);const t=d.series.reduce((a,x)=>({e:a.e+x.entrees,s:a.s+x.sorties,t:a.t+x.transferts,c:a.c+x.commissions}),{e:0,s:0,t:0,c:0});
+ $('chl').textContent=`30 jours : entrées ${f(t.e)} F · sorties ${f(t.s)} F · transferts internes ${f(t.t)} F · commissions ${f(t.c)} F`;
+ const r=d.requests;$('rq').innerHTML=[['Retraits bloqués',r.stuckWithdrawals],['Dépôts PayDunya en attente',r.pendingDeposits],['Dépôts directs à valider',r.manualDeposits],['Retraits directs à payer',r.manualPayouts]].map(x=>`<div>${x[0]}<b class="${x[1]?'bad':'ok'}">${x[1]}</b></div>`).join('');
+ $('an').innerHTML=(d.anomalies.length?d.anomalies.map(a=>'⚠ '+esc(a)).join('<br>'):'<span class="ok">Aucune anomalie détectée.</span>')+(d.accountsWithoutId?'<br>⚠ '+d.accountsWithoutId+' client(s) sans identifiant OM (bouton ci-dessus).':'');
+ $('sec').innerHTML='<tr><th>Contrôle</th><th>État</th><th>Détail</th></tr>'+d.security.map(x=>`<tr><td>${esc(x.item)}</td><td>${LV[x.level]||''}</td><td class="mut">${esc(x.note)}</td></tr>`).join('');
+ $('gp').innerHTML=d.gaps.length?'<tr><th>Client</th><th>Solde</th><th>Attendu (journal)</th></tr>'+d.gaps.map(g=>`<tr><td>${esc(g.email)}</td><td>${f(g.solde)}</td><td>${f(g.attendu)}</td></tr>`).join(''):'<tr><td class="ok">Aucun écart.</td></tr>';
+ $('tp').innerHTML='<tr><th>Client</th><th>Solde</th><th>Entrées</th><th>Sorties</th><th>Envoyés</th><th>Reçus</th><th>Op.</th></tr>'+d.top.map(x=>`<tr><td>${esc(x.email)}</td><td>${f(x.solde)}</td><td>${f(x.entrees)}</td><td>${f(x.sorties)}</td><td>${f(x.envoyes)}</td><td>${f(x.recus)}</td><td>${x.operations}</td></tr>`).join('');
+ $('ac').innerHTML=d.accounts.length?'<tr><th>Compte</th><th>Réseau</th><th>Adresse / numéro</th></tr>'+d.accounts.map(a=>`<tr><td>${esc(a.label)}</td><td>${esc(a.network)}</td><td style="word-break:break-all">${esc(a.detail)}</td></tr>`).join(''):'<tr><td class="bad">Aucun compte défini.</td></tr>'}
+async function backfillIds(){try{const d=await post('/api/id/backfill');alert(d.created+' identifiant(s) créé(s).');await loadDash()}catch(x){$('err').textContent=x.message}}
+async function exportXlsx(){try{const d=await call('/api/admin/export?days=90');if(!window.XLSX)return alert('Bibliothèque Excel non chargée (connexion ?).');
+ const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a.length?a:[{info:'aucune donnée'}]),n);
+ const le=await call('/api/ledger/entries?limit=5000');add('Ledger',le.entries);add('Transactions',d.transactions);add('Clients',d.clients);add('Depots directs',d.deposits);add('Retraits directs',d.payouts);
+ XLSX.writeFile(wb,'omnipay-export-'+new Date().toISOString().slice(0,10)+'.xlsx')}catch(x){$('err').textContent=x.message}}
+async function loadFunds(){const c=await call('/api/ledger/coverage'),f=await call('/api/ledger/funds');
+ $('cv').innerHTML=[['Dû aux clients',f0(c.liabilities)+' F'],['Fonds déclarés',f0(c.held)+' F'],['Couverture',c.ratio==null?'—':(c.ratio*100).toFixed(1)+' %']].map(x=>`<div>${x[0]}<b class="${x[0]==='Couverture'&&c.ratio!=null&&c.ratio<1?'bad':''}">${x[1]}</b></div>`).join('');
+ $('cva').innerHTML=c.alerts.map(a=>'⚠ '+esc(a)).join('<br>');
+ $('fd').innerHTML='<tr><th>Code</th><th>Type</th><th>Libellé</th><th>Solde déclaré</th><th>Mouvement ledger</th><th>Date</th></tr>'+(f.funds.length?f.funds.map(x=>`<tr><td>${esc(x.code)}</td><td>${esc(x.kind)}</td><td>${esc(x.label)}</td><td>${x.balance_xof==null?'—':f0(x.balance_xof)}</td><td>${f0(x.net_movement)}</td><td>${x.declared_at?new Date(x.declared_at).toLocaleDateString('fr-FR'):''}</td></tr>`).join(''):'<tr><td colspan="6" class="bad">Aucun compte : ajoutez vos comptes réels ci-dessous.</td></tr>')}
+const f0=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
+async function saveFund(){try{await post('/api/ledger/funds',{code:$('fc').value,label:$('fl').value,kind:$('fk').value,address:$('fa').value,hotMaxXof:$('fh').value});await loadFunds()}catch(x){$('err').textContent=x.message}}
+async function saveBal(){try{await post('/api/ledger/funds/'+encodeURIComponent($('bc').value)+'/balance',{balanceXof:$('bv').value});await loadFunds()}catch(x){$('err').textContent=x.message}}
+function lgTable(rows){$('le').innerHTML='<tr><th>#</th><th>Réf.</th><th>order_id</th><th>Type</th><th>Sens</th><th>Origine</th><th>Montant</th><th>Frais</th><th>Statut</th><th>tx hash</th></tr>'+rows.map(e=>`<tr><td>${e.seq}</td><td>${esc(e.ref)}</td><td style="word-break:break-all">${esc(e.order_id)}</td><td>${esc(e.kind)}</td><td>${esc(e.direction)}</td><td>${esc(e.origin)}</td><td>${f0(e.amount)}</td><td>${f0(e.fee)}</td><td>${esc(e.status)}</td><td style="word-break:break-all">${esc(e.tx_hash||'')}</td></tr>`).join('')}
+async function lgSearch(){try{const q=$('lq').value.trim();const d=await call('/api/ledger/entries?limit=100'+(q?'&order_id='+encodeURIComponent(q):''));lgTable(d.entries)}catch(x){$('err').textContent=x.message}}
+async function lgVerify(){try{const d=await call('/api/ledger/verify');$('lg').innerHTML=d.ok?`<span class="ok">✔ Journal intègre (${d.count} lignes).</span>`:`<span style="color:var(--err)">✖ ALTÉRATION détectée à la ligne ${d.brokenAtSeq}.</span>`}catch(x){$('err').textContent=x.message}}
+async function lgSync(){try{const d=await post('/api/ledger/sync');$('lg').textContent=d.added+' ligne(s) ajoutée(s).';await lgSearch()}catch(x){$('err').textContent=x.message}}
+async function loadAml(){const d=await call('/api/compliance/alerts');const p=await call('/api/compliance/policy');
+ $('am').innerHTML='<tr><th>Règle</th><th>Client</th><th>Détail</th><th></th></tr>'+(d.alerts.length?d.alerts.map(a=>`<tr><td>${esc(a.rule)}</td><td>${esc(a.email||'')} <span class="mut">(${esc(a.kyc_status||'')})</span></td><td>${esc(a.detail)}</td><td><button class="sec" data-a="amlrev" data-id="${esc(a.id)}">Examinée</button></td></tr>`).join(''):'<tr><td colspan="4" class="ok">Aucune alerte ouverte.</td></tr>');
+ $('pol').textContent=`Limites : non vérifié ${f0(p.unverified.perTx)} / ${f0(p.unverified.perDay)} F par retrait / 24 h ; vérifié ${f0(p.verified.perTx)} / ${f0(p.verified.perDay)} F. Validation manuelle dès ${f0(p.approvalXof)} F.`}
+async function amlScan(){try{const d=await post('/api/compliance/scan');alert(d.created+' nouvelle(s) alerte(s).');await loadAml()}catch(x){$('err').textContent=x.message}}
+async function setKyc(){try{await post('/api/compliance/kyc',{email:$('ke').value,status:$('ks').value});alert('Statut KYC mis à jour.')}catch(x){$('err').textContent=x.message}}
+async function sendBatch(){const ids=[...document.querySelectorAll('.sel:checked')].map(c=>c.value);if(!ids.length)return alert('Sélectionnez au moins une ligne.');
+ if(!confirm(`Envoyer ${ids.length} retrait(s) vers les opérateurs ? Chaque retrait ne peut partir qu'une seule fois.`))return;
+ try{const d=await post('/api/ops/batch/send',{ids});alert(d.sent+' envoyé(s) sur '+ids.length+'.');await loadStuck()}catch(x){$('err').textContent=x.message}}
+async function loadStuck(){const d=await call('/api/ops/stuck');$('auto').textContent='Envoi automatique PayDunya : '+(d.autoPayout?'ACTIVÉ':'désactivé (traitement manuel)');
+ $('sk').innerHTML='<tr><th></th><th>Client</th><th>Opérateur</th><th>Numéro</th><th>FCFA</th><th>Statut</th><th>Âge</th><th></th></tr>'+(d.withdrawals.length?d.withdrawals.map(x=>`<tr><td><input type="checkbox" class="sel" value="${esc(x.id)}" style="width:auto"></td><td>${esc(x.email)}</td><td>${esc(x.operator)}</td><td>${esc(x.phone)}</td><td>${f(x.amount)}+${f(x.fee)}</td><td>${esc(x.status)}</td><td>${Math.round((Date.now()-new Date(x.created_at))/86400000)} j</td><td>${x.status==='pending'?`<button data-a="wsend" data-id="${esc(x.id)}">Envoyer${x.amount>=d.approvalXof?' (validation)':''}</button>`:''}<button class="sec" data-a="wpaid" data-id="${esc(x.id)}">Déjà payé</button></td></tr>`).join(''):'<tr><td colspan="8" class="ok">Aucun retrait bloqué.</td></tr>');}
+function selAll(){document.querySelectorAll('.sel').forEach(c=>c.checked=true)}
+async function refundSel(){const ids=[...document.querySelectorAll('.sel:checked')].map(c=>c.value);if(!ids.length)return alert('Sélectionnez au moins une ligne.');
+ if(!confirm(`Rembourser ${ids.length} retrait(s) ? Chaque client est recrédité (montant + commission) UNE seule fois. Vérifiez que vous ne les avez pas déjà payés.`))return;
+ try{const d=await post('/api/ops/refund',{ids,includeFee:true,note:'Remboursement administrateur'});alert(`${d.refundedCount} remboursé(s), total ${f(d.totalRefunded)} FCFA. Ignorés : ${d.skipped.length}.`);await loadStuck()}catch(x){$('err').textContent=x.message}}
+async function reverify(){try{const d=await post('/api/ops/deposits/reverify');alert(`Vérifiés : ${d.checked}, crédités : ${d.credited}, non payés : ${d.unpaid}, erreurs : ${d.errors}.`)}catch(x){$('err').textContent=x.message}}
+async function loadManual(){const d=await call('/api/manual/admin/pending');
+ $('md').innerHTML='<tr><th>Réf.</th><th>Client</th><th>Moyen</th><th>Montant</th><th>Preuve</th><th></th></tr>'+(d.deposits.map(x=>`<tr><td>${esc(x.reference)}</td><td>${esc(x.email||x.phone)}</td><td>${esc(x.method)}</td><td>${esc(x.amount)} ${esc(x.currency)}</td><td style="word-break:break-all">${esc(x.tx_ref)}</td><td><button class="sec" data-a="credit" data-id="${esc(x.id)}" data-cur="${esc(x.currency)}" data-amt="${esc(x.amount)}">Créditer</button>${/^\d{12,25}$/.test(String(x.tx_ref||'').trim())?`<button class="sec" data-a="p2pv" data-id="${esc(String(x.tx_ref).trim())}">Vérifier Binance</button>`:''}<button class="sec" data-a="drej" data-id="${esc(x.id)}">Refuser</button></td></tr>`).join('')||'<tr><td colspan=6 class="ok">Aucun dépôt en attente</td></tr>');
+ $('mp').innerHTML='<tr><th>Réf.</th><th>Client</th><th>Moyen</th><th>Destination</th><th>FCFA</th><th></th></tr>'+(d.payouts.map(x=>`<tr><td>${esc(x.reference)}</td><td>${esc(x.email||x.phone)}</td><td>${esc(x.method)}</td><td style="word-break:break-all">${esc(x.destination)}</td><td>${f(x.amount)}</td><td><button class="sec" data-a="paid" data-id="${esc(x.id)}">Payé</button><button class="sec" data-a="prej" data-id="${esc(x.id)}">Refuser</button></td></tr>`).join('')||'<tr><td colspan=6 class="ok">Aucun retrait en attente</td></tr>')}
+document.addEventListener('click',async e=>{const b=e.target.closest('button[data-a]');if(!b)return;const id=b.dataset.id,a=b.dataset.a;$('err').textContent='';
+ try{
+  if(a==='credit'){const v=prompt(`Montant en FCFA à créditer (le client a déclaré ${b.dataset.amt} ${b.dataset.cur}) :`);if(!v)return;if(!confirm(`Créditer ${v} FCFA ? Cette action ne peut pas être répétée.`))return;await post(`/api/manual/admin/deposit/${id}/credit`,{amountXof:Number(v)})}
+  else if(a==='p2pv'){const r=await call('/api/p2p/verify/'+encodeURIComponent(id));alert(r.found?`Ordre ${r.order.orderNumber} : ${r.completed?'TERMINÉ':'statut '+r.order.status}\n${r.order.tradeType} ${r.order.amount} ${r.order.asset} = ${r.order.totalPrice} ${r.order.fiat}\nContrepartie : ${r.order.counterparty||'?'}\nCréditez seulement si TERMINÉ et si le sens et le montant correspondent.`:r.message);return}
+  else if(a==='drej'){const n=prompt('Motif du refus (facultatif) :');if(n===null)return;await post(`/api/manual/admin/deposit/${id}/reject`,{note:n})}
+  else if(a==='amlrev'){const n=prompt('Note d\'examen (facultatif) :');if(n===null)return;await post(`/api/compliance/alerts/${id}/review`,{note:n});await loadAml();return}
+  else if(a==='wsend'){if(!confirm('Envoyer ce retrait maintenant ? Il ne pourra partir qu\'une seule fois.'))return;const r=await post(`/api/ops/withdraw/${id}/send`);alert('Résultat : '+r.result+(r.detail?' — '+r.detail:''));await loadStuck();return}
+  else if(a==='wpaid'){if(!confirm('Confirmez-vous avoir déjà payé ce retrait ? La ligne sera fermée sans remboursement.'))return;await post(`/api/ops/withdraw/${id}/paid`);await loadStuck();return}
+  else if(a==='paid'){if(!confirm('Confirmez-vous avoir effectué ce paiement ?'))return;await post(`/api/manual/admin/payout/${id}/paid`)}
+  else if(a==='prej'){const n=prompt('Motif du refus (facultatif) : le client sera remboursé.');if(n===null)return;await post(`/api/manual/admin/payout/${id}/reject`,{note:n})}
+  await loadManual()}catch(x){$('err').textContent=x.message}});
+async function run(){$('err').textContent='';try{const d=await call('/api/omnicheck/run','POST');show(d.report)}catch(e){$('err').textContent=e.message}}
+</script></div></body></html>
