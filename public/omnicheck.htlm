@@ -55,7 +55,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;b
 const $=i=>document.getElementById(i),f=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const H=()=>({'x-admin-key':$('key').value,'x-admin-otp':($('otp').value||'').trim()});
-async function call(p,m){const r=await fetch(p,{method:m||'GET',headers:H()});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
+async function call(p,m){const r=await fetch(p,{method:m||'GET',headers:H()});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error((d.error||d.message||'Erreur')+' [HTTP '+r.status+' '+p.split('?')[0]+']');return d}
 function show(r){$('out').classList.remove('hide');$('st').textContent=r.status;$('st').className=r.status==='OK'?'ok':'bad';
 $('al').innerHTML=(r.alerts||[]).map(a=>'⚠ '+esc(a)).join('<br>');
 $('kp').innerHTML=[['Clients',r.users.total],['Nouveaux 24 h',r.users.new_24h],['Soldes cumulés (FCFA)',f(r.wallets.total_balance)],['Commissions 24 h',f(r.commissions.commissions_24h)],['Commissions totales',f(r.commissions.commissions_total)],['Avis reçus',r.feedback.total+' (moy. '+r.feedback.avg_rating+')']].map(x=>'<div>'+x[0]+'<b>'+esc(x[1])+'</b></div>').join('');
@@ -78,7 +78,7 @@ async function upgrade(){const o=$('up');o.textContent='';const log=t=>{o.innerH
  await step('Re-vérification des dépôts PayDunya',async()=>{const d=await post('/api/ops/deposits/reverify');return `vérifiés ${d.checked}, crédités ${d.credited}, non payés ${d.unpaid}, erreurs ${d.errors}`});
  await step('Analyse conformité',async()=>{const d=await post('/api/compliance/scan');return JSON.stringify(d).slice(0,120)});
  log('Terminé. Remboursez ensuite ligne par ligne dans « Retraits bloqués » (après vérification dans votre Mobile Money).');await load()}
-async function post(p,b){const r=await fetch(p,{method:'POST',headers:{...H(),'content-type':'application/json'},body:JSON.stringify(b||{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
+async function post(p,b){const r=await fetch(p,{method:'POST',headers:{...H(),'content-type':'application/json'},body:JSON.stringify(b||{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error((d.error||d.message||'Erreur')+' [HTTP '+r.status+' '+p.split('?')[0]+']');return d}
 const LV={ok:'<span class="ok">✔ OK</span>',warn:'<span class="bad">⚠ À voir</span>',bad:'<span style="color:var(--err)">✖ À corriger</span>'};
 function chart(sr){const W=640,H=180,pad=24,n=sr.length,max=Math.max(1,...sr.map(x=>Math.max(x.entrees,x.sorties))),bw=(W-pad)/n;
  let g='';sr.forEach((x,i)=>{const x0=pad+i*bw,h1=x.entrees/max*(H-30),h2=x.sorties/max*(H-30);
