@@ -46,6 +46,29 @@ function intlPhone(p) {
 }
 const validLocal = (p) => { const d = String(p || "").replace(/\D/g, ""); return d.length >= 8 && d.length <= 15; };
 
+const approvalXof = () => { const v = Number(process.env.APPROVAL_XOF); return Number.isFinite(v) && v > 0 ? v : 200000; };
+
+// Envoi d'UN retrait vers le canal choisi pour l'opérateur. Le statut 'pending' est « réservé » (→ 'processing') AVANT l'appel,
+// donc un même retrait ne peut jamais partir deux fois (clic double, lot + validation, etc.).
+async function dispatchPayout(q, txId, operator, phone, amount) {
+  const claim = await q`UPDATE transactions SET status = 'processing' WHERE id = ${txId}::uuid AND type = 'withdrawal' AND status = 'pending' RETURNING id`;
+  if (!claim.length) return { status: "skipped" };
+  let r;
+  try {
+    const router = require("../providers/payoutRouter.js");
+    r = await router.payout({ txId, operator, phone, amount, callbackUrl: `${baseUrl()}/wallet/withdraw/callback?id=${txId}&sig=${sig(txId)}` });
+  } catch (e) { r = { status: "uncertain", detail: String(e.response?.data?.response_text || e.message).slice(0, 160), route: "?" }; }
+  const meta = JSON.stringify({ payout: { route: r.route, result: r.status, detail: r.detail || null, at: new Date().toISOString() } });
+  if (r.status === "sent" || r.status === "uncertain") {
+    // sent : en attente de confirmation ; uncertain : reste 'processing' pour vérification humaine (jamais de renvoi automatique)
+    await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${meta}::jsonb WHERE id = ${txId}::uuid`;
+  } else {
+    // refused / unavailable : rien n'est parti -> la demande redevient 'pending'
+    await q`UPDATE transactions SET status = 'pending', metadata = coalesce(metadata,'{}'::jsonb) || ${meta}::jsonb WHERE id = ${txId}::uuid AND status = 'processing'`;
+  }
+  return r;
+}
+
 // ---------- Opérateurs du client ----------
 router.get("/api/operators", requireAuth, async (req, res) => {
   try {
@@ -112,6 +135,16 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
     }
     if (!MODES[operator]) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
     if (!validLocal(phone)) return res.status(400).json({ error: "Numéro Mobile Money invalide." });
+    // Limites par niveau KYC (voir routes/compliance.js). Si le module est absent, aucune limite supplémentaire n'est appliquée.
+    try {
+      const comp = require("./compliance.js");
+      const kyc = (await q`SELECT kyc_status FROM users WHERE id = ${req.user.userId}::uuid`)[0]?.kyc_status;
+      const lim = comp.limitsFor(kyc);
+      if (amount > lim.perTx) return res.status(400).json({ error: `Limite par retrait : ${lim.perTx} FCFA. Faites vérifier votre identité pour relever vos limites.` });
+      const day = await q`SELECT coalesce(sum(t.amount), 0)::float AS v FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+        WHERE w.user_id = ${req.user.userId}::uuid AND t.type = 'withdrawal' AND t.status NOT IN ('cancelled','refunded','failed') AND t.created_at > now() - interval '24 hours'`;
+      if (day[0].v + amount > lim.perDay) return res.status(400).json({ error: `Limite sur 24 h atteinte (${lim.perDay} FCFA). Réessayez plus tard ou faites vérifier votre identité.` });
+    } catch (e) { if (e && e.code !== "MODULE_NOT_FOUND") console.error("LIMITS", e.message); }
 
     const total = amount + COMMISSION;
     const key = crypto.randomUUID();
@@ -129,25 +162,12 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
     const newBalance = Number(rows[0].balance).toFixed(2);
 
     let message = "Demande de retrait enregistrée. Traitement sous 24h.";
-    if (autoPayout()) {
-      try {
-        const pd = require("../providers/paydunya.js");
-        const cb = `${baseUrl()}/wallet/withdraw/callback?id=${txId}&sig=${sig(txId)}`;
-        const tok = await pd.createDisburseToken({ accountAlias: intlPhone(phone), amount, withdrawMode: MODES[operator], callbackUrl: cb });
-        if (tok && tok.response_code === "00" && tok.disburse_token) {
-          const sub = await pd.submitDisburse({ disburseInvoice: tok.disburse_token, disburseId: txId });
-          await q`UPDATE transactions SET status = 'processing', metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ paydunya: { submit: sub && sub.response_code, at: new Date().toISOString() } })}::jsonb
-                  WHERE id = ${txId} AND status = 'pending'`;
-          message = "Retrait envoyé vers votre Mobile Money. Confirmation en cours.";
-        } else {
-          // Refus clair de PayDunya AVANT envoi : on garde 'pending' pour traitement/remboursement par l'administrateur.
-          await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ paydunyaRefused: tok && (tok.response_text || tok.response_code) })}::jsonb WHERE id = ${txId}`;
-        }
-      } catch (e) {
-        // Résultat incertain (timeout…) : on ne rembourse JAMAIS automatiquement, l'argent a pu partir.
-        console.error("AUTO_PAYOUT", e.response?.data || e.message);
-        await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ autoPayoutError: String(e.response?.data?.response_text || e.message).slice(0, 200) })}::jsonb WHERE id = ${txId}`;
-      }
+    const needsApproval = amount >= approvalXof();
+    if (autoPayout() && !needsApproval) {
+      const r = await dispatchPayout(q, txId, operator, phone, amount);
+      if (r.status === "sent") message = "Retrait envoyé vers votre Mobile Money. Confirmation en cours.";
+    } else if (needsApproval) {
+      message = "Demande enregistrée : ce montant est soumis à validation avant envoi (sous 24h).";
     }
     try { await require("../lib/mailer.js").sendAdminNotification("Nouvelle demande de retrait OMNIPAY", `<p>Montant : <b>${amount} XOF</b></p><p>Numéro : <b>${phone}</b> (${operator})</p>`); } catch (_) { /* e-mail facultatif */ }
     res.json({ message, newBalance });
@@ -198,7 +218,7 @@ router.get("/api/ops/stuck", adminOnly, async (req, res) => {
       FROM transactions t JOIN wallets w ON w.id = t.wallet_id JOIN users u ON u.id = w.user_id
       WHERE t.type = 'withdrawal' AND t.status IN ('pending','failed','processing')
       ORDER BY t.created_at`;
-    res.json({ autoPayout: autoPayout(), withdrawals: rows });
+    res.json({ autoPayout: autoPayout(), approvalXof: approvalXof(), withdrawals: rows });
   } catch (e) { console.error("STUCK", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
@@ -258,6 +278,46 @@ router.post("/api/ops/deposits/reverify", adminOnly, async (req, res) => {
     }
     res.json({ checked: pend.length, credited, unpaid, errors });
   } catch (e) { console.error("REVERIFY", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
+// Valide et envoie UN retrait en attente (montants élevés compris).
+router.post("/api/ops/withdraw/:id/send", adminOnly, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    const q = sql();
+    const t = await q`SELECT provider AS operator, provider_ref AS phone, amount::float AS amount FROM transactions WHERE id = ${req.params.id}::uuid AND type = 'withdrawal' AND status = 'pending'`;
+    if (!t.length) return res.status(409).json({ error: "Retrait introuvable ou déjà traité." });
+    const r = await dispatchPayout(q, req.params.id, t[0].operator, t[0].phone, t[0].amount);
+    res.json({ result: r.status, route: r.route, detail: r.detail || null });
+  } catch (e) { console.error("WD_SEND", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
+// Envoi par LOT (20 retraits maximum, un à la fois, avec une courte pause) ; uniquement des identifiants choisis par l'administrateur.
+router.post("/api/ops/batch/send", adminOnly, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? [...new Set(req.body.ids.map(String))].slice(0, 20) : [];
+    if (!ids.length || ids.some((i) => !UUID.test(i))) return res.status(400).json({ error: "Liste d'identifiants invalide (20 maximum)." });
+    const q = sql();
+    const out = [];
+    for (const id of ids) {
+      const t = await q`SELECT provider AS operator, provider_ref AS phone, amount::float AS amount FROM transactions WHERE id = ${id}::uuid AND type = 'withdrawal' AND status = 'pending'`;
+      if (!t.length) { out.push({ id, result: "ignoré" }); continue; }
+      const r = await dispatchPayout(q, id, t[0].operator, t[0].phone, t[0].amount);
+      out.push({ id, result: r.status, detail: r.detail || null });
+      await new Promise((ok) => setTimeout(ok, 400));
+    }
+    res.json({ results: out, sent: out.filter((o) => o.result === "sent").length });
+  } catch (e) { console.error("WD_BATCH", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
+// Interroge MTN pour un retrait envoyé par le canal MoMo direct, et met à jour le statut (jamais de remboursement automatique).
+router.post("/api/ops/withdraw/:id/check", adminOnly, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    const st = await require("../providers/payoutRouter.js").momoStatus(req.params.id);
+    if (st !== "pending") await sql()`UPDATE transactions SET status = ${st} WHERE id = ${req.params.id}::uuid AND type = 'withdrawal' AND status IN ('processing','pending')`;
+    res.json({ status: st });
+  } catch (e) { console.error("WD_CHECK", e.message); res.status(502).json({ error: "Vérification impossible : " + String(e.message).slice(0, 100) }); }
 });
 
 module.exports = router;
