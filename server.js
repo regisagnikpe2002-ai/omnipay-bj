@@ -1,112 +1,174 @@
-require('dotenv').config();
-const crypto = require('crypto');
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { pool, withTx, httpError } = require('./db');
-const ledger = require('./ledger');
-const connectors = require('./connectors');
+"use strict";
 
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET manquant dans .env');
+/**
+ * OMNIPAY — server.js (V2.0)
+ * Ce fichier ne touche PAS à la base de données : aucune migration, aucune
+ * suppression. Clients, transactions et commissions restent intacts.
+ */
+
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
-app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf; } }));
 
-const wrap = (fn) => (req, res, next) => fn(req, res).catch(next);
+// Render est derrière un proxy : nécessaire pour lire la vraie IP du client.
+app.set("trust proxy", 1);
 
-function auth(req, _res, next) {
-  const h = req.headers.authorization || '';
-  try {
-    req.user = jwt.verify(h.replace('Bearer ', ''), process.env.JWT_SECRET);
-    next();
-  } catch { next(httpError(401, 'Non authentifie')); }
+// =========================
+// Middlewares
+// =========================
+
+app.use(cors());
+
+// rawBody conservé : nécessaire à la vérification des webhooks (Binance Pay, PayDunya).
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString("utf8");
+    },
+  })
+);
+app.use(express.urlencoded({ extended: true }));
+
+// =========================
+// Limitation de débit (protège connexion et envoi d'OTP)
+// Seuils volontairement larges : beaucoup d'utilisateurs mobiles partagent la même IP.
+// =========================
+
+let rateLimit = null;
+try {
+  rateLimit = require("express-rate-limit").rateLimit;
+} catch (err) {
+  console.warn("express-rate-limit indisponible :", err.message);
 }
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
-
-app.post('/auth/register', wrap(async (req, res) => {
-  const { phone, name, password } = req.body || {};
-  if (!phone || !name || !password || password.length < 8) throw httpError(400, 'Champs invalides');
-  const hash = await bcrypt.hash(password, 12);
-  const out = await withTx(async (c) => {
-    const u = await c.query('INSERT INTO users(phone,name,password_hash) VALUES ($1,$2,$3) RETURNING id', [phone, name, hash]);
-    await c.query('INSERT INTO accounts(user_id) VALUES ($1)', [u.rows[0].id]);
-    return u.rows[0];
-  }).catch((e) => { if (e.code === '23505') throw httpError(409, 'Numero deja inscrit'); throw e; });
-  res.status(201).json({ id: out.id });
-}));
-
-app.post('/auth/login', wrap(async (req, res) => {
-  const { phone, password } = req.body || {};
-  const r = await pool.query('SELECT id, password_hash FROM users WHERE phone=$1', [phone]);
-  const u = r.rows[0];
-  if (!u || !(await bcrypt.compare(password || '', u.password_hash))) throw httpError(401, 'Identifiants invalides');
-  res.json({ token: jwt.sign({ uid: u.id }, process.env.JWT_SECRET, { expiresIn: '12h' }) });
-}));
-
-async function walletOf(userId) {
-  const r = await pool.query(`SELECT id FROM accounts WHERE user_id=$1 AND kind='wallet' AND currency='XOF'`, [userId]);
-  return r.rows[0].id;
-}
-
-app.get('/wallet', auth, wrap(async (req, res) => {
-  const id = await walletOf(req.user.uid);
-  const c = await pool.connect();
-  try { res.json({ currency: 'XOF', balance: await ledger.balance(c, id) }); } finally { c.release(); }
-}));
-
-app.post('/transfers', auth, wrap(async (req, res) => {
-  const { toPhone, amount, idempotencyKey } = req.body || {};
-  if (!idempotencyKey) throw httpError(400, 'idempotencyKey requis');
-  const to = await pool.query('SELECT id FROM users WHERE phone=$1', [toPhone]);
-  if (!to.rowCount) throw httpError(404, 'Destinataire inconnu');
-  const out = await ledger.transfer({
-    fromAccount: await walletOf(req.user.uid),
-    toAccount: await walletOf(to.rows[0].id),
-    amount, key: `${req.user.uid}:${idempotencyKey}`,
+function limiter(max, message) {
+  if (!rateLimit) return (req, res, next) => next();
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: message },
   });
-  res.json(out);
-}));
-
-// Recharge du portefeuille depuis un compte mobile money
-app.post('/topup', auth, wrap(async (req, res) => {
-  const { provider, phone, amount, idempotencyKey } = req.body || {};
-  const connector = connectors.get(provider);
-  if (!connector) throw httpError(400, 'Fournisseur non supporte');
-  if (!idempotencyKey) throw httpError(400, 'idempotencyKey requis');
-  const key = `${req.user.uid}:${idempotencyKey}`;
-  const accountId = await walletOf(req.user.uid);
-  const txId = await withTx((c) => ledger.createTopup(c, { accountId, amount, provider, key }));
-  if (!txId) throw httpError(409, 'Requete deja traitee');
-  const { providerRef } = await connector.collect({ phone, amount, reference: txId });
-  await pool.query('UPDATE transactions SET provider_ref=$1 WHERE id=$2', [providerRef, txId]);
-  res.status(202).json({ id: txId, status: 'pending' });
-}));
-
-// Webhook : signature HMAC-SHA256 du corps brut (adapter au schema reel de chaque fournisseur)
-app.post('/webhooks/:provider', wrap(async (req, res) => {
-  const { provider } = req.params;
-  const secret = process.env[`WEBHOOK_SECRET_${provider.toUpperCase()}`];
-  if (!secret) throw httpError(400, 'Fournisseur inconnu');
-  const expected = crypto.createHmac('sha256', secret).update(req.rawBody || '').digest('hex');
-  const given = String(req.headers['x-signature'] || '');
-  const ok = given.length === expected.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
-  if (!ok) throw httpError(401, 'Signature invalide');
-  const { providerRef, status } = req.body;
-  res.json(await ledger.settleTopup({ provider, providerRef, success: status === 'success' }));
-}));
-
-// Dev uniquement : simule la confirmation d'une recharge "mock"
-if (process.env.NODE_ENV !== 'production') {
-  app.post('/dev/confirm/:ref', wrap(async (req, res) => {
-    res.json(await ledger.settleTopup({ provider: 'mock', providerRef: req.params.ref, success: true }));
-  }));
 }
 
-app.use((err, _req, res, _next) => {
-  if (!err.status) console.error(err);
-  res.status(err.status || 500).json({ error: err.status ? err.message : 'Erreur interne' });
+// Garde des accès administrateur : liste d'IP, double authentification (TOTP), anti-force brute (voir lib/adminShield.js)
+try { app.use(require("./lib/adminShield")()); } catch (err) { console.error("adminShield non chargé :", err.message); }
+
+app.use("/auth/login", limiter(100, "Trop de tentatives de connexion. Réessayez dans quelques minutes."));
+app.use("/auth/register", limiter(60, "Trop de tentatives d'inscription. Réessayez dans quelques minutes."));
+app.use("/api/id/lookup", limiter(120, "Trop de recherches. Réessayez dans quelques minutes."));
+app.use("/api/email-otp/request", limiter(30, "Trop de demandes de code. Réessayez dans quelques minutes."));
+
+// =========================
+// Fichiers statiques (dossier public/)
+// =========================
+
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Omnipay API sur le port ${port}`));
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
+});
+
+// =========================
+// Santé et statut
+// =========================
+
+app.get("/healthz", (req, res) => res.status(200).send("ok"));
+
+app.get("/api/status", (req, res) => {
+  res.json({
+    success: true,
+    application: "OMNIPAY",
+    status: "ONLINE",
+    version: "2.0",
+    message: "Votre quotidien financier tout-en-un",
+  });
+});
+
+// =========================
+// Routes (chargées avec un message d'erreur explicite si l'une échoue)
+// =========================
+
+function mount(urlPath, modulePath, label) {
+  try {
+    app.use(urlPath, require(modulePath));
+    console.log(`[routes] ${label} chargées (${urlPath})`);
+  } catch (err) {
+    console.error(`[routes] ${label} NON chargées :`, err.message);
+  }
+}
+
+// Routes à chemin précis AVANT les routes montées sur /api
+mount("/auth", "./routes/auth", "Auth");
+mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
+// walletOps remplace /wallet/withdraw et /wallet/deposit/callback (versions atomiques) ; le reste de /wallet est inchangé.
+mount("/", "./routes/walletOps", "Opérations portefeuille V2");
+mount("/wallet", "./routes/wallet", "Wallet");
+mount("/api/omnicheck", "./routes/omnicheck", "OMNICHECK");
+mount("/api/manual", "./routes/manualPayments", "Paiements manuels");
+mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
+mount("/api/admin", "./routes/adminDash", "Tableau de bord admin");
+mount("/api/ledger", "./routes/ledger", "Ledger central");
+mount("/api/compliance", "./routes/compliance", "Conformité");
+mount("/api", "./routes/accountIds", "Identifiants et reçus");
+mount("/api/coingate", "./routes/coingate", "CoinGate");
+mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
+mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-SPI, Mobile Money)");
+mount("/api/paypal", "./routes/paypal", "PayPal");
+mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
+mount("/api/web3", "./routes/web3", "Web3");
+mount("/api", "./routes/binance", "Binance");
+
+// =========================
+// Erreurs
+// =========================
+
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route introuvable" });
+});
+
+app.use((err, req, res, next) => {
+  console.error("ERREUR_SERVEUR", err && err.message ? err.message : err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ success: false, message: "Erreur serveur" });
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED_REJECTION", reason && reason.message ? reason.message : reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT_EXCEPTION", err && err.stack ? err.stack : err);
+});
+
+// =========================
+// Démarrage
+// =========================
+
+const PORT = process.env.PORT || 3000;
+
+console.log("PAYDUNYA_MASTER_KEY:", !!process.env.PAYDUNYA_MASTER_KEY);
+console.log("PAYDUNYA_PRIVATE_KEY:", !!process.env.PAYDUNYA_PRIVATE_KEY);
+console.log("PAYDUNYA_TOKEN:", !!process.env.PAYDUNYA_TOKEN);
+console.log("PAYDUNYA_PUBLIC_KEY:", !!process.env.PAYDUNYA_PUBLIC_KEY);
+console.log("PAYDUNYA_MODE:", process.env.PAYDUNYA_MODE);
+console.log("ADMIN_KEY:", !!process.env.ADMIN_KEY);
+console.log("DATABASE_URL:", !!process.env.DATABASE_URL);
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("================================");
+  console.log("OMNIPAY BACKEND V2.0 DEMARRE");
+  console.log(`PORT : ${PORT}`);
+  console.log("================================");
+  try { require("./routes/ledger").startScheduler(); } catch (err) { console.error("[LEDGER] non démarré :", err.message); }
+  try { require("./routes/compliance").startScheduler(); } catch (err) { console.error("[CONFORMITÉ] non démarré :", err.message); }
+  try { require("./routes/omnicheck").startScheduler(); } catch (err) { console.error("[OMNICHECK] non démarré :", err.message); }
+});
