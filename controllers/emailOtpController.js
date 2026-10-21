@@ -94,6 +94,85 @@ function createVerificationProof({ email, purpose }) {
   return `${payload}.${signature}`;
 }
 
+function verifyEmailVerificationToken({
+  verificationToken,
+  expectedEmail,
+  expectedPurpose,
+}) {
+  if (!verificationToken || typeof verificationToken !== "string") {
+    throw new Error("Vérification email requise.");
+  }
+
+  const parts = verificationToken.split(".");
+
+  if (parts.length !== 2) {
+    throw new Error("Jeton de vérification invalide.");
+  }
+
+  const [payload, submittedSignature] = parts;
+
+  const expectedSignature = crypto
+    .createHmac("sha256", getOtpSecret())
+    .update(payload)
+    .digest("base64url");
+
+  const submittedBuffer = Buffer.from(
+    submittedSignature,
+    "utf8"
+  );
+
+  const expectedBuffer = Buffer.from(
+    expectedSignature,
+    "utf8"
+  );
+
+  if (
+    submittedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(
+      submittedBuffer,
+      expectedBuffer
+    )
+  ) {
+    throw new Error("Jeton de vérification invalide.");
+  }
+
+  let data;
+
+  try {
+    data = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8")
+    );
+  } catch {
+    throw new Error("Jeton de vérification invalide.");
+  }
+
+  const normalizedExpectedEmail =
+    normalizeEmail(expectedEmail);
+
+  if (
+    data.email !== normalizedExpectedEmail ||
+    data.purpose !== expectedPurpose
+  ) {
+    throw new Error(
+      "Le jeton ne correspond pas à cette inscription."
+    );
+  }
+
+  if (
+    !Number.isFinite(data.expiresAt) ||
+    Date.now() >= data.expiresAt
+  ) {
+    throw new Error("Vérification email expirée.");
+  }
+
+  return {
+    verified: true,
+    email: data.email,
+    purpose: data.purpose,
+    expiresAt: data.expiresAt,
+  };
+}
+
 async function requestEmailOtp(req, res) {
   const sql = getSql();
   let challengeId = null;
@@ -338,4 +417,5 @@ async function verifyEmailOtp(req, res) {
 module.exports = {
   requestEmailOtp,
   verifyEmailOtp,
+  verifyEmailVerificationToken,
 };
