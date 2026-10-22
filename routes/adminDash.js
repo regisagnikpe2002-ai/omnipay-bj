@@ -32,7 +32,7 @@ function audit() {
   const bn = e.BINANCE_PAY_API_KEY || e.BINANCE_API_KEY;
   bn ? add("Binance Pay", Number(e.USDT_XOF_RATE) >= 100 ? "ok" : "warn", Number(e.USDT_XOF_RATE) >= 100 ? "Clés et taux USDT/FCFA présents." : "Clés présentes mais USDT_XOF_RATE absent : dépôts USDT refusés.") : add("Binance Pay", "warn", "Non configuré.");
   e.PUBLIC_BASE_URL ? add("Adresse publique", "ok", "PUBLIC_BASE_URL définie.") : add("Adresse publique", "warn", "PUBLIC_BASE_URL absente (valeur par défaut utilisée).");
-  (e.SMTP_HOST || e.SMTP_USER) ? add("E-mail (SMTP)", "ok", "Configuré.") : add("E-mail (SMTP)", "bad", "Non configuré : codes de connexion/réinitialisation impossibles.");
+  (e.EMAIL_USER && e.EMAIL_PASS) ? add("E-mail (SMTP)", "ok", "Configuré.") : add("E-mail (SMTP)", "bad", "Non configuré : codes de connexion/réinitialisation impossibles.");
   let n = 0; try { n = JSON.parse(e.OMNIPAY_PAYIN_ACCOUNTS || "[]").length; } catch (_) { n = -1; }
   n > 0 ? add("Comptes de réception affichés aux clients", "ok", `${n} compte(s).`) : add("Comptes de réception affichés aux clients", n < 0 ? "bad" : "warn", n < 0 ? "OMNIPAY_PAYIN_ACCOUNTS n'est pas un JSON valide." : "Aucun compte défini.");
   add("Clés privées de portefeuilles", "ok", "Jamais stockées par le serveur (adresses publiques seulement).");
