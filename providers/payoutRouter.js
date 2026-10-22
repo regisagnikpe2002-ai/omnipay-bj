@@ -1,7 +1,7 @@
 "use strict";
 // OMNIPAY — aiguillage des retraits par opérateur (fichier AJOUTÉ, à placer dans providers/).
 // Pour chaque opérateur on choisit le canal par variable Render :
-//   PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV / PAYOUT_ROUTE_CELTIIS = manual (DÉFAUT : file d'attente admin, aucun tiers) | momo (MTN MoMo API directe) | pispi (Ecobank PI-SPI) | paydunya (OPTIONNEL, à activer explicitement)
+//   PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV / PAYOUT_ROUTE_CELTIIS = manual (DÉFAUT : file d'attente admin, aucun tiers) | momo (MTN MoMo API directe) | pispi (Ecobank PI-SPI)
 // Chaque canal renvoie : {status:'sent'|'refused'|'uncertain'|'unavailable', detail}
 //   sent        : ordre accepté par le canal (la confirmation finale arrive par callback ou vérification)
 //   refused     : refus clair AVANT envoi -> la demande reste en attente (rien n'est parti)
@@ -14,16 +14,6 @@ const intlPhone = (p) => {
   if (d.startsWith("00")) d = d.slice(2);
   return d.startsWith("229") ? d : "229" + d;
 };
-
-// ---- Canal 1 : PayDunya (déjà intégré) ----
-async function viaPaydunya({ txId, operator, phone, amount, callbackUrl }) {
-  const MODES = { mtn: "mtn-benin", moov: "moov-benin", celtiis: "celtiis-cash" };
-  const pd = require("./paydunya.js");
-  const tok = await pd.createDisburseToken({ accountAlias: intlPhone(phone), amount, withdrawMode: MODES[operator], callbackUrl });
-  if (!(tok && tok.response_code === "00" && tok.disburse_token)) return { status: "refused", detail: String((tok && (tok.response_text || tok.response_code)) || "refus PayDunya") };
-  const sub = await pd.submitDisburse({ disburseInvoice: tok.disburse_token, disburseId: txId });
-  return { status: "sent", detail: sub && sub.response_code, ref: String(txId) };
-}
 
 // ---- Canal 2 : MTN MoMo API directe (Disbursement) ----
 // Écrit d'après la documentation publique « MTN MoMo API » (momodeveloper.mtn.com). À VALIDER D'ABORD en sandbox ;
@@ -76,7 +66,7 @@ async function viaPispi() {
 
 // Canal manuel : aucun tiers. La demande reste « en attente » ; l'admin paie depuis son propre compte puis clique « Payé ».
 async function viaManual() { return { status: "unavailable", detail: "Traitement manuel OMNIPAY (file d'attente admin)." }; }
-const CHANNELS = { manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, pispi: viaPispi };
+const CHANNELS = { manual: viaManual, momo: viaMomo, pispi: viaPispi };
 const routeFor = (operator) => {
   const r = String(process.env["PAYOUT_ROUTE_" + String(operator).toUpperCase()] || "manual").toLowerCase();
   return CHANNELS[r] ? r : "manual";
