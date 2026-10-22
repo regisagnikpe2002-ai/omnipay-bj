@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="fr">
 <head>
@@ -186,6 +185,10 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <div id="m_in">
       <label>Votre référence (à indiquer avec le paiement)</label>
       <div class="row"><input id="m_ref" readonly style="font-weight:800;letter-spacing:1px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('m_ref').value,'m_msg')">Copier</button></div>
+      <div id="mm_box" class="hide" style="border:1px solid var(--mint);border-radius:14px;padding:12px;margin-top:14px">
+        <h2 style="margin:0 0 4px">Dépôt automatique MTN MoMo</h2><p class="sub" style="margin-bottom:8px">Entrez votre numéro MTN : vous validez sur votre téléphone, votre solde est crédité automatiquement.</p>
+        <label>Numéro MTN</label><input id="mm_ph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><label>Montant (FCFA)</label><input id="mm_am" type="number" min="500" value="5000">
+        <button class="pri" id="mm_btn" onclick="momoDeposit('wallet')">Payer avec MTN MoMo</button><div id="mm_msg" class="msg"></div></div>
       <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
       <div id="m_accs"><p class="sub">Chargement…</p></div>
       <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
@@ -2808,7 +2811,7 @@ async function openOc(){$('oc_msg').className='msg';show('oc');
    else{h+=`<h2 style="margin-top:18px">Mon espace agent</h2><div class="tx"><div>Trésorerie disponible<small>${escH(a.name)} · ${escH(a.city)}</small></div><b>${fmt(a.float)}</b></div>
     <h2 style="margin-top:14px">Dépôt en espèces (client → compte)</h2><label>Identifiant OM du client</label><input id="oc_ci_c" placeholder="OM1234567890"><label>Montant remis par le client (FCFA)</label><input id="oc_ci_a" type="number" min="100"><button class="pri" onclick="ocCashin()">Créditer le client</button>
     <h2 style="margin-top:14px">Retrait en espèces (compte → client)</h2><label>Identifiant OM du client</label><input id="oc_cx_c" placeholder="OM1234567890"><label>Code à 6 chiffres du client</label><input id="oc_cx_k" inputmode="numeric" maxlength="6"><button class="pri" onclick="ocCashout()">Valider le retrait</button>
-    <h2 style="margin-top:14px">Ma trésorerie</h2><label>Montant (FCFA)</label><input id="oc_fl" type="number" min="100"><div class="row"><button class="sec" onclick="ocFloat('load')">Recharger depuis mon compte</button><button class="sec" onclick="ocFloat('unload')">Reverser sur mon compte</button></div>
+    <h2 style="margin-top:14px">Ma trésorerie</h2><label>Montant (FCFA)</label><input id="oc_fl" type="number" min="100"><label>N° MTN pour la recharge MoMo</label><input id="oc_mmph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><button class="pri" onclick="momoDeposit('float')">Recharger ma trésorerie par MTN MoMo</button><div class="row"><button class="sec" onclick="ocFloat('load')">Recharger depuis mon compte</button><button class="sec" onclick="ocFloat('unload')">Reverser sur mon compte</button></div>
     <h2 style="margin-top:14px">Dernières opérations</h2>`+(d.ops.length?d.ops.map(o=>`<div class="tx"><div>${({cashin:'Dépôt espèces',cashout:'Retrait espèces',float_load:'Recharge',float_unload:'Reversement',float_admin:'Trésorerie OMNIPAY'})[o.kind]||escH(o.kind)}<small>${escH(o.ref)} · ${new Date(o.created_at).toLocaleString('fr-FR')}</small></div><b>${fmt(o.amount)}</b></div>`).join(''):'<p class="sub">Aucune opération.</p>')}
    $('oc_body').innerHTML=h}catch(e){msg('oc_msg',e.message)}}
 async function ocCoReq(){try{const d=await api('/api/omnicash/cashout/request',{body:{amount:parseInt($('oc_co_am').value,10)}});
@@ -2889,6 +2892,18 @@ async function loadSav(){try{savList=await opsFetch()}catch(e){savList=[]}
   const d=savList.find(o=>o.isDefault);if(d)s.value=d.id;w.classList.remove('hide');savPick()}
 function savPick(){const v=$('io_sav').value;$('io_accw').classList.toggle('hide',!!v);$('io_ch').style.display=v?'none':'';$('io_ch').previousElementSibling.style.display=v?'none':''}
 
+/* ===== MTN MoMo : dépôt automatique ===== */
+async function momoInit(){try{const d=await api('/api/momo/status');$('mm_box').classList.toggle('hide',!d.enabled)}catch(e){$('mm_box').classList.add('hide')}}
+let mmBusy=false;
+async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',mid=isF?'oc_msg':'mm_msg';
+  const am=parseInt($(isF?'oc_fl':'mm_am').value,10),ph=($(isF?'oc_mmph':'mm_ph').value||'').trim();
+  if(!(am>=500))return msg(mid,'Montant minimum : 500 FCFA.');if(ph.replace(/\D/g,'').length<8)return msg(mid,'Numéro MTN invalide.');
+  mmBusy=true;try{const d=await api('/api/momo/deposit',{body:{amount:am,phone:ph,target}});msg(mid,d.message,true);
+    for(let i=0;i<45;i++){await new Promise(r=>setTimeout(r,4000));const s=await api('/api/momo/deposit/'+d.reference);
+      if(s.status==='completed'){msg(mid,isF?'Trésorerie rechargée.':'Dépôt crédité : '+fmt(am)+'.',true);await refresh();if(isF)openOc();mmBusy=false;return}
+      if(s.status==='failed'){msg(mid,'Paiement refusé ou expiré. Rien n\'a été débité.');mmBusy=false;return}}
+    msg(mid,'Toujours en attente : votre solde sera crédité automatiquement dès la confirmation de MTN.',true)}catch(e){msg(mid,e.message)}mmBusy=false}
+
 /* ===== Dépôt crypto ===== */
 async function doCg(){const am=parseInt($('cg_am').value,10);if(!(am>=1000))return msg('cry_msg','Montant minimum : 1000 FCFA.');
   try{const d=await api('/api/coingate/order',{body:{amountXof:am}});msg('cry_msg','Redirection vers le paiement crypto…',true);location.href=d.paymentUrl}catch(e){msg('cry_msg',e.message)}}
@@ -2966,7 +2981,7 @@ function copyTxt(t,out){(navigator.clipboard?navigator.clipboard.writeText(t):Pr
 function manTab(t){$('m_in').classList.toggle('hide',t!=='in');$('m_out').classList.toggle('hide',t!=='out');
   $('mTabIn').style.borderColor=t==='in'?'var(--mint)':'var(--line)';$('mTabOut').style.borderColor=t==='out'?'var(--mint)':'var(--line)'}
 const MAN_STATUS={pending:'en attente',credited:'crédité',paid:'payé',rejected:'refusé'};
-async function openMan(){$('m_msg').className='msg';manTab('in');show('man');
+async function openMan(){$('m_msg').className='msg';manTab('in');show('man');momoInit();
   try{const d=await api('/api/manual/instructions');$('m_ref').value=d.reference;
     const acc=d.accounts||[];
     $('m_accs').innerHTML=acc.length?acc.map((a,i)=>`<div class="tx" style="display:block"><div><b>${escH(a.label)}</b>${a.network?`<small>Réseau : ${escH(a.network)}</small>`:''}</div>
