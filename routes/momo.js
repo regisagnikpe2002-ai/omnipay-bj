@@ -170,7 +170,11 @@ async function tick() {
     for (const p of pend) { out.deposits++; try { if ((await settle(p.provider_ref)).status === "completed") out.depositsCredited++; } catch (e) { console.error("MOMO_TICK_DEP", e.message); } }
   }
   const po = require("../providers/payoutRouter.js");
-  if (po.momoConfigured()) {
+  const disbursementConfigured =
+    typeof po.momoConfigured === "function" &&
+    po.momoConfigured();
+
+  if (disbursementConfigured) {
     const wd = await q`SELECT id FROM transactions WHERE type = 'withdrawal' AND status = 'processing' AND metadata->'payout'->>'route' = 'momo' AND metadata->'payout'->>'result' = 'sent' ORDER BY created_at LIMIT 40`;
     for (const w of wd) {
       out.withdrawals++;
@@ -202,7 +206,10 @@ router.get("/admin/status", adminOnly, async (req, res) => {
     const c = cfg(), po = require("../providers/payoutRouter.js"), q = sql();
     let coll = { configured: ready(c), ok: false };
     if (coll.configured) { try { await token(c); coll.ok = true; } catch (e) { coll.error = "HTTP " + (e.response?.status || e.message); } }
-    const dis = await po.momoPing();
+    const dis =
+      typeof po.momoPing === "function"
+        ? await po.momoPing()
+        : { configured: false, ok: false, detail: "Contrôle MTN Disbursement indisponible." };
     const n = (await q`SELECT
       (SELECT count(*) FROM transactions WHERE provider = 'momo' AND type = 'deposit' AND status = 'pending')::int AS pending_deposits,
       (SELECT count(*) FROM transactions WHERE type = 'withdrawal' AND status = 'processing' AND metadata->'payout'->>'route' = 'momo')::int AS processing_withdrawals,
