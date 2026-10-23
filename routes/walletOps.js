@@ -22,7 +22,9 @@ const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(
 const adminOnly = (req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." }));
 const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const autoPayout = () => String(process.env.AUTO_PAYOUT || "off").toLowerCase() === "on";
+const autoPayout = () => ["on", "true", "1", "yes"].includes(String(process.env.AUTO_PAYOUT || "off").toLowerCase());
+// PayDunya est désactivé par défaut : OMNIPAY fonctionne avec ses propres canaux (voir providers/payoutRouter.js et routes/channels.js).
+const paydunyaOn = () => ["on", "true", "1", "yes"].includes(String(process.env.PAYDUNYA_ENABLED || "off").toLowerCase());
 const baseUrl = () => (process.env.PUBLIC_BASE_URL || "https://www.omnipay-bj.com").replace(/\/$/, "");
 const secret = () => process.env.OTP_SECRET || process.env.ADMIN_KEY || "";
 const sig = (id) => crypto.createHmac("sha256", secret()).update("wd:" + id).digest("hex").slice(0, 32);
@@ -46,6 +48,8 @@ function intlPhone(p) {
 }
 const validLocal = (p) => { const d = String(p || "").replace(/\D/g, ""); return d.length >= 8 && d.length <= 15; };
 
+// Plafond d'envoi AUTOMATIQUE sur 24 h (sécurité) : au-delà, la demande reste en attente de validation. Défaut 1 000 000 ; 0 = envoi automatique suspendu.
+const autoDayMax = () => { const v = Number(process.env.AUTO_PAYOUT_DAY_MAX_XOF); return Number.isFinite(v) && v >= 0 ? v : 1000000; };
 const approvalXof = () => { const v = Number(process.env.APPROVAL_XOF); return Number.isFinite(v) && v > 0 ? v : 200000; };
 
 // Envoi d'UN retrait vers le canal choisi pour l'opérateur. Le statut 'pending' est « réservé » (→ 'processing') AVANT l'appel,
@@ -70,6 +74,9 @@ async function dispatchPayout(q, txId, operator, phone, amount) {
 }
 
 // ---------- Opérateurs du client ----------
+// Nouveau dépôt PayDunya : fermé sauf PAYDUNYA_ENABLED=on (les dépôts déjà créés restent vérifiables).
+router.post("/wallet/deposit", (req, res, next) => (paydunyaOn() ? next() : res.status(410).json({ error: "Ce mode de dépôt n'est plus disponible. Utilisez « Dépôt & retrait directs » (MTN, PI-SPI, crypto)." })));
+
 router.get("/api/operators", requireAuth, async (req, res) => {
   try {
     await ensureTables();
@@ -163,7 +170,14 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
 
     let message = "Demande de retrait enregistrée. Traitement sous 24h.";
     const needsApproval = amount >= approvalXof();
+    let capped = false;
     if (autoPayout() && !needsApproval) {
+      try {
+        const sent = await q`SELECT coalesce(sum(amount), 0)::float AS v FROM transactions WHERE type = 'withdrawal' AND metadata->'payout'->>'result' = 'sent' AND created_at > now() - interval '24 hours'`;
+        capped = sent[0].v + amount > autoDayMax();
+      } catch (_) { capped = false; }
+    }
+    if (autoPayout() && !needsApproval && !capped) {
       const r = await dispatchPayout(q, txId, operator, phone, amount);
       if (r.status === "sent") message = "Retrait envoyé vers votre Mobile Money. Confirmation en cours.";
     } else if (needsApproval) {
@@ -264,6 +278,32 @@ router.post("/api/ops/withdraw/:id/paid", adminOnly, async (req, res) => {
   } catch (e) { console.error("WD_PAID", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Export CSV des retraits à payer (pour un paiement en lot depuis le portail Mobile Money / Ecobank), puis « payé » en lot.
+// Ne déplace aucun argent : c'est vous qui payez, OMNIPAY ne fait que préparer la liste et fermer les lignes.
+router.get("/api/ops/payouts.csv", adminOnly, async (req, res) => {
+  try {
+    const rows = await sql()`
+      SELECT t.id, t.status, t.amount::float AS amount, t.provider AS operator, t.provider_ref AS phone, t.created_at, u.first_name, u.last_name, u.email
+      FROM transactions t JOIN wallets w ON w.id = t.wallet_id JOIN users u ON u.id = w.user_id
+      WHERE t.type = 'withdrawal' AND t.status = 'pending' ORDER BY t.created_at LIMIT 500`;
+    const cell = (v) => { let x = String(v == null ? "" : v); if (/^[=+\-@]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; };
+    const head = ["id", "operateur", "telephone", "montant_fcfa", "beneficiaire", "email", "date"];
+    const lines = rows.map((r) => [r.id, String(r.operator).replace(/-.*/, ""), intlPhoneSafe(r.phone), r.amount, `${r.first_name || ""} ${r.last_name || ""}`.trim(), r.email, new Date(r.created_at).toISOString().slice(0, 10)].map(cell).join(";"));
+    res.set("Content-Type", "text/csv; charset=utf-8").set("Content-Disposition", 'attachment; filename="retraits-a-payer.csv"').send("\ufeff" + [head.join(";"), ...lines].join("\r\n"));
+  } catch (e) { console.error("PAYOUT_CSV", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+function intlPhoneSafe(p) { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); return d.startsWith("229") ? d : "229" + d; }
+
+router.post("/api/ops/batch/paid", adminOnly, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? [...new Set(req.body.ids.map(String))].slice(0, 200) : [];
+    if (!ids.length || ids.some((i) => !UUID.test(i))) return res.status(400).json({ error: "Liste d'identifiants invalide." });
+    const rows = await sql()`UPDATE transactions SET status = 'completed', metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object('paidManuallyAt', now()::text)
+      WHERE id = ANY(${ids}::uuid[]) AND type = 'withdrawal' AND status IN ('pending','failed','processing') RETURNING id`;
+    res.json({ paid: rows.length, skipped: ids.length - rows.length });
+  } catch (e) { console.error("BATCH_PAID", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
 // Re-vérifie auprès de PayDunya les dépôts 'pending' (jusqu'à 50) et crédite ceux réellement payés.
 router.post("/api/ops/deposits/reverify", adminOnly, async (req, res) => {
   try {
@@ -320,4 +360,5 @@ router.post("/api/ops/withdraw/:id/check", adminOnly, async (req, res) => {
   } catch (e) { console.error("WD_CHECK", e.message); res.status(502).json({ error: "Vérification impossible : " + String(e.message).slice(0, 100) }); }
 });
 
+router.refundOne = refundOne;
 module.exports = router;

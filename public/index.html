@@ -42,6 +42,15 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tile{color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;font-size:15px;margin:0}
 .tile span{display:block;font-size:22px;margin-bottom:6px}
+
+/* Accueil : boutons ronds compacts (style applications mobiles) */
+.rb{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 4px;margin:4px 0 18px}
+.rb .tile{background:none;border:0;padding:0;text-align:center;font-size:11.5px;font-weight:600;line-height:1.15;color:var(--txt);display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rb .tile span{width:50px;height:50px;border-radius:50%;margin:0 0 6px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--card);border:1px solid var(--line);transition:transform .12s}
+.rb .tile.p span{background:linear-gradient(135deg,var(--mint),var(--mint2));border:0;color:#05261c}
+.rb .tile:active span{transform:scale(.92)}
+.rb .tile em{font-style:normal;font-size:9px;color:var(--warn);font-weight:700;margin-top:2px}
+@media(min-width:520px){.rb{gap:18px 8px}.rb .tile span{width:56px;height:56px}}
 .msg{padding:10px 12px;border-radius:10px;font-size:14px;margin-top:12px;display:none}
 .msg.ok{display:block;background:#0b2a22;color:var(--mint);border:1px solid #14574a}
 .msg.er{display:block;background:#2b1216;color:var(--err);border:1px solid #6b2a33}
@@ -111,52 +120,36 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
   <!-- TABLEAU DE BORD -->
   <section id="dash" class="hide">
     <div class="bal"><small>Solde OMNIPAY</small><div class="v" id="bal">0 FCFA</div><small id="who"></small></div>
-    <div class="grid">
-      <button class="tile" onclick="toast('Paiement chez un prestataire : bientôt disponible')"><span>💳</span>Payer un prestataire</button>
-      <button class="tile" onclick="openIO('in')"><span>⬇️</span>Dépôt (pay-in)</button>
-      <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retrait (pay-out)</button>
-      <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation (50 F)</button>
-      <button class="tile" onclick="show('xfer')" style="grid-column:1/-1;border-color:var(--mint)"><span>🔁</span>OMNIPAY → OMNIPAY <small style="color:var(--mut)">transfert instantané entre comptes</small></button>
+    <div class="rb">
+      <button class="tile p" onclick="openIO('in')"><span>⬇️</span>Dépôt</button>
+      <button class="tile p" onclick="openIO('out')"><span>⬆️</span>Retrait</button>
+      <button class="tile p" onclick="show('xfer')"><span>🔁</span>Transfert</button>
+      <button class="tile" onclick="toast('Paiement chez un prestataire : bientôt disponible')"><span>💳</span>Payer</button>
+      <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH</button>
+      <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
+      <button class="tile" onclick="show('cry')"><span>🪙</span>Crypto</button>
+      <button class="tile" onclick="openMan()"><span>💸</span>Directs</button>
+      <button class="tile" onclick="toast('PI-SPI : déposez ou retirez via « Directs » avec l\'alias Ecobank. L\'automatisation complète est en cours.')"><span>🔗</span>PI-SPI<em>en cours</em></button>
+      <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
+      <button class="tile" onclick="openQr()"><span>▦</span>Mes QR</button>
+      <button class="tile" onclick="openOps()"><span>📱</span>Numéros</button>
+      <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
+      <button class="tile" onclick="openRc()"><span>🧾</span>Reçus</button>
+      <button class="tile" onclick="window.print()"><span>🖨️</span>Reçus PDF</button>
+      <button class="tile" onclick="document.getElementById('txs').scrollIntoView({behavior:'smooth'})"><span>📊</span>Historique</button>
+      <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
+      <button class="tile" onclick="$('ib_out').className='msg';show('iban')"><span>🏦</span>IBAN</button>
+      <button class="tile" onclick="toast('Carte virtuelle : bientôt disponible')"><span>💳</span>Carte<em>bientôt</em></button>
+      <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<em>bientôt</em></button>
     </div>
     <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
       <div class="row"><input id="id_v" readonly style="font-weight:800;font-size:16px;letter-spacing:1px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyId()">Copier</button></div>
       <div id="id_msg" class="msg"></div>
       <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable uniquement entre clients OMNIPAY. Ce n'est pas un IBAN bancaire.</p></div>
-    <div class="svc"><button class="tile" onclick="openRc()" style="grid-column:1/-1"><span>🧾</span>Mes reçus<small>Chaque opération a une référence</small></button></div>
     <div class="card" style="margin-bottom:16px"><h2>Mon alias OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre adresse de paiement unique : partagez-la pour recevoir de l'argent sans donner d'IBAN.</p>
       <div class="row"><input id="alias_v" readonly style="font-weight:700;font-size:14px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyAlias()">Copier</button></div>
       <div id="alias_msg" class="msg"></div>
       <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable aujourd'hui entre comptes OMNIPAY. Compatible PI-SPI : en cours d'homologation avec notre banque partenaire.</p></div>
-    <div class="svc">
-      <button class="tile" onclick="openOps()" style="grid-column:1/-1"><span>📱</span>Mes numéros Mobile Money<small>MTN, Moov, Celtiis : enregistrez et choisissez pour vos retraits</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="openMan()" style="grid-column:1/-1;border-color:var(--mint)"><span>🏧</span>Dépôt &amp; retrait directs<small>USDT, virement, Mobile Money : avec votre référence</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="$('ib_out').className='msg';show('iban')" style="grid-column:1/-1"><span>🏦</span>Vérificateur IBAN<small>Avant un virement bancaire</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="openHelp()" style="grid-column:1/-1"><span>🛟</span>Aide &amp; avis OMNICHECK<small>Questions, critiques et suggestions</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="openQr()"><span>▦</span>Mes QR codes<small>Recevoir et parrainer</small></button>
-      <button class="tile" onclick="show('cry')"><span>🪙</span>Crypto &amp; P2P<small>USDT, Binance</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH<small>Espèces : retrait chez un agent, ou devenir agent</small></button>
-      <button class="tile" onclick="openP2p()"><span>🔁</span>OMNIP2P<small>Binance P2P vers mon compte</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="toast('PI-SPI Mobile Money : en cours d\'homologation avec notre banque partenaire. Les dépôts et retraits Mobile Money actuels restent disponibles.')"><span>🔗</span>PI-SPI Mobile Money<span class="soon">en cours</span><small>Paiements interopérables BCEAO</small></button>
-      <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias<small>Recevoir avec une adresse unique</small></button>
-    </div>
-    <div class="svc">
-      <button class="tile" onclick="toast('Carte virtuelle : bientôt disponible')"><span>💳</span>Carte virtuelle<span class="soon">bientôt</span><small>Payez en ligne en quelques secondes</small></button>
-      <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<span class="soon">bientôt</span><small>Créez votre commerce</small></button>
-      <button class="tile" onclick="window.print()"><span>🧾</span>Reçus PDF<small>Imprimer / enregistrer en PDF</small></button>
-      <button class="tile" onclick="document.getElementById('txs').scrollIntoView({behavior:'smooth'})"><span>📊</span>Historique<small>Toutes vos opérations</small></button>
-    </div>
     <div class="card" style="margin-bottom:16px"><h2>Réseau OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Un seul compte, tous vos prestataires.</p>
       <div class="tx"><div>Mobile Money (MTN · Moov · Celtiis)<small>Dépôts et retraits</small></div><b class="pos">Actif</b></div>
       <div class="tx"><div>PI-SPI Mobile Money (alias)<small>Interopérabilité BCEAO</small></div><b style="color:var(--warn)">En cours</b></div>
@@ -192,15 +185,15 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
       <div id="m_accs"><p class="sub">Chargement…</p></div>
       <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
-      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="p2p">Binance P2P (n° d'ordre)</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
+      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="pispi">PI-SPI (alias Ecobank)</option><option value="p2p">Binance P2P (n° d'ordre)</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
       <div class="row"><div><label>Montant envoyé</label><input id="m_am" type="number" min="1" step="any"></div><div><label>Devise</label><select id="m_cur"><option>XOF</option><option>USDT</option><option>EUR</option><option>USD</option></select></div></div>
       <label>Preuve (hash de transaction, n° de référence)</label><input id="m_tx" placeholder="Ex : 0x… ou n° de transaction">
       <button class="pri" onclick="manDeposit()">Déclarer mon paiement</button>
     </div>
     <div id="m_out" class="hide">
       <p class="sub">Le montant et la commission de 50 FCFA sont réservés tout de suite sur votre solde, puis le retrait est exécuté après validation.</p>
-      <label>Moyen de réception</label><select id="mo_meth"><option value="momo">Mobile Money</option><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option></select>
-      <label>Destination (numéro, adresse ou IBAN)</label><input id="mo_dst" autocomplete="off">
+      <label>Moyen de réception</label><select id="mo_meth"><option value="momo">Mobile Money</option><option value="pispi">PI-SPI (alias)</option><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option></select>
+      <label>Destination (numéro, alias PI-SPI, adresse ou IBAN)</label><input id="mo_dst" autocomplete="off">
       <label>Montant (FCFA)</label><input id="mo_am" type="number" min="500" value="1000">
       <button class="pri" onclick="manPayout()">Demander le retrait</button>
     </div>

@@ -34,6 +34,28 @@ const credit = (id, userId) => sql()`
                jsonb_build_object('inbound', true, 'reference', w.reference) FROM w RETURNING id)
   SELECT (SELECT count(*) FROM t)::int AS n`;
 
+// Enregistrement UNIQUE d'un paiement reçu (même règle pour le canal signé et pour la saisie admin) : (channel, externalId) ne passe qu'une fois.
+async function ingest({ channel, externalId, amount, reference, payer, source }) {
+  await ensure();
+  const q = sql();
+  const ins = await q`INSERT INTO inbound_payments (channel, external_id, amount, reference, payer, raw)
+    VALUES (${channel}, ${externalId}, ${amount}, ${reference}, ${payer}, ${JSON.stringify({ channel, externalId, amount, reference, payer, source })}::jsonb)
+    ON CONFLICT (channel, external_id) DO NOTHING RETURNING id`;
+  if (!ins.length) return { status: 200, body: { duplicate: true } };
+  const m = reference ? await q`SELECT user_id FROM account_ids WHERE code = ${reference.toUpperCase().replace(/\s/g, "")}` : [];
+  if (!m.length) return { status: 202, body: { matched: false, id: ins[0].id } }; // reste « à rapprocher »
+  const r = await credit(ins[0].id, m[0].user_id);
+  return { status: 201, body: { matched: true, credited: r[0]?.n === 1, id: ins[0].id } };
+}
+const parsePayment = (b) => {
+  const channel = clean(b?.channel, 30).toLowerCase(), externalId = clean(b?.externalId, 120);
+  const amount = Math.floor(Number(b?.amount)), reference = clean(b?.reference, 80), payer = clean(b?.payer, 120);
+  if (!/^[a-z0-9_-]{2,30}$/.test(channel) || !externalId) return { error: "channel / externalId requis." };
+  if (String(b?.currency || "XOF").toUpperCase() !== "XOF") return { error: "Seul le XOF est accepté." };
+  if (!Number.isFinite(amount) || amount < 1 || amount > MAX_IN) return { error: "Montant invalide." };
+  return { channel, externalId, amount, reference, payer };
+};
+
 router.post("/inbound", async (req, res) => {
   try {
     const key = (process.env.CHANNEL_INBOUND_SECRET || "").trim();
@@ -42,25 +64,45 @@ router.post("/inbound", async (req, res) => {
     const want = crypto.createHmac("sha256", key).update(req.rawBody || "").digest("hex");
     const a = Buffer.from(given), b = Buffer.from(want);
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(401).json({ error: "Signature invalide." });
-    const channel = clean(req.body?.channel, 30).toLowerCase(), externalId = clean(req.body?.externalId, 120);
-    const amount = Math.floor(Number(req.body?.amount)), reference = clean(req.body?.reference, 80), payer = clean(req.body?.payer, 120);
-    if (!/^[a-z0-9_-]{2,30}$/.test(channel) || !externalId) return res.status(400).json({ error: "channel / externalId requis." });
-    if (String(req.body?.currency || "XOF").toUpperCase() !== "XOF") return res.status(400).json({ error: "Seul le XOF est accepté." });
-    if (!Number.isFinite(amount) || amount < 1 || amount > MAX_IN) return res.status(400).json({ error: "Montant invalide." });
-    await ensure();
-    const q = sql();
-    const ins = await q`INSERT INTO inbound_payments (channel, external_id, amount, reference, payer, raw)
-      VALUES (${channel}, ${externalId}, ${amount}, ${reference}, ${payer}, ${JSON.stringify({ channel, externalId, amount, reference, payer })}::jsonb)
-      ON CONFLICT (channel, external_id) DO NOTHING RETURNING id`;
-    if (!ins.length) return res.json({ duplicate: true });
-    const m = reference ? await q`SELECT user_id FROM account_ids WHERE code = ${reference.toUpperCase().replace(/\s/g, "")}` : [];
-    if (!m.length) {
-      await q`UPDATE inbound_payments SET status = 'received' WHERE id = ${ins[0].id}::uuid`; // reste à rapprocher
-      return res.status(202).json({ matched: false, id: ins[0].id });
-    }
-    const r = await credit(ins[0].id, m[0].user_id);
-    res.status(201).json({ matched: true, credited: r[0]?.n === 1, id: ins[0].id });
+    const p = parsePayment(req.body);
+    if (p.error) return res.status(400).json({ error: p.error });
+    const r = await ingest({ ...p, source: "signed" });
+    res.status(r.status).json(r.body);
   } catch (e) { console.error("CHANNEL_INBOUND", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
+// Saisie ADMIN d'un paiement vu dans l'application de la banque (PI-SPI, virement, Mobile Money) : la référence de l'opération bancaire
+// sert d'identifiant unique, donc un même paiement ne peut JAMAIS être crédité deux fois. Sans identifiant OM, il reste « à rapprocher ».
+router.post("/record", adminOnly, async (req, res) => {
+  try {
+    const p = parsePayment({ ...req.body, channel: req.body?.channel || "pispi" });
+    if (p.error) return res.status(400).json({ error: p.error });
+    if (p.externalId.length < 6) return res.status(400).json({ error: "Référence de l'opération bancaire requise (6 caractères minimum)." });
+    const r = await ingest({ ...p, source: "admin" });
+    res.status(r.status === 200 ? 409 : 200).json(r.status === 200 ? { error: "Cette opération a déjà été enregistrée." } : { ...r.body, message: r.body.matched ? (r.body.credited ? "Paiement enregistré et client crédité." : "Paiement enregistré, crédit impossible.") : "Paiement enregistré : à rattacher à un client." });
+  } catch (e) { console.error("CHANNEL_RECORD", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
+// Vue d'ensemble des routes (OMNICHECK) : pour chaque opérateur, quel canal est utilisé et s'il est réellement prêt.
+router.get("/routes", adminOnly, async (req, res) => {
+  try {
+    await ensure();
+    const po = require("../providers/payoutRouter.js");
+    const on = (n) => ["on", "true", "1", "yes"].includes(String(process.env[n] || "off").toLowerCase());
+    const ready = (route) => route === "manual" ? { ok: true, note: "Manuel : vous payez puis cliquez « Payé »." }
+      : route === "momo" ? (po.momoConfigured() ? { ok: true, note: "API MTN configurée." } : { ok: false, note: "API MTN non configurée." })
+      : route === "paydunya" ? (on("PAYDUNYA_ENABLED") ? { ok: true, note: "PayDunya activé." } : { ok: false, note: "PayDunya désactivé." })
+      : { ok: false, note: "API non encore fournie." };
+    const operators = ["mtn", "moov", "celtiis"].map((op) => { const route = po.routeFor(op); return { operator: op, route, ...ready(route) }; });
+    let accounts = [];
+    try { accounts = JSON.parse(process.env.OMNIPAY_PAYIN_ACCOUNTS || "[]").map((a) => String(a.label || a.type || "compte")); } catch (_) { accounts = []; }
+    const q = sql();
+    const last = await q`SELECT channel, count(*)::int AS n, coalesce(sum(amount),0)::float AS total FROM inbound_payments WHERE created_at > now() - interval '24 hours' GROUP BY channel ORDER BY channel`;
+    const pend = (await q`SELECT count(*)::int AS n FROM inbound_payments WHERE status = 'received'`)[0].n;
+    res.json({ operators, pispi: { payin: "Entrant : alias PI-SPI + saisie admin (API Ecobank à venir)", payout: "Sortant : « Envoyer » dans l'app Ecobank puis « Payé » (API à venir)" },
+      inboundSecretSet: (process.env.CHANNEL_INBOUND_SECRET || "").trim().length >= 32, payinAccounts: accounts, last24h: last, toReconcile: pend,
+      autoPayout: on("AUTO_PAYOUT"), autoDayMax: Number(process.env.AUTO_PAYOUT_DAY_MAX_XOF || 1000000) });
+  } catch (e) { console.error("CHANNEL_ROUTES", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
 // ---- Admin : paiements reçus mais non rattachés ----

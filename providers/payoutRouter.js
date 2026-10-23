@@ -1,7 +1,7 @@
 "use strict";
 // OMNIPAY — aiguillage des retraits par opérateur (fichier AJOUTÉ, à placer dans providers/).
 // Pour chaque opérateur on choisit le canal par variable Render :
-//   PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV / PAYOUT_ROUTE_CELTIIS = manual (DÉFAUT : file d'attente admin, aucun tiers) | momo (MTN MoMo API directe) | pispi (Ecobank PI-SPI)
+//   PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV / PAYOUT_ROUTE_CELTIIS = manual (DÉFAUT : file d'attente admin, aucun tiers) | momo (MTN MoMo API directe) | moov / celtiis (emplacements, en attente de leur API) | pispi (Ecobank PI-SPI) | paydunya (OPTIONNEL, à activer explicitement)
 // Chaque canal renvoie : {status:'sent'|'refused'|'uncertain'|'unavailable', detail}
 //   sent        : ordre accepté par le canal (la confirmation finale arrive par callback ou vérification)
 //   refused     : refus clair AVANT envoi -> la demande reste en attente (rien n'est parti)
@@ -14,6 +14,16 @@ const intlPhone = (p) => {
   if (d.startsWith("00")) d = d.slice(2);
   return d.startsWith("229") ? d : "229" + d;
 };
+
+// ---- Canal 1 : PayDunya (déjà intégré) ----
+async function viaPaydunya({ txId, operator, phone, amount, callbackUrl }) {
+  const MODES = { mtn: "mtn-benin", moov: "moov-benin", celtiis: "celtiis-cash" };
+  const pd = require("./paydunya.js");
+  const tok = await pd.createDisburseToken({ accountAlias: intlPhone(phone), amount, withdrawMode: MODES[operator], callbackUrl });
+  if (!(tok && tok.response_code === "00" && tok.disburse_token)) return { status: "refused", detail: String((tok && (tok.response_text || tok.response_code)) || "refus PayDunya") };
+  const sub = await pd.submitDisburse({ disburseInvoice: tok.disburse_token, disburseId: txId });
+  return { status: "sent", detail: sub && sub.response_code, ref: String(txId) };
+}
 
 // ---- Canal 2 : MTN MoMo API directe (Disbursement) ----
 // Écrit d'après la documentation publique « MTN MoMo API » (momodeveloper.mtn.com). À VALIDER D'ABORD en sandbox ;
@@ -66,7 +76,13 @@ async function viaPispi() {
 
 // Canal manuel : aucun tiers. La demande reste « en attente » ; l'admin paie depuis son propre compte puis clique « Payé ».
 async function viaManual() { return { status: "unavailable", detail: "Traitement manuel OMNIPAY (file d'attente admin)." }; }
-const CHANNELS = { manual: viaManual, momo: viaMomo, pispi: viaPispi };
+// ---- Canaux Moov Money et Celtiis Cash : emplacements prêts ----
+// À ce jour ni Moov ni Celtiis ne publient d'API de paiement ouverte : aucun appel n'est inventé ici. Tant qu'ils ne fournissent pas de documentation
+// et de clés, ces canaux renvoient « unavailable » (la demande reste en attente, traitée manuellement). Dès réception de leur documentation,
+// l'appel s'ajoute dans viaMoov / viaCeltiis (même contrat {status, detail}) sans toucher au reste. Les dépôts entrants passent déjà par /api/channels/inbound.
+async function viaMoov() { return { status: "unavailable", detail: "Moov Money : API non encore fournie (traitement manuel)." }; }
+async function viaCeltiis() { return { status: "unavailable", detail: "Celtiis Cash : API non encore fournie (traitement manuel)." }; }
+const CHANNELS = { manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
 const routeFor = (operator) => {
   const r = String(process.env["PAYOUT_ROUTE_" + String(operator).toUpperCase()] || "manual").toLowerCase();
   return CHANNELS[r] ? r : "manual";
@@ -78,48 +94,12 @@ async function payout(args) {
   return { ...r, route };
 }
 
-function momoConfigured() {
-  return momoReady(momoCfg());
-}
-
+// Test de connexion (utilisé par OMNICHECK) : obtient un jeton MTN Disbursement, sans rien envoyer.
+const momoConfigured = () => momoReady(momoCfg());
 async function momoPing() {
   const c = momoCfg();
-
-  if (!momoReady(c)) {
-    return {
-      configured: false,
-      ok: false,
-      detail: "MTN MoMo Disbursement non configuré."
-    };
-  }
-
-  try {
-    await momoToken(c);
-
-    return {
-      configured: true,
-      ok: true,
-      environment: c.env,
-      currency: c.currency
-    };
-  } catch (error) {
-    return {
-      configured: true,
-      ok: false,
-      detail: String(
-        error.response?.data?.message ||
-        error.response?.status ||
-        error.message
-      ).slice(0, 160)
-    };
-  }
+  if (!momoReady(c)) return { configured: false, ok: false };
+  try { await momoToken(c); return { configured: true, ok: true }; } catch (e) { return { configured: true, ok: false, error: "HTTP " + (e.response && e.response.status || e.message) }; }
 }
 
-module.exports = {
-  payout,
-  routeFor,
-  momoStatus,
-  momoConfigured,
-  momoPing,
-  intlPhone
-};
+module.exports = { payout, routeFor, momoStatus, momoConfigured, momoPing, intlPhone };

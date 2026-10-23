@@ -150,22 +150,30 @@ router.post("/cashout", requireAuth, needAgent, async (req, res) => {
   } catch (e) { fail(res, e, "OMC_CASHOUT"); }
 });
 
-// L'agent recharge sa trésorerie depuis son portefeuille, ou y reverse une partie.
+// Recharge de trésorerie depuis le portefeuille de l'agent (une seule requête atomique). Aussi utilisée par le dépôt MoMo automatique (routes/momo.js).
+async function floatLoad(agent, amount) {
+  await ensure();
+  const r = ref("OMF");
+  const out = await sql()`
+    WITH a AS (UPDATE omnicash_agents SET float_xof = float_xof + ${amount} WHERE user_id = ${agent}::uuid AND status = 'active'
+                 AND (float_limit = 0 OR float_xof + ${amount} <= float_limit)
+                 AND EXISTS (SELECT 1 FROM wallets WHERE user_id = ${agent}::uuid AND balance >= ${amount}) RETURNING user_id, float_xof),
+    w AS (UPDATE wallets SET balance = balance - ${amount}, updated_at = now() FROM a WHERE wallets.user_id = ${agent}::uuid RETURNING wallets.id AS wid, wallets.balance AS bal),
+    t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
+          SELECT w.wid, 'transfer_out', ${amount}, w.bal, 'completed', 'internal', ${r}, ${"omc-" + r}, ${JSON.stringify({ kind: "float_load" })}::jsonb FROM w RETURNING id),
+    o AS (INSERT INTO omnicash_ops (agent_id, kind, amount, ref) SELECT ${agent}::uuid, 'float_load', ${amount}, ${r} FROM w RETURNING id)
+    SELECT (SELECT count(*) FROM t)::int AS n, (SELECT float_xof FROM a)::float AS float`;
+  return out[0]?.n === 1 ? { ok: true, float: out[0].float, ref: r } : { ok: false };
+}
+router.floatLoad = floatLoad;
+
 router.post("/float/load", requireAuth, needAgent, async (req, res) => {
   try {
-    const amount = amountOf(req.body?.amount), agent = req.user.userId, r = ref("OMF");
+    const amount = amountOf(req.body?.amount);
     if (!amount) return res.status(400).json({ error: `Montant entre 100 et ${MAX_OP()} FCFA.` });
-    const out = await sql()`
-      WITH a AS (UPDATE omnicash_agents SET float_xof = float_xof + ${amount} WHERE user_id = ${agent}::uuid AND status = 'active'
-                   AND (float_limit = 0 OR float_xof + ${amount} <= float_limit)
-                   AND EXISTS (SELECT 1 FROM wallets WHERE user_id = ${agent}::uuid AND balance >= ${amount}) RETURNING user_id, float_xof),
-      w AS (UPDATE wallets SET balance = balance - ${amount}, updated_at = now() FROM a WHERE wallets.user_id = ${agent}::uuid RETURNING wallets.id AS wid, wallets.balance AS bal),
-      t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
-            SELECT w.wid, 'transfer_out', ${amount}, w.bal, 'completed', 'internal', ${r}, ${"omc-" + r}, ${JSON.stringify({ kind: "float_load" })}::jsonb FROM w RETURNING id),
-      o AS (INSERT INTO omnicash_ops (agent_id, kind, amount, ref) SELECT ${agent}::uuid, 'float_load', ${amount}, ${r} FROM w RETURNING id)
-      SELECT (SELECT count(*) FROM t)::int AS n, (SELECT float_xof FROM a)::float AS float`;
-    if (out[0]?.n !== 1) return res.status(400).json({ error: "Solde insuffisant ou plafond de trésorerie dépassé." });
-    res.status(201).json({ message: "Trésorerie rechargée.", float: out[0].float });
+    const r = await floatLoad(req.user.userId, amount);
+    if (!r.ok) return res.status(400).json({ error: "Solde insuffisant ou plafond de trésorerie dépassé." });
+    res.status(201).json({ message: "Trésorerie rechargée.", float: r.float });
   } catch (e) { fail(res, e, "OMC_FLOAD"); }
 });
 

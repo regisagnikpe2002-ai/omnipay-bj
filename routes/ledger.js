@@ -41,7 +41,7 @@ async function ensureTables() {
 }
 
 // ---------- Règles de classement ----------
-const FUND_BY_ORIGIN = { paydunya: "PAYDUNYA", coingate: "COINGATE", binance_pay: "BINANCE", manual: "MANUEL", omnicash: "AGENTS_OMNICASH", internal: "INTERNE" };
+const FUND_BY_ORIGIN = { paydunya: "PAYDUNYA", coingate: "COINGATE", binance_pay: "BINANCE", manual: "MANUEL", omnicash: "AGENTS_OMNICASH", momo: "MTN_MOMO", internal: "INTERNE" };
 const refOf = (id) => "OMP-R" + String(id).replace(/-/g, "").slice(0, 10).toUpperCase();
 
 function classify(t) {

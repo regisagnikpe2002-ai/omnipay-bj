@@ -2,7 +2,7 @@
 // OMNIPAY — Binance P2P (fichier AJOUTÉ, LECTURE SEULE). Binance ne propose aucune API pour passer ou valider un ordre P2P :
 // ce module LIT l'historique P2P de TON compte Binance pour vérifier qu'un ordre existe, qu'il est terminé et pour quel montant,
 // avant que tu crédites un client (dépôt déclaré avec le n° d'ordre comme preuve). Il ne crédite rien tout seul.
-// Variables Render : BINANCE_API_KEY, BINANCE_API_SECRET (clé en LECTURE SEULE, sans retrait, restreinte aux IP sortantes de Render).
+// Variables Render : BINANCE_P2P_API_KEY, BINANCE_P2P_API_SECRET (distinctes de celles de Binance Pay) (clé en LECTURE SEULE, sans retrait, restreinte aux IP sortantes de Render).
 // Écrit d'après la documentation publique Binance (C2C, listUserOrderHistory) : à valider avec ta clé.
 const crypto = require("crypto");
 const axios = require("axios");
@@ -14,7 +14,7 @@ router.use((req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ e
 const base = () => (process.env.BINANCE_SAPI_BASE || "https://api.binance.com").replace(/\/$/, "");
 
 async function history(tradeType, startTs, endTs) {
-  const key = (process.env.BINANCE_API_KEY || "").trim(), secret = (process.env.BINANCE_API_SECRET || "").trim();
+  const key = (process.env.BINANCE_P2P_API_KEY || "").trim(), secret = (process.env.BINANCE_P2P_API_SECRET || "").trim();
   if (!key || !secret) throw Object.assign(new Error("Clés Binance absentes."), { code: "NOKEY" });
   const qs = new URLSearchParams({ tradeType, startTimestamp: String(startTs), endTimestamp: String(endTs), page: "1", rows: "100", recvWindow: "10000", timestamp: String(Date.now()) });
   const sig = crypto.createHmac("sha256", secret).update(qs.toString()).digest("hex");

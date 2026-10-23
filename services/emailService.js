@@ -30,11 +30,32 @@ async function verifyEmailTransport() {
   return true;
 }
 
-async function sendOtpEmail({ email, code, expiresInMinutes }) {
-  const transporter = createTransporter();
+// Envoi : 1) Brevo (BREVO_API_KEY) 2) Resend (RESEND_API_KEY) 3) SMTP (SMTP_*). Les API HTTPS sont plus fiables que Gmail (pas de blocage, pas de limite de 500/jour).
+function fromParts() {
+  const raw = (process.env.MAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || "").trim();
+  const m = raw.match(/^"?([^"<]*?)"?\s*<([^>]+)>$/);
+  return m ? { name: m[1].trim() || "OMNIPAY", email: m[2].trim() } : { name: "OMNIPAY", email: raw };
+}
+async function deliver(mail) {
+  const brevo = (process.env.BREVO_API_KEY || "").trim();
+  const resend = (process.env.RESEND_API_KEY || "").trim();
+  if (brevo || resend) {
+    const f = fromParts();
+    if (!f.email) throw new Error("Variable manquante : MAIL_FROM ou SMTP_FROM");
+    const r = brevo
+      ? await fetch("https://api.brevo.com/v3/smtp/email", { method: "POST", headers: { "api-key": brevo, "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({ sender: f, to: [{ email: mail.to }], subject: mail.subject, htmlContent: mail.html, textContent: mail.text }) })
+      : await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + resend, "content-type": "application/json" },
+          body: JSON.stringify({ from: `${f.name} <${f.email}>`, to: [mail.to], subject: mail.subject, html: mail.html, text: mail.text }) });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`Envoi e-mail refusé (${brevo ? "Brevo" : "Resend"} ${r.status}) : ${String(body.message || body.error || "").slice(0, 160)}`);
+    return { messageId: body.messageId || body.id || null, accepted: [mail.to], rejected: [] };
+  }
+  return createTransporter().sendMail({ ...mail, from: required("SMTP_FROM") });
+}
 
-  const result = await transporter.sendMail({
-    from: required("SMTP_FROM"),
+async function sendOtpEmail({ email, code, expiresInMinutes }) {
+  const result = await deliver({
     to: email,
     subject: "Votre code de vérification OMNIPAY",
     text: [

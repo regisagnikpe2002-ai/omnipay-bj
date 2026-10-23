@@ -23,7 +23,7 @@ app.set("trust proxy", 1);
 
 app.use(cors());
 
-// rawBody conservé pour la vérification cryptographique des webhooks.
+// rawBody conservé : nécessaire à la vérification des webhooks (Binance Pay, PayDunya).
 app.use(
   express.json({
     verify: (req, res, buf) => {
@@ -157,6 +157,11 @@ process.on("uncaughtException", (err) => {
 
 const PORT = process.env.PORT || 3000;
 
+console.log("PAYDUNYA_MASTER_KEY:", !!process.env.PAYDUNYA_MASTER_KEY);
+console.log("PAYDUNYA_PRIVATE_KEY:", !!process.env.PAYDUNYA_PRIVATE_KEY);
+console.log("PAYDUNYA_TOKEN:", !!process.env.PAYDUNYA_TOKEN);
+console.log("PAYDUNYA_PUBLIC_KEY:", !!process.env.PAYDUNYA_PUBLIC_KEY);
+console.log("PAYDUNYA_MODE:", process.env.PAYDUNYA_MODE);
 console.log("ADMIN_KEY:", !!process.env.ADMIN_KEY);
 console.log("DATABASE_URL:", !!process.env.DATABASE_URL);
 
