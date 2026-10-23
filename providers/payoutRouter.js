@@ -78,4 +78,48 @@ async function payout(args) {
   return { ...r, route };
 }
 
-module.exports = { payout, routeFor, momoStatus, intlPhone };
+function momoConfigured() {
+  return momoReady(momoCfg());
+}
+
+async function momoPing() {
+  const c = momoCfg();
+
+  if (!momoReady(c)) {
+    return {
+      configured: false,
+      ok: false,
+      detail: "MTN MoMo Disbursement non configuré."
+    };
+  }
+
+  try {
+    await momoToken(c);
+
+    return {
+      configured: true,
+      ok: true,
+      environment: c.env,
+      currency: c.currency
+    };
+  } catch (error) {
+    return {
+      configured: true,
+      ok: false,
+      detail: String(
+        error.response?.data?.message ||
+        error.response?.status ||
+        error.message
+      ).slice(0, 160)
+    };
+  }
+}
+
+module.exports = {
+  payout,
+  routeFor,
+  momoStatus,
+  momoConfigured,
+  momoPing,
+  intlPhone
+};
