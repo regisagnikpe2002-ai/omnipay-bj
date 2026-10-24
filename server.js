@@ -123,7 +123,7 @@ mount("/api", "./routes/accountIds", "Identifiants et reçus");
 mount("/api/coingate", "./routes/coingate", "CoinGate");
 mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
 mount("/api/omnicash", "./routes/omnicash", "OMNICASH (agents)");
-mount("/api/momo", "./routes/momo", "MTN MoMo (dépôts et suivi des retraits)");
+mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE");mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE");mount("/api/momo", "./routes/momo", "MTN MoMo (dépôts et suivi des retraits)");
 mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-SPI, Mobile Money)");
 mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");

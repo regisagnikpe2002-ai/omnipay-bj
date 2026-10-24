@@ -70,8 +70,37 @@ async function momoStatus(txId) {
 // ---- Canal 3 : Ecobank PI-SPI (à brancher avec les accès fournis par Ecobank) ----
 // Aucun accès n'existe encore : ce canal renvoie « unavailable » et la demande reste en attente.
 // Dès réception de la documentation et des clés d'Ecobank, c'est ici (et seulement ici) que l'appel est ajouté.
-async function viaPispi() {
-  return { status: "unavailable", detail: "PI-SPI Ecobank : accès non encore fournis." };
+async function viaPispi(args) {
+  const piSpi = require("../lib/piSpi.js");
+
+  if (!piSpi.isEnabled()) {
+    return {
+      status: "unavailable",
+      detail: "PI-SPI Ecobank non configuré."
+    };
+  }
+
+  try {
+    const result = await piSpi.initiate(args);
+    const status = String(result?.status || "uncertain").toLowerCase();
+
+    if (["sent", "refused", "uncertain", "unavailable"].includes(status)) {
+      return { ...result, status };
+    }
+
+    return {
+      status: "uncertain",
+      detail: "Réponse PI-SPI non reconnue."
+    };
+  } catch (error) {
+    const detail = String(error.message || "Erreur PI-SPI").slice(0, 160);
+
+    if (detail.includes("branchement à finaliser")) {
+      return { status: "unavailable", detail };
+    }
+
+    return { status: "uncertain", detail };
+  }
 }
 
 // Canal manuel : aucun tiers. La demande reste « en attente » ; l'admin paie depuis son propre compte puis clique « Payé ».
