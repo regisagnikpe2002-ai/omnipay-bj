@@ -3039,7 +3039,7 @@ async function openMan(){$('m_msg').className='msg';manTab('in');show('man');mom
       <div style="word-break:break-all;margin:6px 0;font-weight:600">${escH(a.detail)}</div>
       <div class="row"><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="copy">Copier</button><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="qr">QR</button></div>
       <div id="qra${i}" class="qrbox hide" style="margin-top:8px"></div></div>`).join('')
-      +'<p class="sub" style="font-size:12px;margin-top:8px">Pour l\'USDT, vérifiez le réseau avant d\'envoyer : un mauvais réseau peut faire perdre vos fonds.</p>'
+      +(d.omId?`<p class="sub" style="font-size:13px;margin-top:8px"><b>Référence obligatoire (motif / libellé) : ${escH(d.omId)}</b><br>Pour un virement ou dépôt bancaire, écrivez votre identifiant OM exactement dans le motif : votre compte est crédité automatiquement dès réception.</p>`:'')+'<p class="sub" style="font-size:12px;margin-top:8px">Pour l\'USDT, vérifiez le réseau avant d\'envoyer : un mauvais réseau peut faire perdre vos fonds.</p>'
       :'<p class="sub">Les comptes de réception ne sont pas encore affichés. Réessayez plus tard.</p>';
     $('m_accs').onclick=e=>{const b=e.target.closest('button[data-a]');if(!b)return;const a=acc[+b.dataset.i];
       if(b.dataset.a==='copy')copyTxt(a.detail,'m_msg');else{const q=$('qra'+b.dataset.i);if(q.classList.contains('hide')){q.innerHTML=qrSvg(a.detail);q.classList.remove('hide')}else q.classList.add('hide')}};

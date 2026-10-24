@@ -83,6 +83,27 @@ router.post("/record", adminOnly, async (req, res) => {
   } catch (e) { console.error("CHANNEL_RECORD", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Lecture d'un message de banque COLLÉ par l'admin (SMS / notification PI-SPI) : extrait montant, référence, identifiant OM, payeur.
+// N'ENREGISTRE RIEN : l'admin relit les champs préremplis puis valide lui-même (« Enregistrer et créditer »). Format Ecobank non garanti : on signale ce qui manque.
+function parseBankText(text) {
+  const t = String(text || "").replace(/[\u00a0\u202f]/g, " ").slice(0, 2000);
+  const warnings = [];
+  let amount = null;
+  const am = t.match(/(?:montant|re[cç]u|cr[ée]dit(?:[ée])?|de)\s*:?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[,.]\d{1,2})?\s*(?:FCFA|F\s?CFA|XOF|CFA|F)\b/i) || t.match(/(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[,.]\d{1,2})?\s*(?:FCFA|F\s?CFA|XOF|CFA)\b/i);
+  if (am) amount = parseInt(am[1].replace(/[ .]/g, ""), 10);
+  let externalId = null;
+  const rf = t.match(/(?:r[ée]f(?:[ée]rence)?|id(?:\s*(?:op[ée]ration|transaction|paiement))?|transaction|trx|n[°o])\s*[:#°]?\s*([A-Za-z0-9][A-Za-z0-9\-_]{5,39})/i) || t.match(/\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
+  if (rf) externalId = rf[1];
+  const om = t.match(/\bOM\s?(\d{10})\b/i);
+  const pm = t.match(/(?:de|from|exp[ée]diteur|payeur|par)\s*:?\s*([A-ZÀ-Ý][A-ZÀ-Ý'\- ]{3,60}[A-ZÀ-Ý])(?=\s|$|[.,;])/);
+  if (/d[ée]bit|envoy[ée]|vous avez pay|retrait/i.test(t) && !/re[cç]u|cr[ée]dit|re[cç]u de/i.test(t)) warnings.push("Ce message ressemble à une SORTIE d'argent, pas à un paiement reçu.");
+  if (amount == null) warnings.push("Montant introuvable : saisissez-le.");
+  if (!externalId) warnings.push("Référence de l'opération introuvable : copiez-la depuis l'application bancaire.");
+  return { amount, externalId, omId: om ? "OM" + om[1] : null, payer: pm ? pm[1].trim() : null, warnings };
+}
+router.post("/parse-text", adminOnly, (req, res) => res.json(parseBankText(req.body?.text)));
+router._test = { parseBankText };
+
 // Vue d'ensemble des routes (OMNICHECK) : pour chaque opérateur, quel canal est utilisé et s'il est réellement prêt.
 router.get("/routes", adminOnly, async (req, res) => {
   try {
