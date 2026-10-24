@@ -1,0 +1,11 @@
+VARIABLES RENDER (facultatives, toutes désactivées par défaut = rien ne change tant que vous ne les ajoutez pas) :
+  WITHDRAW_REQUIRE_LINKED = on   -> un retrait n'est accepté que vers un compte Mobile Money relié ET validé par vous
+  OMNICASH_PAUSE          = on   -> coupe tout envoi automatique (le bouton Pause d'OMNICHECK fait la même chose sans redéployer)
+  AUTO_PAYOUT             = on   -> envoi automatique des retraits (seulement si la route de l'opérateur est prête : PAYOUT_ROUTE_MTN=momo)
+  AUTO_PAYOUT_DAY_MAX_XOF / APPROVAL_XOF : plafond automatique sur 24 h / montant à partir duquel vous validez à la main
+
+BUREAU CASH (v13) — variables facultatives :
+  CASHDESK_MAX_XOF = 20000000   plafond du total des commandes cash en cours (défaut 20 000 000)
+  CASHDESK_HOURS   = 48         délai avant que l'argent soit à rendre à l'expéditeur (défaut 48)
+  CASHDESK_MIN_XOF = 1000       montant minimum par commande
+Référence à donner à l'expéditeur : celle de la commande (CASH-XXXXXXXX), jamais un ID OM.
