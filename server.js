@@ -122,11 +122,14 @@ mount("/api/compliance", "./routes/compliance", "Conformité");
 mount("/api", "./routes/accountIds", "Identifiants et reçus");
 mount("/api/coingate", "./routes/coingate", "CoinGate");
 mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
+mount("/api/treasury", "./routes/treasury", "Trésorerie (PI-SPI + MetaMask)");
 mount("/api/omnicash", "./routes/omnicash", "OMNICASH (agents)");
 mount("/api/momo", "./routes/momo", "MTN MoMo (dépôts et suivi des retraits)");
 mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-SPI, Mobile Money)");
 mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
+mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");
+mount("/api/p2pdesk", "./routes/p2pdesk", "Bureau P2P (garde-fou libération)");
 mount("/api/web3", "./routes/web3", "Web3");
 mount("/api", "./routes/binance", "Binance");
 
@@ -172,6 +175,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("================================");
   try { require("./routes/ledger").startScheduler(); } catch (err) { console.error("[LEDGER] non démarré :", err.message); }
   try { require("./routes/compliance").startScheduler(); } catch (err) { console.error("[CONFORMITÉ] non démarré :", err.message); }
+  try { require("./routes/treasury").startScheduler(); } catch (err) { console.error("[TRÉSORERIE] non démarré :", err.message); }
   try { require("./routes/momo").startScheduler(); } catch (err) { console.error("[MOMO] non démarré :", err.message); }
   try { require("./routes/omnicheck").startScheduler(); } catch (err) { console.error("[OMNICHECK] non démarré :", err.message); }
 });

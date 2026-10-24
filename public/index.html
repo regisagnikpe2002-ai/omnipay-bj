@@ -70,11 +70,36 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 .qrbox{background:#fff;border-radius:16px;padding:14px;display:grid;place-items:center;margin-bottom:10px}.qrbox svg{width:100%;max-width:240px;height:auto}
 .faq{border-bottom:1px solid var(--line);padding:10px 0}.faq summary{cursor:pointer;font-weight:600;font-size:15px}.faq p{color:var(--mut);font-size:14px;margin-top:8px}
 .foot{max-width:460px;margin:26px auto 0;text-align:center;color:var(--mut);font-size:12px;line-height:1.8}.foot a{color:var(--mint);text-decoration:none}
+
+/* Thème : blanc le jour, sombre la nuit (automatique, avec bascule manuelle) */
+:root[data-theme=light]{--bg:#f2f5fb;--card:#ffffff;--card2:#eef2f9;--line:#d8e1ef;--txt:#0b1426;--mut:#5b6b86;--mint:#0f9d73;--mint2:#0a7d5c;--warn:#a86a00;--err:#c93a3a}
+:root[data-theme=light] body{background:linear-gradient(180deg,#e7efff 0,#f6f9ff 320px,#f2f5fb 100%)}
+:root[data-theme=light] .pri,:root[data-theme=light] .rb .tile.p span{color:#fff}
+:root[data-theme=light] .card{box-shadow:0 6px 22px rgba(20,40,90,.07)}
+:root[data-theme=light] .bal,:root[data-theme=light] .bal .v{color:#fff}
+:root[data-theme=light] .rb .tile span{box-shadow:0 3px 10px rgba(20,40,90,.10)}
+:root[data-theme=light] .msg.ok{background:#e5f7ef;color:#0a7d5c;border-color:#b5e6d0}
+:root[data-theme=light] .msg.er{background:#fdebec;color:#c93a3a;border-color:#f3c1c4}
+:root[data-theme=light] .badge{background:#e5f7ef;color:#0a7d5c;border-color:#b5e6d0}
+:root[data-theme=light] .demo,:root[data-theme=light] .tile .soon{background:#fff4d6;color:#a86a00}
+:root[data-theme=light] input,:root[data-theme=light] select,:root[data-theme=light] textarea{background:#fff;border-color:#c9d5e8}
+.thm{width:38px;height:38px;margin:0 0 0 auto;padding:0;border-radius:50%;background:var(--card);border:1px solid var(--line);font-size:18px;line-height:1;color:var(--txt)}
 </style>
+<script>
+/* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
+(function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
+ function eff(){if(mode==='light'||mode==='dark')return mode;var h=new Date().getHours();return h>=6&&h<18?'light':'dark'}
+ function apply(){var t=eff();document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#f2f5fb':'#070b14');
+  var b=document.getElementById('thm');if(b){b.textContent=mode==='auto'?'🌗':(t==='light'?'☀️':'🌙');b.title='Thème : '+(mode==='auto'?'automatique (jour/nuit)':t==='light'?'clair':'sombre')}}
+ window.toggleTheme=function(){mode=mode==='auto'?'light':mode==='light'?'dark':'auto';try{localStorage.setItem(K,mode)}catch(e){}apply();
+  var b=document.getElementById('thm');if(b)alert(b.title)};
+ apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
+</script>
+
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="44" height="44" style="border-radius:12px;display:block"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div></div>
+  <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="44" height="44" style="border-radius:12px;display:block"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
 
   <!-- CONNEXION -->
   <section id="login" class="card">
@@ -139,7 +164,8 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <button class="tile" onclick="document.getElementById('txs').scrollIntoView({behavior:'smooth'})"><span>📊</span>Historique</button>
       <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
       <button class="tile" onclick="$('ib_out').className='msg';show('iban')"><span>🏦</span>IBAN</button>
-      <button class="tile" onclick="toast('Carte virtuelle : bientôt disponible')"><span>💳</span>Carte<em>bientôt</em></button>
+      <button class="tile" onclick="openCard()"><span>💳</span>Carte<em>nouveau</em></button>
+      <button class="tile" onclick="openOlat()"><span>💬</span>Olatounde<em>assistante</em></button>
       <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<em>bientôt</em></button>
     </div>
     <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
@@ -293,6 +319,26 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <h1>OMNICASH</h1><p class="sub">Déposez ou retirez des espèces auprès d'un agent OMNICASH, ou devenez agent.</p>
     <div id="oc_body"></div>
     <div id="oc_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="olat" class="card hide">
+    <h1>OLATOUNDE</h1><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
+    <div id="ol_log" style="min-height:160px;max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0"></div>
+    <div class="row"><input id="ol_in" placeholder="Votre question…" maxlength="500" autocomplete="off"><button class="pri" style="width:auto;margin:0;padding:0 18px" onclick="olSend()">Envoyer</button></div>
+    <button class="sec" onclick="show('dash')">← Retour</button>
+  </section>
+  <section id="card" class="card hide">
+    <h1>Ma carte OMNIPAY</h1><p class="sub">Votre carte d'identité de paiement : donnez votre identifiant ou votre alias pour recevoir de l'argent d'un autre client OMNIPAY.</p>
+    <div id="vc" style="border-radius:20px;padding:20px;color:#fff;background:linear-gradient(135deg,#143a8a,#0f6b63);box-shadow:0 10px 28px rgba(15,40,90,.25);margin:6px 0 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:800;letter-spacing:1px"><span>OMNIPAY</span><span style="font-size:11px;opacity:.85;letter-spacing:.5px">CARTE CLIENT</span></div>
+      <div id="vc_id" style="font-size:22px;font-weight:800;letter-spacing:2px;margin:26px 0 6px;word-break:break-all">—</div>
+      <div id="vc_nm" style="font-size:14px;opacity:.95">—</div>
+      <div id="vc_al" style="font-size:11px;opacity:.8;margin-top:6px;word-break:break-all"></div>
+    </div>
+    <p class="sub" style="font-size:13px">Ce n'est pas encore une carte Visa ou Mastercard utilisable chez les commerçants : elle fonctionne entre clients OMNIPAY. La carte bancaire virtuelle nécessite un partenaire émetteur ; dites-nous si vous la voulez, nous vous préviendrons dès son ouverture.</p>
+    <button class="pri" onclick="cardRequest()">Je veux la carte virtuelle</button>
+    <div id="card_msg" class="msg"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -2674,7 +2720,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2896,6 +2942,18 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
       if(s.status==='completed'){msg(mid,isF?'Trésorerie rechargée.':'Dépôt crédité : '+fmt(am)+'.',true);await refresh();if(isF)openOc();mmBusy=false;return}
       if(s.status==='failed'){msg(mid,'Paiement refusé ou expiré. Rien n\'a été débité.');mmBusy=false;return}}
     msg(mid,'Toujours en attente : votre solde sera crédité automatiquement dès la confirmation de MTN.',true)}catch(e){msg(mid,e.message)}mmBusy=false}
+
+/* ===== Carte OMNIPAY ===== */
+function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
+function openOlat(){show('olat');if(!$('ol_log').children.length)olAdd("Bonjour, je suis OLATOUNDE. Demandez-moi : « où en est mon dépôt ? », « comment retirer ? », « mon code n'arrive pas »… ou « parler à un conseiller ».",false);setTimeout(()=>$('ol_in').focus(),50)}
+async function olSend(){const i=$('ol_in'),m=i.value.trim();if(m.length<2)return;i.value='';olAdd(m,true);try{const r=await api('/api/olatounde/ask',{body:{message:m}});olAdd(r.reply,false)}catch(e){olAdd(e.message||'Service momentanément indisponible.',false)}}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='ol_in')olSend()});
+function openCard(){$('card_msg').className='msg';const u=S.user||{};
+  $('vc_id').textContent=($('id_v')&&$('id_v').value)||'—';$('vc_nm').textContent=((u.firstName||'')+' '+(u.lastName||'')).trim()||u.phone||u.email||'';
+  const al=($('alias_v')&&$('alias_v').value)||'';$('vc_al').textContent=al?('Alias : '+al):'';show('card')}
+async function cardRequest(){try{const u=S.user||{};
+  const r=await fetch('/api/omnicheck/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:'idee',rating:5,message:'Demande de carte virtuelle OMNIPAY — client '+(($('id_v')&&$('id_v').value)||'inconnu'),contact:u.phone||u.email||''})});
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Envoi impossible.');msg('card_msg','Merci ! Votre demande est enregistrée : nous vous prévenons dès l\'ouverture de la carte.',true)}catch(e){msg('card_msg',e.message)}}
 
 /* ===== Dépôt crypto ===== */
 async function doCg(){const am=parseInt($('cg_am').value,10);if(!(am>=1000))return msg('cry_msg','Montant minimum : 1000 FCFA.');

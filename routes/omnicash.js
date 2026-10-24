@@ -229,11 +229,15 @@ router.post("/admin/agents/:id/float", adminOnly, async (req, res) => {
     const amount = Math.trunc(Number(req.body?.amount)), note = clean(req.body?.note, 200);
     if (!Number.isFinite(amount) || amount === 0 || Math.abs(amount) > 50000000) return res.status(400).json({ error: "Montant invalide." });
     if (note.length < 4) return res.status(400).json({ error: "Indiquez la référence du virement ou du reçu (obligatoire)." });
+    // Seuls deux comptes réels alimentent la trésorerie des agents : votre PI-SPI Ecobank et votre MetaMask.
+    const channel = String(req.body?.channel || "").toLowerCase();
+    if (!["pispi", "metamask"].includes(channel)) return res.status(400).json({ error: "Canal obligatoire : « pispi » ou « metamask » (vos deux comptes de trésorerie)." });
+    const fullNote = (channel.toUpperCase() + " · " + note).slice(0, 200);
     const r = ref("OMA");
     const out = await sql()`
       WITH a AS (UPDATE omnicash_agents SET float_xof = float_xof + ${amount} WHERE user_id = ${req.params.id}::uuid AND float_xof + ${amount} >= 0
                    AND (${amount} < 0 OR float_limit = 0 OR float_xof + ${amount} <= float_limit) RETURNING user_id, float_xof),
-      o AS (INSERT INTO omnicash_ops (agent_id, kind, amount, ref, note) SELECT a.user_id, 'float_admin', ${amount}, ${r}, ${note} FROM a RETURNING id)
+      o AS (INSERT INTO omnicash_ops (agent_id, kind, amount, ref, note) SELECT a.user_id, 'float_admin', ${amount}, ${r}, ${fullNote} FROM a RETURNING id)
       SELECT (SELECT float_xof FROM a)::float AS float, (SELECT count(*) FROM o)::int AS n`;
     if (out[0]?.n !== 1) return res.status(400).json({ error: "Refusé : agent introuvable, float négatif ou plafond dépassé." });
     res.json({ message: "Trésorerie mise à jour.", ref: r, float: out[0].float });
