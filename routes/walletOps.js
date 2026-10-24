@@ -320,6 +320,22 @@ router.post("/api/ops/deposits/reverify", adminOnly, async (req, res) => {
   } catch (e) { console.error("REVERIFY", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Nettoyage : clôture (« cancelled ») les dépôts PayDunya restés 'pending' depuis plus de N jours (7 par défaut, 3 minimum).
+// Aucun solde n'est touché (un dépôt en attente n'a jamais été crédité) ; l'historique est conservé dans le ledger. dryRun:true = simple comptage.
+router.post("/api/ops/deposits/expire-stale", adminOnly, async (req, res) => {
+  try {
+    const days = Math.max(3, Math.min(365, parseInt(req.body?.days, 10) || 7));
+    const q = sql();
+    if (req.body?.dryRun) {
+      const r = await q`SELECT count(*)::int AS n, coalesce(sum(amount),0)::float AS total FROM transactions WHERE type = 'deposit' AND provider = 'paydunya' AND status = 'pending' AND created_at < now() - make_interval(days => ${days})`;
+      return res.json({ dryRun: true, days, count: r[0].n, totalXof: r[0].total });
+    }
+    const rows = await q`UPDATE transactions SET status = 'cancelled', metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object('expiredAt', now()::text, 'expiredReason', 'dépôt PayDunya jamais confirmé')
+      WHERE type = 'deposit' AND provider = 'paydunya' AND status = 'pending' AND created_at < now() - make_interval(days => ${days}) RETURNING id, amount`;
+    res.json({ days, closed: rows.length, totalXof: rows.reduce((a, r) => a + Number(r.amount), 0) });
+  } catch (e) { console.error("EXPIRE_STALE", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
 // Valide et envoie UN retrait en attente (montants élevés compris).
 router.post("/api/ops/withdraw/:id/send", adminOnly, async (req, res) => {
   try {

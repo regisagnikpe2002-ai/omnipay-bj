@@ -30,11 +30,11 @@ const rate = () => { const v = Number(process.env.USDT_XOF_RATE); return Number.
 const CHAINS = [
   { key: "bsc", name: "BNB Chain", env: "TREASURY_RPC_BSC", rpc: "https://bsc-dataseed.binance.org", native: "BNB", tokens: [
     { sym: "USDT", addr: "0x55d398326f99059fF775485246999027B3197955", dec: 18 }, { sym: "USDC", addr: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", dec: 18 } ] },
-  { key: "polygon", name: "Polygon", env: "TREASURY_RPC_POLYGON", rpc: "https://polygon-rpc.com", native: "POL", tokens: [
+  { key: "polygon", name: "Polygon", env: "TREASURY_RPC_POLYGON", rpc: "https://polygon-bor-rpc.publicnode.com", native: "POL", tokens: [
     { sym: "USDT", addr: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", dec: 6 }, { sym: "USDC", addr: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", dec: 6 } ] },
   { key: "base", name: "Base", env: "TREASURY_RPC_BASE", rpc: "https://mainnet.base.org", native: "ETH", tokens: [
     { sym: "USDC", addr: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", dec: 6 } ] },
-  { key: "eth", name: "Ethereum", env: "TREASURY_RPC_ETH", rpc: "https://cloudflare-eth.com", native: "ETH", tokens: [
+  { key: "eth", name: "Ethereum", env: "TREASURY_RPC_ETH", rpc: "https://ethereum-rpc.publicnode.com", native: "ETH", tokens: [
     { sym: "USDT", addr: "0xdAC17F958D2ee523a2206206994597C13D831ec7", dec: 6 }, { sym: "USDC", addr: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", dec: 6 } ] },
 ];
 
