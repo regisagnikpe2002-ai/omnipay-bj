@@ -1,0 +1,3 @@
+Ajoutez UNE entrée de plus dans OMNIPAY_PAYIN_ACCOUNTS (Render > Environment), au tout début de la liste, avec VOTRE vrai IBAN/RIB ETS OMNIPAY
+(copiez-le depuis votre application Ecobank ; je ne le génère pas) :
+{"label":"Virement bancaire — ETS OMNIPAY (Ecobank)","type":"bank","network":"Ecobank Bénin","detail":"IBAN : <votre IBAN> | BIC : <code BIC> | Titulaire : ETS OMNIPAY | Motif obligatoire : votre ID OM"}
