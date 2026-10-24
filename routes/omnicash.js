@@ -272,4 +272,53 @@ router.get("/admin/treasury", adminOnly, async (req, res) => {
   } catch (e) { fail(res, e, "OMC_TREAS"); }
 });
 
+// ---------- Supervision : le pilote OMNICASH voit tout, et peut tout suspendre ----------
+router.get("/admin/supervision", adminOnly, async (req, res) => {
+  try {
+    const q = sql();
+    const safe = async (fn, d) => { try { return await fn(); } catch (_) { return d; } };
+    const guard = require("../lib/omnicashGuard.js");
+    const router2 = require("../providers/payoutRouter.js");
+    const paused = await guard.isPaused();
+    const routes = {}; for (const o of ["mtn", "moov", "celtiis"]) routes[o] = router2.routeFor(o);
+    const num2 = (n) => { const v = Number(process.env[n]); return Number.isFinite(v) ? v : null; };
+    const pay = await safe(async () => (await q`SELECT
+        count(*) FILTER (WHERE status = 'pending')::int AS pending,
+        count(*) FILTER (WHERE status = 'processing')::int AS processing,
+        count(*) FILTER (WHERE status = 'processing' AND created_at < now() - interval '30 minutes')::int AS stuck,
+        coalesce(sum(amount) FILTER (WHERE created_at > now() - interval '24 hours' AND status NOT IN ('cancelled','refunded','failed')),0)::float AS vol24,
+        count(*) FILTER (WHERE created_at > now() - interval '24 hours' AND status = 'failed')::int AS failed24
+        FROM transactions WHERE type = 'withdrawal'`)[0], {});
+    const dep = await safe(async () => (await q`SELECT count(*) FILTER (WHERE status = 'pending')::int AS pending,
+        coalesce(sum(amount) FILTER (WHERE status = 'completed' AND created_at > now() - interval '24 hours'),0)::float AS vol24
+        FROM transactions WHERE type = 'deposit'`)[0], {});
+    const inb = await safe(async () => (await q`SELECT count(*) FILTER (WHERE status = 'received')::int AS a_rapprocher,
+        count(*) FILTER (WHERE status = 'credited' AND created_at > now() - interval '24 hours')::int AS credites24 FROM inbound_payments`)[0], {});
+    const linked = await safe(async () => (await q`SELECT count(*) FILTER (WHERE status = 'pending')::int AS pending, count(*) FILTER (WHERE status = 'verified')::int AS verified FROM linked_accounts`)[0], {});
+    const manual = await safe(async () => (await q`SELECT (SELECT count(*) FROM manual_deposits WHERE status='pending')::int AS deposits, (SELECT count(*) FROM manual_payouts WHERE status='pending')::int AS payouts`)[0], {});
+    const alerts = [];
+    if (paused) alerts.push("PAUSE ACTIVE : aucun envoi automatique tant que vous ne reprenez pas.");
+    if (pay.stuck) alerts.push(`${pay.stuck} retrait(s) bloqué(s) en traitement depuis plus de 30 min : vérifiez-les (OMNICHECK > Retraits).`);
+    if (pay.failed24) alerts.push(`${pay.failed24} retrait(s) en échec sur 24 h.`);
+    if (inb.a_rapprocher) alerts.push(`${inb.a_rapprocher} paiement(s) reçu(s) sans ID OM valide : à rapprocher à la main.`);
+    if (linked.pending) alerts.push(`${linked.pending} compte(s) relié(s) en attente de validation.`);
+    if (manual.deposits || manual.payouts) alerts.push(`File manuelle : ${manual.deposits} dépôt(s), ${manual.payouts} retrait(s) à traiter.`);
+    res.json({
+      paused, mode: {
+        autoPayout: guard.on(process.env.AUTO_PAYOUT), requireLinked: guard.requireLinked(), routes,
+        autoDayMaxXof: num2("AUTO_PAYOUT_DAY_MAX_XOF") ?? 1000000, approvalXof: num2("APPROVAL_XOF") ?? 200000, p2pAutoConfirm: guard.on(process.env.P2P_AUTO_CONFIRM),
+      },
+      payouts: pay, deposits: dep, inbound: inb, linked, manual, alerts, status: alerts.length ? "ATTENTION" : "OK", at: new Date().toISOString(),
+    });
+  } catch (e) { fail(res, e, "OMC_SUP"); }
+});
+
+router.post("/admin/pause", adminOnly, async (req, res) => {
+  try {
+    const on = req.body && (req.body.on === true || req.body.on === "on");
+    await require("../lib/omnicashGuard.js").setPaused(on);
+    res.json({ paused: on, message: on ? "Pause activée : plus aucun envoi automatique." : "Envois automatiques repris." });
+  } catch (e) { fail(res, e, "OMC_PAUSE"); }
+});
+
 module.exports = router;

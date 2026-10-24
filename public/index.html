@@ -177,6 +177,8 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <div id="alias_msg" class="msg"></div>
       <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable aujourd'hui entre comptes OMNIPAY. Compatible PI-SPI : en cours d'homologation avec notre banque partenaire.</p></div>
     <div class="card" style="margin-bottom:16px"><h2>Réseau OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Un seul compte, tous vos prestataires.</p>
+      <button class="pri" onclick="openLnk()">🔗 Relier mon compte (Mobile Money · banque · crypto)</button>
+      <button class="sec" onclick="openCash()">💵 Mes retraits en espèces</button>
       <div class="tx"><div>Mobile Money (MTN · Moov · Celtiis)<small>Dépôts et retraits</small></div><b class="pos">Actif</b></div>
       <div class="tx"><div>PI-SPI Mobile Money (alias)<small>Interopérabilité BCEAO</small></div><b style="color:var(--warn)">En cours</b></div>
       <div class="tx"><div>Banques (Ecobank · UBA · BSIC)<small>PI-SPI, virements</small></div><b style="color:var(--warn)">En cours</b></div>
@@ -322,6 +324,24 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="lnk" class="card hide">
+    <h1>Mes comptes reliés</h1><p class="sub">Enregistrez où vous voulez recevoir votre argent. OMNIPAY n'accède jamais à ces comptes et ne vous demande jamais de mot de passe, de code PIN ni de clé secrète. Après vérification par notre équipe, vos retraits s'envoient vers ces comptes.</p>
+    <div id="lk_list"></div>
+    <h2 style="margin-top:14px">Ajouter un compte</h2>
+    <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire (IBAN)</option><option value="crypto">Portefeuille crypto</option></select>
+    <select id="lk_prov"></select>
+    <select id="lk_net" class="hide"><option>EVM</option><option>TRON</option><option>BITCOIN</option><option>SOLANA</option><option>STELLAR</option></select>
+    <input id="lk_det" placeholder="Numéro" autocomplete="off">
+    <input id="lk_name" placeholder="Nom du titulaire (comme sur le compte)" maxlength="120">
+    <div id="lk_msg" class="msg"></div>
+    <button class="pri" onclick="lkAdd()">Relier ce compte</button>
+    <button class="sec" onclick="show('dash')">← Retour</button>
+  </section>
+  <section id="cashs" class="card hide">
+    <h1>Mes retraits en espèces</h1><p class="sub">Quand quelqu'un vous envoie de l'argent en espèces via OMNIPAY, votre code apparaît ici dès que le paiement est reçu. Donnez ce code <b>uniquement</b> à la personne qui vous remet les espèces, et seulement après avoir reçu le montant complet.</p>
+    <div id="cs_list"></div><div id="cs_msg" class="msg"></div>
+    <button class="sec" onclick="show('dash')">← Retour</button>
+  </section>
   <section id="olat" class="card hide">
     <h1>OLATOUNDE</h1><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
     <div id="ol_log" style="min-height:160px;max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0"></div>
@@ -2720,7 +2740,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2834,7 +2854,7 @@ async function doIO(){
     if(ioMode==='in'){const d=await api('/wallet/deposit',{body:{amount:am}});if(d.paymentUrl){msg('io_msg','Redirection vers le paiement…',true);location.href=d.paymentUrl}else msg('io_msg',d.message||'Dépôt initié.',true)}
     else{const sv=$('io_sav').value,ph=$('io_acc').value.trim();if(!sv&&!ph)return msg('io_msg','Renseignez le numéro Mobile Money.');
       if(!confirm(`Retirer ${fmt(am)} vers ${sv?$('io_sav').selectedOptions[0].textContent:ph} ? (+50 FCFA de commission)`))return;
-      const d=await api('/wallet/withdraw',{body:sv?{amount:am,operatorId:sv}:{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
+      const d=await api('/wallet/withdraw',{body:sv?(sv.startsWith('L:')?{amount:am,linkedId:sv.slice(2)}:{amount:am,operatorId:sv}):{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
   }catch(e){msg('io_msg',e.message)}
 }
 
@@ -2925,9 +2945,11 @@ async function opAdd(){const phone=$('op_ph').value.trim();if(!phone)return msg(
 async function opDef(id){try{await api('/api/operators/'+id+'/default',{body:{}});await renderOps()}catch(e){msg('ops_msg',e.message)}}
 async function opDel(id){if(!confirm('Supprimer ce numéro ?'))return;try{await api('/api/operators/'+id,{method:'DELETE'});await renderOps()}catch(e){msg('ops_msg',e.message)}}
 let savList=[];
+let lkOk=[];
 async function loadSav(){try{savList=await opsFetch()}catch(e){savList=[]}
-  const w=$('io_savw'),s=$('io_sav');if(!savList.length){w.classList.add('hide');s.innerHTML='';$('io_accw').classList.remove('hide');return}
-  s.innerHTML=savList.map(o=>`<option value="${o.id}">${OPN[o.operator]||o.operator} · ${escH(o.phone)}</option>`).join('')+'<option value="">Autre numéro…</option>';
+  try{lkOk=((await api('/api/linked/mine')).accounts||[]).filter(a=>a.kind==='mobile'&&a.status==='verified')}catch(e){lkOk=[]}
+  const w=$('io_savw'),s=$('io_sav');if(!savList.length&&!lkOk.length){w.classList.add('hide');s.innerHTML='';$('io_accw').classList.remove('hide');return}
+  s.innerHTML=lkOk.map(o=>`<option value="L:${escH(o.id)}">✔ ${OPN[o.provider]||escH(o.provider)} · ${escH(o.detail)} (compte relié)</option>`).join('')+savList.map(o=>`<option value="${o.id}">${OPN[o.operator]||o.operator} · ${escH(o.phone)}</option>`).join('')+'<option value="">Autre numéro…</option>';
   const d=savList.find(o=>o.isDefault);if(d)s.value=d.id;w.classList.remove('hide');savPick()}
 function savPick(){const v=$('io_sav').value;$('io_accw').classList.toggle('hide',!!v);$('io_ch').style.display=v?'none':'';$('io_ch').previousElementSibling.style.display=v?'none':''}
 
@@ -2945,6 +2967,19 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
 
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
+
+const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash']],bank:[['ecobank','Ecobank'],['uba','UBA'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['wallet','Portefeuille (MetaMask, Trust…)'],['binance','Binance (adresse de dépôt)']]};
+const LK_ST={pending:'En vérification',verified:'Validé ✔',rejected:'Refusé'};
+function lkKind(){const k=$('lk_kind').value;$('lk_prov').innerHTML=LK_PROV[k].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');$('lk_det').placeholder=k==='mobile'?'Numéro (ex. 01XXXXXXXX)':k==='bank'?'IBAN (ex. BJ66…)':'Adresse du portefeuille (0x…, T…)'}
+async function openLnk(){show('lnk');lkKind();$('lk_msg').className='msg';await lkList()}
+async function lkList(){try{const d=await api('/api/linked/mine');
+  $('lk_list').innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="tx"><div><b>${escH(a.provider.toUpperCase())}${a.network?' · '+escH(a.network):''}</b><small style="word-break:break-all">${escH(a.detail)} · ${escH(a.holder_name)}</small><small>${escH(LK_ST[a.status]||a.status)}${a.note?' · '+escH(a.note):''}</small></div><button class="sec" style="width:auto;margin:0;padding:6px 12px" data-id="${escH(a.id)}">Supprimer</button></div>`).join(''):'<p class="sub">Aucun compte relié.</p>';
+  $('lk_list').onclick=async e=>{const b=e.target.closest('button[data-id]');if(!b||!confirm('Supprimer ce compte ?'))return;try{await api('/api/linked/'+b.dataset.id,{method:'DELETE'});await lkList()}catch(x){msg('lk_msg',x.message)}}}catch(e){msg('lk_msg',e.message)}}
+async function lkAdd(){try{const k=$('lk_kind').value;const r=await api('/api/linked',{body:{kind:k,provider:$('lk_prov').value,network:k==='crypto'?$('lk_net').value:undefined,detail:$('lk_det').value,holderName:$('lk_name').value}});
+  msg('lk_msg',r.message,true);$('lk_det').value='';await lkList()}catch(e){msg('lk_msg',e.message)}}
+const CS_ST={open:'En attente du paiement de l\'expéditeur',funded:'Payé : votre code est prêt',delivered:'Livré ✔',cancelled:'Annulé',expired:'Expiré (l\'expéditeur est remboursé)'};
+async function openCash(){show('cashs');try{const d=await api('/api/cashdesk/mine');
+  $('cs_list').innerHTML=d.orders.length?d.orders.map(o=>`<div class="tx" style="display:block"><div><b>${fmt(o.amount)}</b> · ${escH(o.city)}<small>${escH(o.ref)} · ${escH(CS_ST[o.status]||o.status)}</small></div>${o.code?`<div style="font-size:30px;font-weight:800;letter-spacing:6px;margin:8px 0">${escH(o.code)}</div><small>Valable jusqu'au ${new Date(o.deadline).toLocaleString('fr-FR')}</small>`:''}</div>`).join(''):'<p class="sub">Aucun retrait en espèces pour le moment.</p>'}catch(e){msg('cs_msg',e.message)}}
 function openOlat(){show('olat');if(!$('ol_log').children.length)olAdd("Bonjour, je suis OLATOUNDE. Demandez-moi : « où en est mon dépôt ? », « comment retirer ? », « mon code n'arrive pas »… ou « parler à un conseiller ».",false);setTimeout(()=>$('ol_in').focus(),50)}
 async function olSend(){const i=$('ol_in'),m=i.value.trim();if(m.length<2)return;i.value='';olAdd(m,true);try{const r=await api('/api/olatounde/ask',{body:{message:m}});olAdd(r.reply,false)}catch(e){olAdd(e.message||'Service momentanément indisponible.',false)}}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='ol_in')olSend()});

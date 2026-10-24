@@ -134,13 +134,25 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
     const q = sql();
     let operator = String(req.body?.operator || "").toLowerCase();
     let phone = String(req.body?.phone || "").replace(/[^\d+]/g, "").slice(0, 20);
-    if (req.body?.operatorId) { // numéro enregistré par le client
+    let viaLinked = false;
+    const guard = (() => { try { return require("../lib/omnicashGuard.js"); } catch (_) { return null; } })();
+    if (req.body?.linkedId && guard) { // compte Mobile Money relié ET validé par l'équipe
+      if (!UUID.test(String(req.body.linkedId))) return res.status(400).json({ error: "Compte relié invalide." });
+      const l = await guard.verifiedMobile(req.user.userId, { linkedId: req.body.linkedId });
+      if (!l) return res.status(403).json({ error: "Ce compte relié n'est pas encore validé par OMNIPAY." });
+      operator = l.operator; phone = l.phone; viaLinked = true;
+    } else if (req.body?.operatorId) { // numéro enregistré par le client
       if (!UUID.test(String(req.body.operatorId))) return res.status(400).json({ error: "Numéro enregistré invalide." });
       const o = await q`SELECT operator, phone FROM user_operators WHERE id = ${req.body.operatorId} AND user_id = ${req.user.userId}`;
       if (!o.length) return res.status(404).json({ error: "Numéro enregistré introuvable." });
       operator = o[0].operator; phone = o[0].phone;
     }
     if (!MODES[operator]) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
+    if (guard && guard.requireLinked() && !viaLinked) {
+      const l = await guard.verifiedMobile(req.user.userId, { operator, phone });
+      if (!l) return res.status(403).json({ error: "Pour votre sécurité, les retraits partent uniquement vers un compte relié et validé. Reliez votre compte dans « Réseau OMNIPAY »." });
+      viaLinked = true;
+    }
     if (!validLocal(phone)) return res.status(400).json({ error: "Numéro Mobile Money invalide." });
     // Limites par niveau KYC (voir routes/compliance.js). Si le module est absent, aucune limite supplémentaire n'est appliquée.
     try {
@@ -171,15 +183,19 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
     let message = "Demande de retrait enregistrée. Traitement sous 24h.";
     const needsApproval = amount >= approvalXof();
     let capped = false;
-    if (autoPayout() && !needsApproval) {
+    let paused = false;
+    try { paused = Boolean(guard && (await guard.isPaused())); } catch (_) { paused = false; }
+    if (autoPayout() && !needsApproval && !paused) {
       try {
         const sent = await q`SELECT coalesce(sum(amount), 0)::float AS v FROM transactions WHERE type = 'withdrawal' AND metadata->'payout'->>'result' = 'sent' AND created_at > now() - interval '24 hours'`;
         capped = sent[0].v + amount > autoDayMax();
       } catch (_) { capped = false; }
     }
-    if (autoPayout() && !needsApproval && !capped) {
+    if (autoPayout() && !needsApproval && !capped && !paused) {
       const r = await dispatchPayout(q, txId, operator, phone, amount);
       if (r.status === "sent") message = "Retrait envoyé vers votre Mobile Money. Confirmation en cours.";
+    } else if (paused) {
+      message = "Demande enregistrée : les envois automatiques sont temporairement suspendus, votre retrait sera traité par l'équipe.";
     } else if (needsApproval) {
       message = "Demande enregistrée : ce montant est soumis à validation avant envoi (sous 24h).";
     }

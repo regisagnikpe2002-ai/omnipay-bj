@@ -130,6 +130,8 @@ mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");
 mount("/api/p2pdesk", "./routes/p2pdesk", "Bureau P2P (garde-fou libération)");
+mount("/api/linked", "./routes/linkedAccounts", "Comptes reliés (retraits vers vos comptes)");
+mount("/api/cashdesk", "./routes/cashdesk", "Bureau Cash OMNIXPAY (retraits espèces sous séquestre)");
 mount("/api/web3", "./routes/web3", "Web3");
 mount("/api", "./routes/binance", "Binance");
 
