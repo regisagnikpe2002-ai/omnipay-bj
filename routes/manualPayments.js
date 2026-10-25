@@ -41,7 +41,7 @@ const adminOnly = (req, res, next) => (isAdmin(req) ? next() : res.status(403).j
 function accountsFromEnv() {
   try {
     const list = JSON.parse(process.env.OMNIPAY_PAYIN_ACCOUNTS || "[]");
-    return (Array.isArray(list) ? list : []).slice(0, 12).map((a) => ({
+    return (Array.isArray(list) ? list : []).slice(0, 20).map((a) => ({
       label: clean(a.label, 80), type: clean(a.type, 20), network: clean(a.network, 40),
       detail: clean(a.detail || a.address, 200),
     })).filter((a) => a.label && a.detail);
@@ -49,9 +49,12 @@ function accountsFromEnv() {
 }
 
 // ---------- Client ----------
-router.get("/instructions", requireAuth, (req, res) => {
+router.get("/instructions", requireAuth, async (req, res) => {
+  let omId = null;
+  try { const r = await sql()`SELECT code FROM account_ids WHERE user_id = ${req.user.userId}`; omId = r[0]?.code || null; } catch (_) { /* table absente : repli sur OMP- */ }
   res.json({
-    reference: refOf(req.user.userId),
+    reference: omId || refOf(req.user.userId),
+    omId,
     accounts: accountsFromEnv(),
     limits: { min: MIN, max: MAX, openRequests: MAX_OPEN },
     notice: "Indiquez toujours votre référence. Le crédit est effectué après vérification de la réception par OMNIPAY.",
