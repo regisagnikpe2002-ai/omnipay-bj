@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;b
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body><div class="w">
 <button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button><h1>OMNICHECK — Administration</h1><p class="mut">Inventaire, opérations non abouties, avis clients. La clé n'est jamais enregistrée.</p>
 <div class="card"><input id="key" type="password" placeholder="Clé administrateur (ADMIN_KEY)" autocomplete="off"><input id="otp" inputmode="numeric" maxlength="6" placeholder="Code 2FA à 6 chiffres (si activé)" autocomplete="one-time-code" style="margin-top:8px">
-<button onclick="load()">Afficher le rapport</button><button class="sec" onclick="run()">Lancer l'inventaire maintenant</button><div id="err" class="bad"></div></div>
+<button onclick="login()">Se connecter et afficher le rapport</button><button class="sec" onclick="logout()">Se déconnecter</button><button class="sec" onclick="run()">Lancer l'inventaire maintenant</button><div id="err" class="bad"></div></div>
 <div id="out" class="hide">
 <div class="card"><h2>Tableau de bord</h2>
 <div class="k" id="dk"></div>
@@ -254,4 +254,4 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
   else if(a==='prej'){const n=prompt('Motif du refus (facultatif) : le client sera remboursé.');if(n===null)return;await post(`/api/manual/admin/payout/${id}/reject`,{note:n})}
   await loadManual()}catch(x){$('err').textContent=x.message}});
 async function run(){$('err').textContent='';try{const d=await call('/api/omnicheck/run','POST');show(d.report)}catch(e){$('err').textContent=e.message}}
-</script></div></body></html>
+</script></div><script src="/omnicheck-session.js"></script></body></html>
