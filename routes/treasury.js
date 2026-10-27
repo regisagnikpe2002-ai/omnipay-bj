@@ -16,7 +16,12 @@ const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(
 router.use((req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." })));
 const on = (n) => ["on", "true", "1", "yes"].includes(String(process.env[n] || "off").toLowerCase());
 
-const PISPI_CODE = "PISPI_ECOBANK", META_CODE = "METAMASK";
+const PISPI_CODE = "PISPI_ECOBANK";
+const META_CODE = "METAMASK";
+const BIIC_CODE = "BIIC_XOF";
+const CASH_CODE = "CASH_XOF";
+const MOMO_CODE = "MOMO_XOF";
+const STRATEGIC_CODE = "STRATEGIC_RESERVE_XOF";
 const pispiAlias = () => (process.env.TREASURY_PISPI_ALIAS || "853c809e-f225-46d4-8eb3-3bd0001adb76").trim();
 const EVM = /^0x[0-9a-fA-F]{40}$/;
 function metaAddress() {
@@ -89,6 +94,21 @@ function ensure() {
             ON CONFLICT (code) DO UPDATE SET address = EXCLUDED.address`;
     await q`INSERT INTO fund_accounts (code, kind, label, currency, network, address, custody) VALUES (${META_CODE}, 'hot', 'MetaMask (USDT/USDC)', 'XOF', 'EVM', ${metaAddress() || null}, 'MetaMask (auto-garde)')
             ON CONFLICT (code) DO UPDATE SET address = coalesce(EXCLUDED.address, fund_accounts.address)`;
+    await q`INSERT INTO fund_accounts (code, kind, label, currency, network, custody)
+            VALUES (${BIIC_CODE}, 'bank', 'BIIC - Réserve OMNIPAY', 'XOF', 'BANK', 'BIIC Bénin')
+            ON CONFLICT (code) DO NOTHING`;
+
+    await q`INSERT INTO fund_accounts (code, kind, label, currency, network, custody)
+            VALUES (${CASH_CODE}, 'cash', 'Cash physique OMNIPAY', 'XOF', 'CASH', 'OMNIPAY')
+            ON CONFLICT (code) DO NOTHING`;
+
+    await q`INSERT INTO fund_accounts (code, kind, label, currency, network, custody)
+            VALUES (${MOMO_CODE}, 'mobile', 'Mobile Money OMNIPAY', 'XOF', 'MOBILE_MONEY', 'OMNIPAY')
+            ON CONFLICT (code) DO NOTHING`;
+
+    await q`INSERT INTO fund_accounts (code, kind, label, currency, network, custody, active)
+            VALUES (${STRATEGIC_CODE}, 'reserve', 'Réserve stratégique privée OMNIPAY', 'XOF', 'INTERNAL', 'Direction OMNIPAY', true)
+            ON CONFLICT (code) DO NOTHING`;
   })().catch((e) => { ready = null; throw e; });
   return ready;
 }
@@ -134,7 +154,7 @@ async function overview(force) {
   const [fl, oc, funds, liab] = await Promise.all([
     flows(), onchain(force),
     q`SELECT f.code, f.label, f.address, b.balance_xof::float AS balance_xof, b.declared_at, b.note
-      FROM fund_accounts f LEFT JOIN LATERAL (SELECT balance_xof, declared_at, note FROM fund_balances WHERE code = f.code ORDER BY id DESC LIMIT 1) b ON true WHERE f.code IN (${PISPI_CODE}, ${META_CODE})`,
+      FROM fund_accounts f LEFT JOIN LATERAL (SELECT balance_xof, declared_at, note FROM fund_balances WHERE code = f.code ORDER BY id DESC LIMIT 1) b ON true WHERE f.code IN (${PISPI_CODE}, ${META_CODE}, ${BIIC_CODE}, ${CASH_CODE}, ${MOMO_CODE})`,
     q`SELECT (SELECT coalesce(sum(balance), 0) FROM wallets)::float AS wallets`,
   ]);
   const byCode = Object.fromEntries(funds.map((f) => [f.code, f]));
@@ -147,9 +167,15 @@ async function overview(force) {
   } catch (_) { /* OMNICASH pas encore utilisé */ }
   const r = rate();
   const metaXof = r && oc.stableTotal !== null ? Math.round(oc.stableTotal * r) : null;
-  const declaredPispi = byCode[PISPI_CODE]?.balance_xof ?? null, declaredMeta = byCode[META_CODE]?.balance_xof ?? null;
+  const declaredPispi = byCode[PISPI_CODE]?.balance_xof ?? null;
+  const declaredMeta = byCode[META_CODE]?.balance_xof ?? null;
+  const declaredBiic = byCode[BIIC_CODE]?.balance_xof ?? null;
+  const declaredCash = byCode[CASH_CODE]?.balance_xof ?? null;
+  const declaredMomo = byCode[MOMO_CODE]?.balance_xof ?? null;
   const due = liab[0].wallets + agents.float;
-  const held = (declaredPispi || 0) + (metaXof !== null ? metaXof : declaredMeta || 0);
+  const metaHeld = metaXof !== null ? metaXof : (declaredMeta || 0);
+  const held = (declaredPispi || 0) + (declaredBiic || 0) + (declaredCash || 0) + (declaredMomo || 0) + metaHeld;
+  const freeReserve = held - due;
   const alerts = [];
   if (!metaAddress()) alerts.push("Adresse MetaMask inconnue : renseignez TREASURY_METAMASK_ADDRESS.");
   else if (!oc.complete) alerts.push("Lecture blockchain incomplète : certains réseaux n'ont pas répondu (voir détail).");
@@ -162,9 +188,16 @@ async function overview(force) {
     generatedAt: new Date().toISOString(), rate: r,
     pispi: { code: PISPI_CODE, alias: pispiAlias(), declared: declaredPispi, declaredAt: byCode[PISPI_CODE]?.declared_at || null, flows: fl.PISPI },
     metamask: { code: META_CODE, address: oc.address, chains: oc.chains, stableTotal: oc.stableTotal, valueXof: metaXof, declared: declaredMeta, declaredAt: byCode[META_CODE]?.declared_at || null, flows: fl.METAMASK },
+    reserves: {
+      pispi: { code: PISPI_CODE, balanceXof: declaredPispi || 0 },
+      biic: { code: BIIC_CODE, balanceXof: declaredBiic || 0 },
+      cash: { code: CASH_CODE, balanceXof: declaredCash || 0 },
+      momo: { code: MOMO_CODE, balanceXof: declaredMomo || 0 },
+      crypto: { code: META_CODE, balanceXof: metaHeld }
+    },
     omnicash: { agentsFloat: agents.float, byChannel: agents.byChannel, flows: fl.OMNICASH },
     other: { flows: other },
-    coverage: { due, held, ratio: due > 0 ? held / due : null }, alerts, status: alerts.length ? "ATTENTION" : "OK",
+    coverage: { due, held, freeReserve, ratio: due > 0 ? held / due : null }, alerts, status: alerts.length ? "ATTENTION" : "OK",
   };
 }
 
@@ -177,7 +210,12 @@ router.post("/declare", async (req, res) => {
   try {
     await ensure();
     const code = String(req.body?.code || "").toUpperCase();
-    if (![PISPI_CODE, META_CODE].includes(code)) return res.status(400).json({ error: `Compte inconnu (${PISPI_CODE} ou ${META_CODE}).` });
+    const allowedCodes = [PISPI_CODE, META_CODE, BIIC_CODE, CASH_CODE, MOMO_CODE];
+    if (!allowedCodes.includes(code)) {
+      return res.status(400).json({
+        error: "Compte de réserve OMNIPAY inconnu."
+      });
+    }
     let amount = Number(req.body?.balanceXof), note = String(req.body?.note || "").replace(/[<>]/g, "").trim().slice(0, 160);
     if (code === META_CODE && (req.body?.balanceXof === undefined || req.body?.balanceXof === "")) {
       const oc = await onchain(true);
@@ -185,7 +223,8 @@ router.post("/declare", async (req, res) => {
       amount = Math.round(oc.stableTotal * rate()); note = note || "Lecture blockchain automatique";
     }
     if (!Number.isFinite(amount) || amount < 0 || amount > 1e12) return res.status(400).json({ error: "Solde invalide." });
-    if (code === PISPI_CODE && note.length < 3) note = "Solde relevé dans l'application Ecobank";
+    if (code === PISPI_CODE && note.length < 3) note = "Solde relevé dans l.application Ecobank";
+    if ([BIIC_CODE, CASH_CODE, MOMO_CODE].includes(code) && note.length < 4) return res.status(400).json({ error: "Référence ou justificatif obligatoire pour cette réserve." });
     await sql()`INSERT INTO fund_balances (code, balance_xof, note) VALUES (${code}, ${amount}, ${note || null})`;
     res.json({ message: "Solde déclaré.", code, balanceXof: amount });
   } catch (e) { console.error("TREASURY_DECLARE", e.message); res.status(500).json({ error: "Erreur serveur." }); }
