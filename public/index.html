@@ -3077,7 +3077,7 @@ async function openMan(){$('m_msg').className='msg';manTab('in');show('man');mom
       +(d.omId?`<p class="sub" style="font-size:13px;margin-top:8px"><b>Référence obligatoire (motif / libellé) : ${escH(d.omId)}</b><br>Pour un virement ou dépôt bancaire, écrivez votre identifiant OM exactement dans le motif : votre compte est crédité automatiquement dès réception.</p>`:'')+'<p class="sub" style="font-size:12px;margin-top:8px">Pour l\'USDT, vérifiez le réseau avant d\'envoyer : un mauvais réseau peut faire perdre vos fonds.</p>'
       :'<p class="sub">Les comptes de réception ne sont pas encore affichés. Réessayez plus tard.</p>';
     $('m_accs').onclick=e=>{const b=e.target.closest('button[data-a]');if(!b)return;const a=acc[+b.dataset.i];
-      if(b.dataset.a==='copy')copyTxt(a.detail,'m_msg');else{const q=$('qra'+b.dataset.i);if(q.classList.contains('hide')){q.innerHTML=qrSvg(a.detail);q.classList.remove('hide')}else q.classList.add('hide')}};
+      if(b.dataset.a==='copy')copyTxt(a.detail,'m_msg');else{const q=$('qra'+b.dataset.i);if(q.classList.contains('hide')){q.innerHTML=a.type==='pispi'?'<img src="/pispi-qr.png" alt="QR PI-SPI ETS OMNIPAY" style="max-width:280px;width:100%;border-radius:12px"><p class="sub" style="font-size:12px">Scannez avec l\'application de votre banque ou de votre Mobile Money (PI-SPI), puis écrivez votre ID OM en motif.</p>':qrSvg(a.detail);q.classList.remove('hide')}else q.classList.add('hide')}};
   }catch(e){msg('m_msg',e.message)}
   manList()}
 async function manList(){try{const d=await api('/api/manual/mine');
