@@ -14,9 +14,13 @@ const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(
 const adminOnly = (req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." }));
 const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MAX_PER_USER = 6;
-const MOBILE = ["mtn", "moov", "celtiis"];
-const BANKS = ["ecobank", "uba", "bsic", "autre"];
+const MAX_PER_USER = 12;
+const MOBILE = ["mtn", "moov", "celtiis", "autre"];
+const BANKS = ["biic", "ecobank", "boa", "uba", "nsia", "bsic", "autre"];
+const PAYPAL = ["paypal"];
+const WALLETS = ["autre"];
+const CRYPTO_PROVIDERS = ["binance", "metamask", "wallet"];
+
 const NETWORKS = { EVM: /^0x[0-9a-fA-F]{40}$/, TRON: /^T[1-9A-HJ-NP-Za-km-z]{33}$/, BITCOIN: /^(bc1[0-9a-z]{20,80}|[13][1-9A-HJ-NP-Za-km-z]{25,39})$/, SOLANA: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, STELLAR: /^G[A-Z2-7]{55}$/ };
 
 let ready = null;
@@ -39,31 +43,82 @@ function ibanOk(s) {
 }
 
 function validate(b) {
-  const kind = clean(b.kind, 10).toLowerCase(), provider = clean(b.provider, 30).toLowerCase();
+  const kind = clean(b.kind, 10).toLowerCase();
+  const provider = clean(b.provider, 30).toLowerCase();
   const holder = clean(b.holderName, 120);
-  if (holder.replace(/[^A-Za-zÀ-ÿ]/g, "").length < 3) return { error: "Indiquez le nom du titulaire, tel qu'il apparaît sur le compte." };
+
+  if (holder.replace(/[^A-Za-zÀ-ÿ]/g, "").length < 3)
+    return { error: "Indiquez le nom du titulaire du compte." };
+
   if (kind === "mobile") {
-    if (!MOBILE.includes(provider)) return { error: "Opérateur invalide (MTN, Moov ou Celtiis)." };
-    let n = String(b.detail || "").replace(/[\s.\-()]/g, "").replace(/^\+?229/, "");
-    if (!/^\d{8,10}$/.test(n)) return { error: "Numéro invalide (8 à 10 chiffres, ex. 01XXXXXXXX)." };
-    return { kind, provider, network: null, detail: n, holder };
+    if (!MOBILE.includes(provider))
+      return { error: "Opérateur invalide." };
+
+    let detail = String(b.detail || "")
+      .replace(/[\s.\-()]/g, "")
+      .replace(/^\+?229/, "");
+
+    if (!/^\d{8,10}$/.test(detail))
+      return { error: "Numéro Mobile Money invalide." };
+
+    return { kind, provider, network: null, detail, holder };
   }
+
   if (kind === "bank") {
-    if (!BANKS.includes(provider)) return { error: "Banque invalide." };
-    const iban = String(b.detail || "").replace(/\s/g, "").toUpperCase();
-    if (!ibanOk(iban)) return { error: "IBAN invalide : vérifiez chaque caractère." };
-    return { kind, provider, network: null, detail: iban, holder };
+    if (!BANKS.includes(provider))
+      return { error: "Banque invalide." };
+
+    const detail = clean(b.detail, 120).replace(/\s+/g, " ").trim();
+
+    if (detail.length < 6)
+      return { error: "Numéro de compte ou IBAN invalide." };
+
+    return { kind, provider, network: null, detail, holder };
   }
+
   if (kind === "crypto") {
+    if (!CRYPTO_PROVIDERS.includes(provider))
+      return { error: "Portefeuille crypto invalide." };
+
     const net = clean(b.network, 20).toUpperCase();
-    if (!NETWORKS[net]) return { error: "Réseau invalide (EVM, TRON, BITCOIN, SOLANA ou STELLAR)." };
-    const addr = clean(b.detail, 120).replace(/\s/g, "");
-    if (!NETWORKS[net].test(addr)) return { error: "Adresse invalide pour ce réseau : vérifiez le réseau choisi." };
-    return { kind, provider: provider || "wallet", network: net, detail: addr, holder };
+
+    if (!NETWORKS[net])
+      return { error: "Réseau crypto invalide." };
+
+    const detail = clean(b.detail, 120).replace(/\s/g, "");
+
+    if (!NETWORKS[net].test(detail))
+      return { error: "Adresse invalide pour ce réseau." };
+
+    return { kind, provider, network: net, detail, holder };
   }
+
+  if (kind === "paypal") {
+    if (!PAYPAL.includes(provider))
+      return { error: "Fournisseur PayPal invalide." };
+
+    const detail = clean(b.detail, 120);
+
+    if (detail.length < 4)
+      return { error: "Indiquez votre identifiant ou lien PayPal public." };
+
+    return { kind, provider, network: null, detail, holder };
+  }
+
+  if (kind === "wallet") {
+    if (!WALLETS.includes(provider))
+      return { error: "Portefeuille invalide." };
+
+    const detail = clean(b.detail, 120);
+
+    if (detail.length < 4)
+      return { error: "Identifiant du portefeuille invalide." };
+
+    return { kind, provider, network: null, detail, holder };
+  }
+
   return { error: "Type de compte invalide." };
 }
-
 router.get("/mine", requireAuth, async (req, res) => {
   try {
     await ensure();

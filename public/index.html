@@ -328,8 +328,7 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <h1>Mes comptes reliés</h1><p class="sub">Enregistrez où vous voulez recevoir votre argent. OMNIPAY n'accède jamais à ces comptes et ne vous demande jamais de mot de passe, de code PIN ni de clé secrète. Après vérification par notre équipe, vos retraits s'envoient vers ces comptes.</p>
     <div id="lk_list"></div>
     <h2 style="margin-top:14px">Ajouter un compte</h2>
-    <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire (IBAN)</option><option value="crypto">Portefeuille crypto</option></select>
-    <select id="lk_prov"></select>
+    <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire</option><option value="crypto">Portefeuille crypto</option><option value="paypal">PayPal</option><option value="wallet">Autre portefeuille</option></select>    <select id="lk_prov"></select>
     <select id="lk_net" class="hide"><option>EVM</option><option>TRON</option><option>BITCOIN</option><option>SOLANA</option><option>STELLAR</option></select>
     <input id="lk_det" placeholder="Numéro" autocomplete="off">
     <input id="lk_name" placeholder="Nom du titulaire (comme sur le compte)" maxlength="120">
@@ -2968,9 +2967,9 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
 
-const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash']],bank:[['ecobank','Ecobank'],['uba','UBA'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['wallet','Portefeuille (MetaMask, Trust…)'],['binance','Binance (adresse de dépôt)']]};
+const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash'],['autre','Autre opérateur']],bank:[['biic','BIIC'],['ecobank','Ecobank'],['boa','BOA'],['uba','UBA'],['nsia','NSIA Bank'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['metamask','MetaMask'],['binance','Binance'],['wallet','Autre wallet crypto']],paypal:[['paypal','PayPal']],wallet:[['autre','Autre portefeuille']]};
 const LK_ST={pending:'En vérification',verified:'Validé ✔',rejected:'Refusé'};
-function lkKind(){const k=$('lk_kind').value;$('lk_prov').innerHTML=LK_PROV[k].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');$('lk_det').placeholder=k==='mobile'?'Numéro (ex. 01XXXXXXXX)':k==='bank'?'IBAN (ex. BJ66…)':'Adresse du portefeuille (0x…, T…)'}
+function lkKind(){const k=$('lk_kind').value;const providers=LK_PROV[k]||LK_PROV.wallet;$('lk_prov').innerHTML=providers.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');const hints={mobile:'Numéro Mobile Money (ex. 01XXXXXXXX)',bank:'Numéro de compte ou IBAN',crypto:'Adresse publique du portefeuille',paypal:'Lien PayPal.Me ou identifiant public',wallet:'Identifiant public du portefeuille'};$('lk_det').placeholder=hints[k]||'Identifiant public'}
 async function openLnk(){show('lnk');lkKind();$('lk_msg').className='msg';await lkList()}
 async function lkList(){try{const d=await api('/api/linked/mine');
   $('lk_list').innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="tx"><div><b>${escH(a.provider.toUpperCase())}${a.network?' · '+escH(a.network):''}</b><small style="word-break:break-all">${escH(a.detail)} · ${escH(a.holder_name)}</small><small>${escH(LK_ST[a.status]||a.status)}${a.note?' · '+escH(a.note):''}</small></div><button class="sec" style="width:auto;margin:0;padding:6px 12px" data-id="${escH(a.id)}">Supprimer</button></div>`).join(''):'<p class="sub">Aucun compte relié.</p>';
