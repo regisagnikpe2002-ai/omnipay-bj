@@ -116,7 +116,6 @@ mount("/wallet", "./routes/wallet", "Wallet");
 mount("/api/omnicheck", "./routes/omnicheck", "OMNICHECK");
 mount("/api/manual", "./routes/manualPayments", "Paiements manuels");
 mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
-mount("/api/admin-session", "./routes/adminSession", "Session admin unique");
 mount("/api/admin", "./routes/adminDash", "Tableau de bord admin");
 mount("/api/ledger", "./routes/ledger", "Ledger central");
 mount("/api/compliance", "./routes/compliance", "Conformité");
