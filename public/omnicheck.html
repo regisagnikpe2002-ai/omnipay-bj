@@ -59,6 +59,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;b
 <div class="card"><h2>Opérations non abouties (&gt; 30 min)</h2><p class="mut">Signalées pour vérification : OMNICHECK n'exécute aucun paiement automatiquement.</p><table id="nc"></table></div>
 <div class="card"><h2>Dépôts à valider</h2><p class="mut">Vérifiez la réception réelle (relevé, MetaMask, Mobile Money) avant de créditer. Un seul crédit possible par demande.</p><table id="md"></table></div>
 <div class="card"><h2>Retraits à exécuter</h2><p class="mut">Le solde du client est déjà réservé. Payez, puis cliquez « Payé » ; ou « Refuser » pour rembourser.</p><table id="mp"></table></div>
+<div class="card">
+<h2>🤖 OLATOUNDE — Alter ego administrateur</h2>
+<p class="mut">Analyse privée et lecture seule des activités OMNIPAY. OLATOUNDE recommande, mais ne déplace jamais d’argent et ne valide aucune opération.</p>
+<div id="olag" class="ok" style="margin:8px 0"></div>
+<div id="olak" class="k"></div>
+<div id="ola_alerts" class="bad" style="margin-top:10px"></div>
+<h2 style="margin-top:14px">Recommandations</h2>
+<div id="ola_reco" class="mut"></div>
+<p id="ola_time" class="mut" style="margin-top:10px"></p>
+<button class="sec" onclick="loadOlatBriefing()">Actualiser le briefing</button>
+</div>
 <div class="card"><h2>OLATOUNDE : demandes clients à traiter</h2><p class="mut">Questions auxquelles l'assistante n'a pas su répondre, ou clients qui demandent un conseiller. Répondez au client (téléphone / e-mail ci-dessous), puis clôturez.</p><table id="olt"></table></div>
 <div class="card"><h2>Comptes reliés par les clients</h2><p class="mut">Vérifiez que le titulaire correspond bien au client avant de valider. Un compte non validé ne peut pas recevoir de retrait.</p><div id="lkm" class="mut"></div><table id="lkt"></table></div>
 <div class="card"><h2>Bureau P2P Binance</h2><p class="mut">Garde-fou avant de libérer des cryptos : déclarez l'ordre vu dans Binance, enregistrez le paiement MoMo reçu (carte « Routes de paiement », canal momo), puis OMNICHECK vérifie le <b>montant exact</b> et le <b>nom du payeur</b>. Ne libérez dans Binance que lorsque l'ordre affiche « Paiement confirmé ».</p>
@@ -103,7 +114,7 @@ async function load(){$('err').textContent='';errs=[];
  if(errs.length&&/double authentification/i.test(errs[0])){$('err').innerHTML='<b>Code 2FA refusé.</b> Pour protéger votre accès, les autres sections ne sont pas interrogées (10 refus = blocage de 15 min). Vérifiez : 1) le code à 6 chiffres est celui de l\'application <i>actuellement affiché</i> (il change toutes les 30 s) ; 2) l\'heure du téléphone est en automatique ; 3) <code>ADMIN_TOTP_SECRET</code> sur Render est exactement le secret enregistré dans l\'application (lettres A–Z et chiffres 2–7 uniquement, sans espace ni guillemets).';return}
  if(errs.length&&/Trop de tentatives/i.test(errs[0])){$('err').textContent='Trop de tentatives : attendez 15 minutes avant de réessayer.';return}
  await sec('tableau de bord (/api/admin)',loadDash);await sec('fonds (/api/ledger)',loadFunds);await sec('conformité (/api/compliance)',loadAml);await sec('ledger (/api/ledger)',lgSearch);
- await sec('dépôts directs (/api/manual)',loadManual);await sec('routes (/api/channels)',loadRoutes);await sec('paiements entrants (/api/channels)',loadChan);await sec('bureau cash (/api/cashdesk)',loadCash);await sec('supervision (/api/omnicash)',loadSup);await sec('comptes reliés (/api/linked)',loadLinked);await sec('bureau P2P (/api/p2pdesk)',loadP2p);await sec('OLATOUNDE (/api/olatounde)',loadOlat);await sec('trésorerie (/api/treasury)',()=>loadTreasury());await sec('connecteurs MoMo (/api/momo)',loadMomo);await sec('OMNICASH (/api/omnicash)',loadOc);await sec('retraits bloqués (/api/ops)',loadStuck);
+ await sec('dépôts directs (/api/manual)',loadManual);await sec('routes (/api/channels)',loadRoutes);await sec('paiements entrants (/api/channels)',loadChan);await sec('bureau cash (/api/cashdesk)',loadCash);await sec('supervision (/api/omnicash)',loadSup);await sec('comptes reliés (/api/linked)',loadLinked);await sec('bureau P2P (/api/p2pdesk)',loadP2p);await sec('OLATOUNDE briefing',loadOlatBriefing);await sec('OLATOUNDE tickets',loadOlat);await sec('trésorerie (/api/treasury)',()=>loadTreasury());await sec('connecteurs MoMo (/api/momo)',loadMomo);await sec('OMNICASH (/api/omnicash)',loadOc);await sec('retraits bloqués (/api/ops)',loadStuck);
  await sec('avis',async()=>{const fb=await call('/api/omnicheck/feedback');
 $('fb').innerHTML='<tr><th>Date</th><th>Type</th><th>Note</th><th>Message</th><th>Contact</th></tr>'+(fb.feedback.map(x=>`<tr><td>${new Date(x.created_at).toLocaleDateString('fr-FR')}</td><td>${esc(x.category)}</td><td>${esc(x.rating)}</td><td>${esc(x.message)}</td><td>${esc(x.contact)}</td></tr>`).join('')||'<tr><td colspan=5 class="mut">Aucun avis pour le moment</td></tr>')});
  if(errs.length)$('err').innerHTML='Sections indisponibles (les autres fonctionnent) :<br>'+errs.map(esc).join('<br>')+'<br><span class="mut">« Route introuvable » = fichier pas encore déposé sur GitHub ou non chargé : voir les logs Render ("NON chargées").</span>'}
@@ -164,6 +175,15 @@ async function refundSel(){const ids=[...document.querySelectorAll('.sel:checked
  try{const d=await post('/api/ops/refund',{ids,includeFee:true,note:'Remboursement administrateur'});alert(`${d.refundedCount} remboursé(s), total ${f(d.totalRefunded)} FCFA. Ignorés : ${d.skipped.length}.`);await loadStuck()}catch(x){$('err').textContent=x.message}}
 async function expireStale(){try{const d=await post('/api/ops/deposits/expire-stale',{days:7,dryRun:true});if(!d.count){alert('Aucun dépôt PayDunya en attente de plus de 7 jours.');return}if(!confirm(d.count+' dépôt(s) PayDunya jamais confirmés (total '+f(d.totalXof)+' F) vont être clôturés. Aucun solde client ne change. Continuer ?'))return;const r=await post('/api/ops/deposits/expire-stale',{days:7});alert(r.closed+' dépôt(s) clôturé(s).');load()}catch(x){$('err').textContent=x.message}}
 async function reverify(){try{const d=await post('/api/ops/deposits/reverify');alert(`Vérifiés : ${d.checked}, crédités : ${d.credited}, non payés : ${d.unpaid}, erreurs : ${d.errors}.`)}catch(x){$('err').textContent=x.message}}
+async function loadOlatBriefing(){
+ const d=await call('/api/olatounde/admin/briefing'),t=d.treasury||{},a=d.activity||{},l=d.linked||{},u=d.support||{};
+ $('olag').textContent=d.greeting||'Briefing OLATOUNDE disponible.';
+ const ratio=t.coverageRatio==null?'—':(t.coverageRatio*100).toFixed(1)+' %';
+ $('olak').innerHTML=[['Dépôts 24 h',f(a.deposits_24h)+' F'],['Retraits 24 h',f(a.withdrawals_24h)+' F'],['Opérations en attente',a.pending_operations||0],['Opérations échouées',a.failed_operations||0],['Comptes à vérifier',l.pending||0],['Tickets ouverts',u.open||0],['Réserve opérationnelle',f(t.operationalReserve)+' F'],['Réserve stratégique',f(t.strategicReserve)+' F'],['Engagements',f(t.due)+' F'],['Réserve libre',f(t.freeReserve)+' F'],['Couverture',ratio]].map(x=>`<div><span class="mut">${esc(x[0])}</span><b>${esc(String(x[1]))}</b></div>`).join('');
+ $('ola_alerts').innerHTML=(d.alerts||[]).map(x=>'⚠ '+esc(x)).join('<br>')||'<span class="ok">Aucune alerte prioritaire.</span>';
+ $('ola_reco').innerHTML=(d.recommendations||[]).map((x,i)=>(i+1)+'. '+esc(x)).join('<br>')||'Aucune action urgente recommandée.';
+ $('ola_time').textContent='Briefing généré le '+new Date(d.generatedAt).toLocaleString('fr-FR');
+}
 async function loadOlat(){const d=await call('/api/olatounde/admin/tickets');
  $('olt').innerHTML='<tr><th>Client</th><th>Message</th><th></th></tr>'+(d.tickets.length?d.tickets.map(t=>`<tr><td>${esc(t.phone||'—')}<br><span class="mut">${esc(t.email||'')}</span></td><td>${esc(t.message)}<br><span class="mut">${esc(new Date(t.created_at).toLocaleString('fr-FR'))}</span></td><td><button class="sec" onclick="olClose('${t.id}')">Clôturer</button></td></tr>`).join(''):'<tr><td colspan="3" class="mut">Aucune demande ouverte.</td></tr>')}
 async function olClose(id){const n=prompt('Note (facultatif) :')||'';try{await post('/api/olatounde/admin/tickets/'+id+'/close',{note:n});await loadOlat()}catch(e){alert(e.message)}}

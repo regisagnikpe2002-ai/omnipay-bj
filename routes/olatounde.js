@@ -114,6 +114,279 @@ router.post("/ask", requireAuth, async (req, res) => {
   } catch (e) { console.error("OLATOUNDE_ASK", e.message); res.status(500).json({ error: "Service momentanément indisponible." }); }
 });
 
+async function adminBriefing() {
+  await ensure();
+  const q = sql();
+
+  const safe = async (fn, fallback) => {
+    try {
+      return await fn();
+    } catch (_) {
+      return fallback;
+    }
+  };
+
+  const activity = await safe(async () => {
+    const rows = await q`
+      SELECT
+        coalesce(sum(CASE
+          WHEN type = 'deposit' AND status = 'completed'
+          THEN amount ELSE 0
+        END), 0)::float AS deposits_24h,
+
+        coalesce(sum(CASE
+          WHEN type = 'withdrawal' AND status = 'completed'
+          THEN amount ELSE 0
+        END), 0)::float AS withdrawals_24h,
+
+        count(*) FILTER (
+          WHERE status IN ('pending', 'processing')
+        )::int AS pending_operations,
+
+        count(*) FILTER (
+          WHERE status IN ('failed', 'refused')
+        )::int AS failed_operations
+
+      FROM transactions
+      WHERE created_at > now() - interval '24 hours'
+    `;
+    return rows[0];
+  }, {
+    deposits_24h: 0,
+    withdrawals_24h: 0,
+    pending_operations: 0,
+    failed_operations: 0
+  });
+
+  const linked = await safe(async () => {
+    const rows = await q`
+      SELECT
+        count(*) FILTER (
+          WHERE status = 'pending'
+        )::int AS pending,
+
+        count(*) FILTER (
+          WHERE status = 'verified'
+        )::int AS verified,
+
+        count(*) FILTER (
+          WHERE status = 'rejected'
+        )::int AS rejected
+
+      FROM linked_accounts
+    `;
+    return rows[0];
+  }, {
+    pending: 0,
+    verified: 0,
+    rejected: 0
+  });
+
+  const support = await safe(async () => {
+    const rows = await q`
+      SELECT
+        count(*) FILTER (
+          WHERE status = 'open'
+        )::int AS open,
+
+        count(*) FILTER (
+          WHERE status = 'open'
+          AND created_at < now() - interval '24 hours'
+        )::int AS older_than_24h
+
+      FROM olatounde_tickets
+    `;
+    return rows[0];
+  }, {
+    open: 0,
+    older_than_24h: 0
+  });
+
+  const wallets = await safe(async () => {
+    const rows = await q`
+      SELECT
+        coalesce(sum(balance), 0)::float AS clients_due
+      FROM wallets
+    `;
+    return rows[0];
+  }, {
+    clients_due: 0
+  });
+
+  const agents = await safe(async () => {
+    const rows = await q`
+      SELECT
+        coalesce(sum(float_xof), 0)::float AS agents_float,
+        count(*) FILTER (
+          WHERE status = 'active' AND float_xof < 20000
+        )::int AS low_float_agents
+      FROM omnicash_agents
+    `;
+    return rows[0];
+  }, {
+    agents_float: 0,
+    low_float_agents: 0
+  });
+
+  const reserves = await safe(async () => {
+    const rows = await q`
+      SELECT
+        f.code,
+        coalesce(b.balance_xof, 0)::float AS balance_xof
+      FROM fund_accounts f
+      LEFT JOIN LATERAL (
+        SELECT balance_xof
+        FROM fund_balances
+        WHERE code = f.code
+        ORDER BY id DESC
+        LIMIT 1
+      ) b ON true
+      WHERE f.active = true
+    `;
+
+    const byCode = Object.fromEntries(
+      rows.map((row) => [row.code, Number(row.balance_xof) || 0])
+    );
+
+    const strategic =
+      byCode.STRATEGIC_RESERVE_XOF || 0;
+
+    const operational = rows
+      .filter((row) => row.code !== "STRATEGIC_RESERVE_XOF")
+      .reduce(
+        (sum, row) => sum + (Number(row.balance_xof) || 0),
+        0
+      );
+
+    return {
+      byCode,
+      operational,
+      strategic,
+      total: operational + strategic
+    };
+  }, {
+    byCode: {},
+    operational: 0,
+    strategic: 0,
+    total: 0
+  });
+
+  const due =
+    Number(wallets.clients_due || 0) +
+    Number(agents.agents_float || 0);
+
+  const freeReserve =
+    Number(reserves.operational || 0) - due;
+
+  const alerts = [];
+  const recommendations = [];
+
+  if (linked.pending > 0) {
+    alerts.push(
+      `${linked.pending} compte(s) relié(s) attendent une vérification.`
+    );
+    recommendations.push(
+      "Vérifier les comptes reliés avant d'autoriser leurs retraits."
+    );
+  }
+
+  if (support.open > 0) {
+    alerts.push(
+      `${support.open} demande(s) client OLATOUNDE sont ouvertes.`
+    );
+  }
+
+  if (support.older_than_24h > 0) {
+    alerts.push(
+      `${support.older_than_24h} demande(s) client dépassent 24 heures.`
+    );
+    recommendations.push(
+      "Traiter en priorité les tickets OLATOUNDE les plus anciens."
+    );
+  }
+
+  if (agents.low_float_agents > 0) {
+    alerts.push(
+      `${agents.low_float_agents} agent(s) OMNICASH ont une trésorerie faible.`
+    );
+    recommendations.push(
+      "Examiner le float des agents avant les prochains retraits cash."
+    );
+  }
+
+  if (due > 0 && reserves.operational < due) {
+    alerts.push(
+      `Couverture opérationnelle insuffisante : ${f(
+        reserves.operational
+      )} F détenus pour ${f(due)} F dus.`
+    );
+    recommendations.push(
+      "Suspendre les sorties automatiques et renforcer la liquidité opérationnelle."
+    );
+  }
+
+  if (activity.failed_operations > 0) {
+    alerts.push(
+      `${activity.failed_operations} opération(s) ont échoué ou été refusées sur 24 heures.`
+    );
+    recommendations.push(
+      "Contrôler les opérations échouées avant toute nouvelle tentative."
+    );
+  }
+
+  const level =
+    due > 0 && reserves.operational < due
+      ? "critical"
+      : alerts.length
+        ? "attention"
+        : "normal";
+
+  const greeting =
+    level === "normal"
+      ? "Bonjour Regis. La situation opérationnelle ne présente aucune alerte prioritaire."
+      : `Bonjour Regis. J'ai identifié ${alerts.length} point(s) qui demandent ton attention.`;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    greeting,
+    level,
+    activity,
+    linked,
+    support,
+    treasury: {
+      operationalReserve: reserves.operational,
+      strategicReserve: reserves.strategic,
+      totalReserve: reserves.total,
+      clientsDue: Number(wallets.clients_due || 0),
+      agentsFloat: Number(agents.agents_float || 0),
+      due,
+      freeReserve,
+      coverageRatio:
+        due > 0 ? reserves.operational / due : null,
+      accounts: reserves.byCode
+    },
+    alerts,
+    recommendations,
+    permissions: {
+      readOnly: true,
+      canMoveMoney: false,
+      canApproveWithdrawal: false,
+      canModifyReserve: false
+    }
+  };
+}
+
+router.get("/admin/briefing", adminOnly, async (req, res) => {
+  try {
+    res.json(await adminBriefing());
+  } catch (e) {
+    console.error("OLATOUNDE_ADMIN_BRIEFING", e.message);
+    res.status(500).json({
+      error: "Briefing OLATOUNDE momentanément indisponible."
+    });
+  }
+});
+
 router.get("/admin/tickets", adminOnly, async (req, res) => {
   try {
     await ensure();
