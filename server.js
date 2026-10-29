@@ -118,6 +118,7 @@ mount("/api/manual", "./routes/manualPayments", "Paiements manuels");
 mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
 mount("/api/admin", "./routes/adminDash", "Tableau de bord admin");
 mount("/api/ledger", "./routes/ledger", "Ledger central");
+mount("/api/schema-inspect", "./routes/schemaInspect", "Inspection schéma READ-ONLY");
 mount("/api/compliance", "./routes/compliance", "Conformité");
 mount("/api", "./routes/accountIds", "Identifiants et reçus");
 mount("/api/coingate", "./routes/coingate", "CoinGate");
