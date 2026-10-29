@@ -66,6 +66,8 @@ async function sendOtpEmail({ email, code, expiresInMinutes }) {
       "",
       "Ne partagez jamais ce code avec une autre personne.",
       "",
+      "Ouvrir OMNIPAY : https://www.omnipay-bj.com",
+      "",
       "OMNIPAY",
       "Votre quotidien financier tout-en-un",
     ].join("\n"),
@@ -101,6 +103,13 @@ async function sendOtpEmail({ email, code, expiresInMinutes }) {
 
             <p style="line-height:1.6;color:#b91c1c;font-weight:600">
               Ne communiquez jamais ce code à une autre personne.
+            </p>
+
+            <p style="text-align:center;margin:26px 0 4px">
+              <a href="https://www.omnipay-bj.com" style="display:inline-block;background:#10b981;color:#052e22;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:12px">Ouvrir OMNIPAY</a>
+            </p>
+            <p style="text-align:center;font-size:13px;color:#64748b;margin:8px 0 0">
+              ou copiez ce lien : <a href="https://www.omnipay-bj.com" style="color:#1d4ed8">https://www.omnipay-bj.com</a>
             </p>
           </div>
         </div>

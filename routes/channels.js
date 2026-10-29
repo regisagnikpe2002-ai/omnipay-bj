@@ -104,6 +104,60 @@ function parseBankText(text) {
 router.post("/parse-text", adminOnly, (req, res) => res.json(parseBankText(req.body?.text)));
 router._test = { parseBankText };
 
+
+// ---- Rapprochement par lot (MTN · Moov · Celtiis · PI-SPI) ----
+// 1) /reconcile : l'admin COLLE plusieurs SMS / lignes de relevé ; on lit chaque message, on signale les doublons et les clients reconnus. N'ENREGISTRE RIEN.
+// 2) /record-batch : après relecture, l'admin valide les lignes cochées ; chaque opération passe par ingest() (jamais de double crédit).
+const RECO_CHANNELS = { mtn: "momo", momo: "momo", moov: "moov", celtiis: "celtiis", pispi: "pispi" };
+function splitMessages(text) {
+  const t = String(text || "").replace(/\r/g, "").slice(0, 20000).trim();
+  if (!t) return [];
+  let parts = t.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
+  if (parts.length === 1) {
+    const lines = t.split("\n").map((x) => x.trim()).filter(Boolean);
+    if (lines.length > 1 && lines.every((l) => /\d+\s*(?:FCFA|F\s?CFA|XOF|CFA|F)\b/i.test(l))) parts = lines;
+  }
+  return parts.slice(0, 50);
+}
+router.post("/reconcile", adminOnly, async (req, res) => {
+  try {
+    await ensure();
+    const channel = RECO_CHANNELS[clean(req.body?.operator, 20).toLowerCase()];
+    if (!channel) return res.status(400).json({ error: "Opérateur inconnu (mtn, moov, celtiis, pispi)." });
+    const msgs = splitMessages(req.body?.text);
+    if (!msgs.length) return res.status(400).json({ error: "Collez au moins un message." });
+    const q = sql(); const items = [];
+    for (const m of msgs) {
+      const p = parseBankText(m); const w = [...p.warnings];
+      let duplicate = false, clientFound = false;
+      if (p.externalId) { duplicate = (await q`SELECT 1 FROM inbound_payments WHERE channel = ${channel} AND external_id = ${p.externalId}`).length > 0; }
+      if (p.omId) { clientFound = (await q`SELECT 1 FROM account_ids WHERE code = ${p.omId}`).length > 0; if (!clientFound) w.push("Identifiant OM inconnu : le paiement restera « à rapprocher »."); }
+      else w.push("Pas d'identifiant OM : le paiement restera « à rapprocher » (vous l'attribuerez ensuite).");
+      if (duplicate) w.push("Déjà enregistré : sera ignoré.");
+      items.push({ channel, raw: m.slice(0, 300), amount: p.amount, externalId: p.externalId, reference: p.omId, payer: p.payer, duplicate, clientFound, warnings: w, ok: !!(p.amount && p.externalId && p.externalId.length >= 6 && !duplicate) });
+    }
+    res.json({ channel, items });
+  } catch (e) { console.error("CHANNEL_RECONCILE", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+router.post("/record-batch", adminOnly, async (req, res) => {
+  try {
+    const channel = RECO_CHANNELS[clean(req.body?.operator, 20).toLowerCase()];
+    if (!channel) return res.status(400).json({ error: "Opérateur inconnu." });
+    const list = Array.isArray(req.body?.items) ? req.body.items.slice(0, 50) : [];
+    if (!list.length) return res.status(400).json({ error: "Aucune ligne à enregistrer." });
+    const out = { credited: 0, toAssign: 0, duplicates: 0, errors: 0, details: [] };
+    for (const it of list) {
+      const p = parsePayment({ ...it, channel });
+      if (p.error || p.externalId.length < 6) { out.errors++; out.details.push({ externalId: it?.externalId || "?", result: p.error || "Référence trop courte" }); continue; }
+      const r = await ingest({ ...p, source: "admin-batch" });
+      if (r.status === 200) { out.duplicates++; out.details.push({ externalId: p.externalId, result: "doublon ignoré" }); }
+      else if (r.body.matched && r.body.credited) { out.credited++; out.details.push({ externalId: p.externalId, result: "client crédité" }); }
+      else { out.toAssign++; out.details.push({ externalId: p.externalId, result: "à rapprocher" }); }
+    }
+    res.json({ ...out, message: `${out.credited} crédité(s), ${out.toAssign} à attribuer, ${out.duplicates} doublon(s), ${out.errors} erreur(s).` });
+  } catch (e) { console.error("CHANNEL_RECORD_BATCH", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
 // Vue d'ensemble des routes (OMNICHECK) : pour chaque opérateur, quel canal est utilisé et s'il est réellement prêt.
 router.get("/routes", adminOnly, async (req, res) => {
   try {

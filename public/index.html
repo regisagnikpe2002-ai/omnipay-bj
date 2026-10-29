@@ -30,6 +30,56 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 .pri{background:linear-gradient(135deg,var(--mint),var(--mint2));color:#05261c}
 .pri:disabled{opacity:.4;cursor:not-allowed}
 .sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+
+/* ===== v16 : connexion nouvelle génération + accueil par groupes ===== */
+html[data-theme] body.lg,body.lg{background:radial-gradient(900px 520px at 85% -5%,rgba(0,168,120,.22),transparent 60%),radial-gradient(900px 600px at -10% 10%,rgba(30,90,255,.28),transparent 62%),linear-gradient(180deg,#010b22 0,#031232 55%,#020a1e 100%);color:#f2f6fc;--card:rgba(10,24,56,.72);--card2:#0f2148;--line:#1f3566;--txt:#f2f6fc;--mut:#9db0d3;--mint:#34e8b0;--mint2:#1fb98a}
+body.lg .brand{display:none}
+body.lg .card{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,.45)}
+#hero{display:none;text-align:center;margin:6px 0 14px}
+body.lg #hero{display:block}
+#hero img{width:100%;max-width:420px;height:auto;mix-blend-mode:screen;-webkit-mask-image:radial-gradient(ellipse at center,#000 52%,transparent 76%);mask-image:radial-gradient(ellipse at center,#000 52%,transparent 76%);animation:hfloat 6s ease-in-out infinite}
+@keyframes hfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+#hero .tag{color:#cfe0ff;font-size:14px;margin-top:-6px}
+#hero .dom{display:inline-flex;gap:8px;align-items:center;margin-top:12px;background:rgba(52,232,176,.10);border:1px solid rgba(52,232,176,.35);color:#34e8b0;border-radius:99px;padding:7px 14px;font-size:13px;font-weight:700;letter-spacing:.2px;text-decoration:none}
+#hero .dom b{color:#fff}
+#hero .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+#hero .chips i{font-style:normal;font-size:11px;font-weight:700;color:#cfe0ff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:99px;padding:4px 10px}
+#demo{display:none;margin-top:18px}
+body.lg #demo{display:block}
+#demo h2{font-size:16px;text-align:center;margin-bottom:10px;color:#fff}
+.phone{position:relative;margin:0 auto;width:230px;height:380px;border-radius:34px;border:2px solid #2a4585;background:linear-gradient(180deg,#071a40,#04102c);box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 0 6px rgba(255,255,255,.03),0 0 60px rgba(52,232,176,.10);padding:14px 12px;overflow:hidden}
+.phone:before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:60px;height:6px;border-radius:6px;background:#1b2f60}
+.scene{position:absolute;inset:34px 12px 14px;opacity:0;transform:translateY(14px) scale(.98);transition:opacity .6s,transform .6s;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;pointer-events:none}
+.scene.on{opacity:1;transform:none}
+.scene .ico{font-size:44px;animation:pop 1.4s ease-in-out infinite}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.scene h3{font-size:16px;color:#fff}
+.scene p{font-size:12px;color:#9db0d3;line-height:1.35}
+.scene .amt{font-size:26px;font-weight:800;color:#34e8b0;font-variant-numeric:tabular-nums}
+.scene .bar{width:80%;height:6px;border-radius:6px;background:#12295a;overflow:hidden}
+.scene .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#34e8b0,#1fb98a);border-radius:6px}
+.scene.on .bar i{animation:fill 3s ease-out forwards}
+@keyframes fill{to{width:100%}}
+.scene .qrm{width:92px;height:92px;border-radius:10px;background:#fff;display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:7px}
+.scene .qrm i{background:#031232;border-radius:1px}
+.scene .qrm i:nth-child(3n){background:transparent}
+.scene.on .qrm{animation:scan 2.6s ease-in-out infinite}
+@keyframes scan{0%,100%{box-shadow:0 0 0 0 rgba(52,232,176,.0)}50%{box-shadow:0 0 0 8px rgba(52,232,176,.25)}}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.dots i{width:7px;height:7px;border-radius:50%;background:#1f3566;transition:all .3s}
+.dots i.on{width:20px;border-radius:7px;background:#34e8b0}
+#splash{position:fixed;inset:0;z-index:99;background:#010b22 url(/omnipay-splash.jpg) center/cover no-repeat;transition:opacity .7s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:9vh}
+#splash.out{opacity:0;pointer-events:none}
+#splash span{color:#9db0d3;font-size:12px;letter-spacing:3px}
+.grp{font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--mut);margin:6px 2px 8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.grp:after{content:"";flex:1;height:1px;background:var(--line)}
+.grp.ex{color:var(--mint)}
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:2px 0 18px}
+.qa button{margin:0;padding:12px 4px;border-radius:16px;background:var(--card);border:1px solid var(--line);color:var(--txt);font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .12s}
+.qa button span{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(135deg,var(--mint),var(--mint2));color:#05261c}
+.qa button:active{transform:scale(.95)}
+.rb.ex .tile span{border-color:var(--mint)}
+@media (prefers-reduced-motion:reduce){#hero img,.scene .ico,.scene.on .qrm{animation:none}#splash{transition:none}}
 @media print{body *{visibility:hidden}#rcd,#rcd *{visibility:visible}#rcd{position:absolute;left:0;top:0;width:100%;background:#fff!important;color:#000!important;border:0}.no-print{display:none!important}#rcd .tx{border-color:#ccc!important}#rcd small,#rcd .sub{color:#333!important}}
 .lnk{background:none;color:var(--mint);width:auto;padding:6px 0;margin:10px 0 0;font-size:14px}
 .steps{display:flex;gap:6px;margin-bottom:16px}.steps i{flex:1;height:4px;border-radius:4px;background:var(--line)}.steps i.on{background:var(--mint)}
@@ -98,7 +148,11 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 
 </head>
 <body>
+<div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
+  <div id="hero"><img src="/omnipay-hero.jpg" alt="OMNIPAY" width="930" height="240"><div class="tag">Votre quotidien financier tout-en-un</div>
+    <a class="dom" href="https://www.omnipay-bj.com" onclick="return false">🔒 <span>https://</span><b>www.omnipay-bj.com</b></a>
+    <div class="chips"><i>MTN</i><i>Moov</i><i>Celtiis</i><i>PI-SPI</i><i>Ecobank</i><i>Crypto</i><i>OMNIXPAY Cash</i></div></div>
   <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="64" height="64" style="border-radius:16px;display:block;box-shadow:0 0 0 2px var(--mint),0 6px 22px rgba(0,214,143,.45)"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
 
   <!-- CONNEXION -->
@@ -145,26 +199,39 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
   <!-- TABLEAU DE BORD -->
   <section id="dash" class="hide">
     <div class="bal"><small>Solde OMNIPAY</small><div class="v" id="bal">0 FCFA</div><small id="who"></small></div>
-    <div class="rb">
-      <button class="tile p" onclick="openIO('in')"><span>⬇️</span>Dépôt</button>
-      <button class="tile p" onclick="openIO('out')"><span>⬆️</span>Retrait</button>
-      <button class="tile p" onclick="show('xfer')"><span>🔁</span>Transfert</button>
-      <button class="tile" onclick="toast('Paiement chez un prestataire : bientôt disponible')"><span>💳</span>Payer</button>
-      <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH</button>
+    <div class="qa">
+      <button onclick="show('xfer')"><span>🔁</span>Envoyer</button>
+      <button onclick="openQr()"><span>▦</span>Recevoir</button>
+      <button onclick="openIO('in')"><span>⬇️</span>Dépôt</button>
+      <button onclick="openIO('out')"><span>⬆️</span>Retrait</button>
+    </div>
+    <div class="card" style="margin-bottom:16px"><h2>Dernières opérations</h2><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button></div>
+    <div class="grp ex">OMNIEXCHANGE</div>
+    <div class="rb ex">
       <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
       <button class="tile" onclick="show('cry')"><span>🪙</span>Crypto</button>
       <button class="tile" onclick="openMan()"><span>💸</span>Directs</button>
       <button class="tile" onclick="toast('PI-SPI : déposez ou retirez via « Directs » avec l\'alias Ecobank. L\'automatisation complète est en cours.')"><span>🔗</span>PI-SPI<em>en cours</em></button>
+    </div>
+    <div class="grp">OMNICASH · Cash</div>
+    <div class="rb">
+      <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH</button>
+      <button class="tile" onclick="toast('Paiement chez un prestataire : bientôt disponible')"><span>💳</span>Payer</button>
+      <button class="tile" onclick="openOps()"><span>📱</span>Numéros</button>
+    </div>
+    <div class="grp">Mon compte</div>
+    <div class="rb">
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
       <button class="tile" onclick="openQr()"><span>▦</span>Mes QR</button>
-      <button class="tile" onclick="openOps()"><span>📱</span>Numéros</button>
-      <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
       <button class="tile" onclick="openRc()"><span>🧾</span>Reçus</button>
       <button class="tile" onclick="window.print()"><span>🖨️</span>Reçus PDF</button>
-      <button class="tile" onclick="document.getElementById('txs').scrollIntoView({behavior:'smooth'})"><span>📊</span>Historique</button>
-      <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
       <button class="tile" onclick="$('ib_out').className='msg';show('iban')"><span>🏦</span>IBAN</button>
       <button class="tile" onclick="openCard()"><span>💳</span>Carte<em>nouveau</em></button>
+      <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
+      <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
+    </div>
+    <div class="grp">Assistance &amp; boutique</div>
+    <div class="rb">
       <button class="tile" onclick="openOlat()"><span>💬</span>Olatounde<em>assistante</em></button>
       <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<em>bientôt</em></button>
     </div>
@@ -184,7 +251,6 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <div class="tx"><div>Banques (Ecobank · UBA · BSIC)<small>PI-SPI, virements</small></div><b style="color:var(--warn)">En cours</b></div>
       <div class="tx"><div>Crypto (Binance · wallets)<small>Option réservée aux clients vérifiés</small></div><b style="color:var(--warn)">En cours</b></div>
       <div class="tx"><div>Prestataires (factures, transport, livraison)<small>Paiement depuis votre solde</small></div><b style="color:var(--warn)">En cours</b></div></div>
-    <div class="card"><h2>Dernières opérations</h2><div id="txs"></div></div>
     <button class="sec" onclick="logout()">Se déconnecter</button>
   </section>
 
@@ -309,6 +375,9 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
       <input id="rq_link" readonly style="margin-top:8px">
       <div class="row"><button class="sec" onclick="copyReq()">Copier le lien</button><button class="sec" onclick="shareReq()">WhatsApp</button><button class="sec" onclick="dlQr('qr_req','omnipay-demande')">Télécharger</button></div></div>
     <div id="rq_msg" class="msg"></div>
+    <h2 style="margin-top:18px">Mes demandes</h2><p class="sub" style="margin-bottom:6px">Une demande à montant fixe ne peut être payée qu'une fois et expire au bout de 24 h. Sans montant : QR réutilisable.</p>
+    <div id="rq_list"></div>
+    <button class="sec" onclick="makeReusable()">Créer mon QR commerçant (montant libre, réutilisable)</button>
     <h2 style="margin-top:22px">Parrainage (50 F par filleul)</h2>
     <p class="sub" style="margin-bottom:8px">Un nouveau client qui scanne arrive sur l'inscription avec votre code de parrainage.</p>
     <div id="qr_aff" class="qrbox"></div>
@@ -328,7 +397,8 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <h1>Mes comptes reliés</h1><p class="sub">Enregistrez où vous voulez recevoir votre argent. OMNIPAY n'accède jamais à ces comptes et ne vous demande jamais de mot de passe, de code PIN ni de clé secrète. Après vérification par notre équipe, vos retraits s'envoient vers ces comptes.</p>
     <div id="lk_list"></div>
     <h2 style="margin-top:14px">Ajouter un compte</h2>
-    <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire</option><option value="crypto">Portefeuille crypto</option><option value="paypal">PayPal</option><option value="wallet">Autre portefeuille</option></select>    <select id="lk_prov"></select>
+    <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire (IBAN)</option><option value="crypto">Portefeuille crypto</option></select>
+    <select id="lk_prov"></select>
     <select id="lk_net" class="hide"><option>EVM</option><option>TRON</option><option>BITCOIN</option><option>SOLANA</option><option>STELLAR</option></select>
     <input id="lk_det" placeholder="Numéro" autocomplete="off">
     <input id="lk_name" placeholder="Nom du titulaire (comme sur le compte)" maxlength="120">
@@ -393,6 +463,15 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="payq" class="card hide">
+    <h1>Payer une demande</h1><p class="sub">Vérifiez le bénéficiaire et le montant avant de payer.</p>
+    <div id="pq_box"></div>
+    <label id="pq_al" class="hide">Montant (FCFA)</label><input id="pq_am" type="number" min="100" class="hide" placeholder="Ex. 5000">
+    <button class="pri" id="pq_go" onclick="payReq()">Payer</button>
+    <div id="pq_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
   <section id="xfer" class="card hide">
     <h1>OMNIPAY → OMNIPAY</h1><p class="sub">Envoyez de l'argent à un autre compte OMNIPAY, instantanément (commission 50 FCFA).</p>
     <label>Téléphone ou identifiant OMNIPAY (OM…) du bénéficiaire</label><input id="x_to" placeholder="Votre numéro de téléphone" onblur="lookup()"><div id="x_name" class="sub" style="margin:6px 0 0;color:var(--mint);min-height:22px"></div>
@@ -426,6 +505,16 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
     <div id="receipt" class="hide"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
+  <div id="demo"><h2>OMNIPAY en 20 secondes</h2>
+    <div class="phone" aria-label="Démonstration animée des services OMNIPAY">
+      <div class="scene on"><div class="ico">⬇️</div><h3>Déposez</h3><p>MTN · Moov · Celtiis · PI-SPI · crypto.<br>Votre ID OM en référence : crédit automatique.</p><div class="amt" data-n="25000">0 FCFA</div><div class="bar"><i></i></div></div>
+      <div class="scene"><div class="ico">🔁</div><h3>Envoyez en 1 seconde</h3><p>Par numéro ou ID OM, vers un autre compte OMNIPAY. Reçu immédiat.</p><div class="amt" data-n="5000">0 FCFA</div><div class="bar"><i></i></div></div>
+      <div class="scene"><div class="ico">▦</div><h3>Payez par QR</h3><p>Le commerçant affiche son QR, vous scannez, c'est réglé.</p><div class="qrm"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="scene"><div class="ico">📲</div><h3>Retirez</h3><p>Vers vos comptes reliés et vérifiés : MTN, Moov, Celtiis, banque.</p><div class="amt" data-n="10000">0 FCFA</div><div class="bar"><i></i></div></div>
+      <div class="scene"><div class="ico">💱</div><h3>OMNIEXCHANGE</h3><p>P2P et crypto, avec garde-fou : libération seulement après argent réel reçu.</p></div>
+      <div class="scene"><div class="ico">🏧</div><h3>OMNIXPAY Cash</h3><p>Envoyez de l'argent, le receveur retire des espèces avec son code.</p></div>
+    </div><div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div>
+
   <div id="foot" class="foot">
     <div><b style="color:var(--txt)">OMNIPAY</b> · holding fintech · Abomey-Calavi, Bénin</div>
     <div><a href="https://www.omnipay-bj.com">omnipay-bj.com</a> · <a href="mailto:regisagnikpe2002@gmail.com">regisagnikpe2002@gmail.com</a></div>
@@ -2739,7 +2828,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2809,7 +2898,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.email||u.phone||'';
-  show('dash');loadId();applyPendingTo();ppReturn()
+  show('dash');loadId();applyPendingTo();applyPendingPay();ppReturn()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -2898,7 +2987,7 @@ function openQr(){
   const pl=payLink(),al=affLink();
   $('qr_pay').innerHTML=pl?qrSvg(pl):'<p class="sub" style="color:#0b1426">Reconnectez-vous pour générer ce code.</p>';
   $('qr_aff').innerHTML=(S.user&&(S.user.phone||S.user.email))?qrSvg(al):'<p class="sub" style="color:#0b1426">Reconnectez-vous pour générer ce code.</p>';
-  show('qr')}
+  show('qr');loadReqs()}
 function dlQr(id,name){const svg=$(id).querySelector('svg');if(!svg)return;
   const url=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));
   const a=document.createElement('a');a.href=url;a.download=name+'.svg';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
@@ -2908,6 +2997,17 @@ function applyPendingTo(){const t=LS.get('omnipayTo');if(!t)return;LS.del('omnip
   const own=String((S.user&&S.user.phone)||'');if(own&&own===t)return;
   $('x_to').value=t;$('x_name').textContent='';const am=LS.get('omnipayAmt'),nt=LS.get('omnipayNote');LS.del('omnipayAmt');LS.del('omnipayNote');if(am)$('x_am').value=am;show('xfer');lookup();if(nt)msg('x_msg','Demande de paiement : '+nt.replace(/[<>]/g,''),true)}
 
+
+/* ===== v16 : splash + démonstration animée ===== */
+(function(){
+ try{document.body.classList.add('lg')}catch(e){}
+ var sp=document.getElementById('splash'),seen=false;try{seen=sessionStorage.getItem('omSplash')==='1'}catch(e){}
+ if(sp){if(seen||matchMedia('(prefers-reduced-motion:reduce)').matches){sp.remove()}else{setTimeout(function(){sp.classList.add('out');try{sessionStorage.setItem('omSplash','1')}catch(e){}setTimeout(function(){sp.remove()},800)},1500)}}
+ var sc=[].slice.call(document.querySelectorAll('#demo .scene')),dt=[].slice.call(document.querySelectorAll('#demo .dots i')),k=0,f=new Intl.NumberFormat('fr-FR');
+ function count(el){var n=+el.getAttribute('data-n');if(!n)return;var t0=performance.now();(function st(t){var r=Math.min(1,(t-t0)/1800);el.textContent=f.format(Math.round(n*r))+' FCFA';if(r<1)requestAnimationFrame(st)})(t0)}
+ function go(i){k=(i+sc.length)%sc.length;sc.forEach(function(x,j){x.classList.toggle('on',j===k)});dt.forEach(function(x,j){x.classList.toggle('on',j===k)});var a=sc[k].querySelector('.amt');if(a)count(a)}
+ if(sc.length){go(0);setInterval(function(){if(document.body.classList.contains('lg')&&!document.hidden)go(k+1)},3800);dt.forEach(function(d,j){d.style.cursor='pointer';d.onclick=function(){go(j)}})}
+})();
 /* ===== Identifiant OMNIPAY + reçus ===== */
 const refOf=id=>'OMP-R'+String(id||'').replace(/-/g,'').slice(0,10).toUpperCase();
 async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}}
@@ -2928,8 +3028,29 @@ function shareRc(){if(!rcLast)return;window.open('https://wa.me/?text='+encodeUR
 /* ===== Demander un paiement ===== */
 function reqLink(){const p=String((S.user&&S.user.phone)||'').trim(),a=parseInt($('rq_am').value,10),n=$('rq_note').value.trim().slice(0,60);
   if(!p||!(a>0))return '';return location.origin+'/?to='+encodeURIComponent(p)+'&amt='+a+(n?'&note='+encodeURIComponent(n):'')}
-function makeReq(){const l=reqLink();if(!l)return msg('rq_msg','Saisissez un montant valide (et reconnectez-vous si besoin).');
-  $('rq_msg').className='msg';$('qr_req').innerHTML=qrSvg(l);$('rq_link').value=l;$('rq_out').classList.remove('hide')}
+async function loadReqs(){try{const d=await api('/api/pay/mine');const st={open:'En attente',paid:'Payée',cancelled:'Annulée'};
+  $('rq_list').innerHTML=d.requests.length?d.requests.slice(0,10).map(r=>{const state=r.expired?'Expirée':(st[r.status]||r.status);const open=r.status==='open'&&!r.expired;
+   return `<div class="tx"><div>${r.amount?fmt(r.amount):'Montant libre'} · ${escH(state)}<small>${escH(r.note||'')}${r.amount==null?' · '+r.pay_count+' paiement(s)':''} · ${escH(r.token)}</small></div>${open?`<button class="sec" style="width:auto;margin:0" onclick="cancelReq('${r.token}')">Annuler</button>`:''}</div>`}).join(''):'<p class="sub">Aucune demande.</p>'}catch(e){$('rq_list').innerHTML=''}}
+async function cancelReq(t){try{await api('/api/pay/'+t+'/cancel',{method:'POST',body:{}});await loadReqs()}catch(e){msg('rq_msg',e.message)}}
+async function makeReq(){const a=parseInt($('rq_am').value,10),n=$('rq_note').value.trim().slice(0,60);
+  if(!(a>0))return msg('rq_msg','Saisissez un montant valide.');
+  try{const d=await api('/api/pay/request',{body:{amount:a,note:n}});const l=location.origin+'/?pay='+d.token;
+   $('rq_msg').className='msg';$('qr_req').innerHTML=qrSvg(l);$('rq_link').value=l;$('rq_out').classList.remove('hide');await loadReqs()}
+  catch(e){const l=reqLink();if(!l)return msg('rq_msg',e.message);$('rq_msg').className='msg';$('qr_req').innerHTML=qrSvg(l);$('rq_link').value=l;$('rq_out').classList.remove('hide')}}
+async function makeReusable(){const n=$('rq_note').value.trim().slice(0,60);
+  try{const d=await api('/api/pay/request',{body:{hours:0,note:n}});const l=location.origin+'/?pay='+d.token;
+   $('rq_msg').className='msg';$('qr_req').innerHTML=qrSvg(l);$('rq_link').value=l;$('rq_out').classList.remove('hide');await loadReqs()}catch(e){msg('rq_msg',e.message)}}
+/* lien ?pay=JETON : demande de paiement à confirmer après connexion */
+(function(){try{const t=new URLSearchParams(location.search).get('pay');if(t&&/^[A-Za-z0-9]{10}$/.test(t)){LS.set('omnipayPay',t.toUpperCase());history.replaceState(null,'',location.pathname)}}catch(e){}})();
+let pqTok='',pqOpen=false;
+async function applyPendingPay(){const t=LS.get('omnipayPay');if(!t)return;LS.del('omnipayPay');pqTok=t;$('pq_msg').className='msg';$('pq_box').innerHTML='';
+  try{const d=await api('/api/pay/'+t);pqOpen=d.state==='open';
+   $('pq_box').innerHTML=`<div class="tx"><div>Bénéficiaire</div><b>${escH(d.to)}</b></div>`+(d.amount?`<div class="tx"><div>Montant</div><b>${fmt(d.amount)}</b></div>`:'')+`<div class="tx"><div>Commission</div><b>${fmt(d.fee)}</b></div>`+(d.note?`<div class="tx"><div>Libellé</div><b>${escH(d.note)}</b></div>`:'')+(pqOpen?'':`<p class="sub">Cette demande est ${d.state==='paid'?'déjà payée':d.state==='cancelled'?'annulée':'expirée'}.</p>`);
+   const free=pqOpen&&!d.amount;$('pq_am').classList.toggle('hide',!free);$('pq_al').classList.toggle('hide',!free);$('pq_go').classList.toggle('hide',!pqOpen);show('payq')}
+  catch(e){toast(e.message)}}
+async function payReq(){if(!pqTok||!pqOpen)return;const a=parseInt($('pq_am').value,10);if(!confirm('Confirmer le paiement ?'))return;
+  try{const d=await api('/api/pay/'+pqTok+'/pay',{body:$('pq_am').classList.contains('hide')?{}:{amount:a}});pqOpen=false;$('pq_go').classList.add('hide');msg('pq_msg',d.message+' Reçu : '+d.receiptRef,true);refresh().catch(()=>{})}
+  catch(e){msg('pq_msg',e.message)}}
 function copyReq(){const l=$('rq_link').value;(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(()=>msg('rq_msg','Lien copié.',true)).catch(()=>{$('rq_link').select();msg('rq_msg','Copiez le lien ci-dessus.',true)})}
 function shareReq(){const l=$('rq_link').value;if(l)window.open('https://wa.me/?text='+encodeURIComponent('Paiement OMNIPAY : '+l),'_blank','noopener')}
 
@@ -2967,9 +3088,9 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
 
-const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash'],['autre','Autre opérateur']],bank:[['biic','BIIC'],['ecobank','Ecobank'],['boa','BOA'],['uba','UBA'],['nsia','NSIA Bank'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['metamask','MetaMask'],['binance','Binance'],['wallet','Autre wallet crypto']],paypal:[['paypal','PayPal']],wallet:[['autre','Autre portefeuille']]};
+const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash']],bank:[['ecobank','Ecobank'],['uba','UBA'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['wallet','Portefeuille (MetaMask, Trust…)'],['binance','Binance (adresse de dépôt)']]};
 const LK_ST={pending:'En vérification',verified:'Validé ✔',rejected:'Refusé'};
-function lkKind(){const k=$('lk_kind').value;const providers=LK_PROV[k]||LK_PROV.wallet;$('lk_prov').innerHTML=providers.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');const hints={mobile:'Numéro Mobile Money (ex. 01XXXXXXXX)',bank:'Numéro de compte ou IBAN',crypto:'Adresse publique du portefeuille',paypal:'Lien PayPal.Me ou identifiant public',wallet:'Identifiant public du portefeuille'};$('lk_det').placeholder=hints[k]||'Identifiant public'}
+function lkKind(){const k=$('lk_kind').value;$('lk_prov').innerHTML=LK_PROV[k].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');$('lk_det').placeholder=k==='mobile'?'Numéro (ex. 01XXXXXXXX)':k==='bank'?'IBAN (ex. BJ66…)':'Adresse du portefeuille (0x…, T…)'}
 async function openLnk(){show('lnk');lkKind();$('lk_msg').className='msg';await lkList()}
 async function lkList(){try{const d=await api('/api/linked/mine');
   $('lk_list').innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="tx"><div><b>${escH(a.provider.toUpperCase())}${a.network?' · '+escH(a.network):''}</b><small style="word-break:break-all">${escH(a.detail)} · ${escH(a.holder_name)}</small><small>${escH(LK_ST[a.status]||a.status)}${a.note?' · '+escH(a.note):''}</small></div><button class="sec" style="width:auto;margin:0;padding:6px 12px" data-id="${escH(a.id)}">Supprimer</button></div>`).join(''):'<p class="sub">Aucun compte relié.</p>';
