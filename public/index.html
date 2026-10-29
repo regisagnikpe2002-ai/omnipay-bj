@@ -80,6 +80,12 @@ body.lg #demo{display:block}
 .qa button:active{transform:scale(.95)}
 .rb.ex .tile span{border-color:var(--mint)}
 @media (prefers-reduced-motion:reduce){#hero img,.scene .ico,.scene.on .qrm{animation:none}#splash{transition:none}}
+
+.opt{display:flex;gap:14px;align-items:center;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:16px;margin:10px 0 0;color:var(--txt);font-weight:400}
+.opt i{flex:0 0 52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:22px;background:rgba(52,232,176,.16)}
+.opt b{display:block;font-size:17px;margin-bottom:2px}.opt small{display:block;color:var(--mut);font-size:13.5px;line-height:1.3}
+.opt.off{opacity:.55;cursor:not-allowed}.opt .soon2{display:inline-block;background:#2a2410;color:var(--warn);font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;margin-left:6px;vertical-align:middle}
+.opt:active:not(.off){transform:scale(.985)}
 @media print{body *{visibility:hidden}#rcd,#rcd *{visibility:visible}#rcd{position:absolute;left:0;top:0;width:100%;background:#fff!important;color:#000!important;border:0}.no-print{display:none!important}#rcd .tx{border-color:#ccc!important}#rcd small,#rcd .sub{color:#333!important}}
 .lnk{background:none;color:var(--mint);width:auto;padding:6px 0;margin:10px 0 0;font-size:14px}
 .steps{display:flex;gap:6px;margin-bottom:16px}.steps i{flex:1;height:4px;border-radius:4px;background:var(--line)}.steps i.on{background:var(--mint)}
@@ -266,8 +272,19 @@ body.lg #demo{display:block}
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="dep" class="card hide">
+    <h1>Choisir la méthode de recharge</h1><p class="sub">Choisissez comment vous voulez alimenter votre solde OMNIPAY. Les détails de paiement s'affichent seulement après votre choix.</p>
+    <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Via Mobile Money</b><small>MTN, Moov, Celtiis : payez depuis votre téléphone</small></span></button>
+    <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>Via PI-SPI / QR</b><small>Scannez le QR avec n'importe quelle banque ou Mobile Money</small></span></button>
+    <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Via Crypto</b><small>Déposez des cryptos depuis votre wallet externe ou Binance Pay</small></span></button>
+    <button class="opt" onclick="openMan('bank')"><i>🏦</i><span><b>Via Virement bancaire</b><small>Depuis le compte de votre banque</small></span></button>
+    <button class="opt off" onclick="toast('Paiement par carte : bientôt disponible')"><i>💳</i><span><b>Via Carte bancaire<em class="soon2">Bientôt</em></b><small>Visa / Mastercard</small></span></button>
+    <button class="opt off" onclick="toast('Gift Card : bientôt disponible')"><i>🎁</i><span><b>Via Gift Card<em class="soon2">Bientôt</em></b><small>Rechargez avec une carte cadeau</small></span></button>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
   <section id="man" class="card hide">
-    <h1>Dépôt &amp; retrait directs</h1><p class="sub">Envoyez vers un compte OMNIPAY avec votre référence personnelle. OMNIPAY vérifie la réception, puis crédite votre solde.</p>
+    <h1 id="man_t">Dépôt &amp; retrait directs</h1><p class="sub">Envoyez vers un compte OMNIPAY avec votre référence personnelle. OMNIPAY vérifie la réception, puis crédite votre solde.</p>
     <div class="row"><button class="sec" id="mTabIn" onclick="manTab('in')" style="margin-top:0">Déposer</button><button class="sec" id="mTabOut" onclick="manTab('out')" style="margin-top:0">Retirer</button></div>
     <div id="m_in">
       <label>Votre référence (à indiquer avec le paiement)</label>
@@ -2828,7 +2845,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){['login','reg','dash','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2930,7 +2947,8 @@ async function doXfer(){
 /* DEPOT (pay-in via PayDunya) / RETRAIT (pay-out) */
 let ioMode='in';
 const OPS=[['mtn','MTN Mobile Money'],['moov','Moov Money'],['celtiis','Celtiis Cash']];
-function openIO(m){if(m==='in'){return openMan()}ioMode=m;$('io_msg').className='msg';
+function openDep(){show('dep')}
+function openIO(m){if(m==='in'){return openDep()}ioMode=m;$('io_msg').className='msg';
   $('io_t').textContent=m==='in'?'Dépôt : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
   $('io_s').textContent=m==='in'?'Vous serez redirigé vers la page de paiement sécurisée pour finaliser le dépôt.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
   $('io_ch').innerHTML=m==='in'?'<option value="paydunya">Mobile Money / carte (paiement sécurisé)</option>':OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
@@ -3074,7 +3092,7 @@ async function loadSav(){try{savList=await opsFetch()}catch(e){savList=[]}
 function savPick(){const v=$('io_sav').value;$('io_accw').classList.toggle('hide',!!v);$('io_ch').style.display=v?'none':'';$('io_ch').previousElementSibling.style.display=v?'none':''}
 
 /* ===== MTN MoMo : dépôt automatique ===== */
-async function momoInit(){try{const d=await api('/api/momo/status');$('mm_box').classList.toggle('hide',!d.enabled)}catch(e){$('mm_box').classList.add('hide')}}
+async function momoInit(){try{const d=await api('/api/momo/status');const f=$('mm_box').dataset.f||'';$('mm_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'))}catch(e){$('mm_box').classList.add('hide')}}
 let mmBusy=false;
 async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',mid=isF?'oc_msg':'mm_msg';
   const am=parseInt($(isF?'oc_fl':'mm_am').value,10),ph=($(isF?'oc_mmph':'mm_ph').value||'').trim();
@@ -3187,9 +3205,11 @@ function copyTxt(t,out){(navigator.clipboard?navigator.clipboard.writeText(t):Pr
 function manTab(t){$('m_in').classList.toggle('hide',t!=='in');$('m_out').classList.toggle('hide',t!=='out');
   $('mTabIn').style.borderColor=t==='in'?'var(--mint)':'var(--line)';$('mTabOut').style.borderColor=t==='out'?'var(--mint)':'var(--line)'}
 const MAN_STATUS={pending:'en attente',credited:'crédité',paid:'payé',rejected:'refusé'};
-async function openMan(){$('m_msg').className='msg';manTab('in');show('man');momoInit();
+const MAN_F={momo:['momo'],pispi:['pispi'],crypto:['binance','crypto'],bank:['bank']},MAN_T={momo:'Recharge par Mobile Money',pispi:'Recharge par PI-SPI / QR',crypto:'Recharge par crypto',bank:'Recharge par virement bancaire'},MAN_M={momo:'momo',pispi:'pispi',crypto:'usdt',bank:'virement'};
+async function openMan(f){f=MAN_F[f]?f:'';$('m_msg').className='msg';manTab('in');show('man');momoInit();$('man_t').textContent=f?MAN_T[f]:'Dépôt & retrait directs';if(f&&$('m_meth'))$('m_meth').value=MAN_M[f];
+  $('mm_box').dataset.f=f;
   try{const d=await api('/api/manual/instructions');$('m_ref').value=d.reference;
-    const acc=d.accounts||[];
+    const acc=f?(d.accounts||[]).filter(a=>MAN_F[f].includes(a.type)):(d.accounts||[]);
     $('m_accs').innerHTML=acc.length?acc.map((a,i)=>`<div class="tx" style="display:block"><div><b>${escH(a.label)}</b>${a.network?`<small>Réseau : ${escH(a.network)}</small>`:''}</div>
       <div style="word-break:break-all;margin:6px 0;font-weight:600">${escH(a.detail)}</div>
       <div class="row"><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="copy">Copier</button><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="qr">QR</button></div>
