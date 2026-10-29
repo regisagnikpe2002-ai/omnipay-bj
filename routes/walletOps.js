@@ -287,11 +287,57 @@ router.post("/api/ops/refund", adminOnly, async (req, res) => {
 // Retrait déjà payé à la main par l'administrateur : on ferme la ligne SANS rembourser.
 router.post("/api/ops/withdraw/:id/paid", adminOnly, async (req, res) => {
   try {
-    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const rows = await sql()`UPDATE transactions SET status = 'completed' WHERE id = ${req.params.id} AND type = 'withdrawal' AND status IN ('pending','failed','processing') RETURNING id`;
-    if (!rows.length) return res.status(409).json({ error: "Introuvable ou déjà traité." });
-    res.json({ message: "Marqué comme payé." });
-  } catch (e) { console.error("WD_PAID", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+    if (!UUID.test(req.params.id)) {
+      return res.status(400).json({ error: "Identifiant invalide." });
+    }
+    const paymentRef = clean(req.body?.paymentRef, 160);
+    const channel = clean(req.body?.channel || "pispi", 20).toLowerCase();
+    if (paymentRef.length < 6) {
+      return res.status(400).json({
+        error: "Reference reelle requise: txId ou end2endId PI-SPI."
+      });
+    }
+    const duplicate = await sql()`
+      SELECT id FROM transactions
+      WHERE type = 'withdrawal'
+        AND status = 'completed'
+        AND metadata->'settlement'->>'reference' = ${paymentRef}
+      LIMIT 1
+    `;
+    if (duplicate.length) {
+      return res.status(409).json({
+        error: "Cette reference de paiement est deja utilisee."
+      });
+    }
+    const rows = await sql()`
+      UPDATE transactions
+      SET status = 'completed',
+          metadata = coalesce(metadata, '{}'::jsonb) ||
+            jsonb_build_object('settlement', jsonb_build_object(
+              'channel', ${channel},
+              'reference', ${paymentRef},
+              'confirmedAt', now()::text,
+              'confirmedBy', 'admin'
+            ))
+      WHERE id = ${req.params.id}::uuid
+        AND type = 'withdrawal'
+        AND status IN ('pending', 'failed', 'processing')
+      RETURNING id
+    `;
+    if (!rows.length) {
+      return res.status(409).json({
+        error: "Retrait introuvable ou deja traite."
+      });
+    }
+    res.json({
+      message: "Paiement reel confirme et retrait cloture.",
+      paymentRef,
+      channel
+    });
+  } catch (e) {
+    console.error("WD_PAID", e.message);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 });
 
 // Export CSV des retraits à payer (pour un paiement en lot depuis le portail Mobile Money / Ecobank), puis « payé » en lot.
@@ -311,13 +357,9 @@ router.get("/api/ops/payouts.csv", adminOnly, async (req, res) => {
 function intlPhoneSafe(p) { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); return d.startsWith("229") ? d : "229" + d; }
 
 router.post("/api/ops/batch/paid", adminOnly, async (req, res) => {
-  try {
-    const ids = Array.isArray(req.body?.ids) ? [...new Set(req.body.ids.map(String))].slice(0, 200) : [];
-    if (!ids.length || ids.some((i) => !UUID.test(i))) return res.status(400).json({ error: "Liste d'identifiants invalide." });
-    const rows = await sql()`UPDATE transactions SET status = 'completed', metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object('paidManuallyAt', now()::text)
-      WHERE id = ANY(${ids}::uuid[]) AND type = 'withdrawal' AND status IN ('pending','failed','processing') RETURNING id`;
-    res.json({ paid: rows.length, skipped: ids.length - rows.length });
-  } catch (e) { console.error("BATCH_PAID", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+  return res.status(410).json({
+    error: "Paiement en lot desactive : chaque retrait PI-SPI doit avoir son propre txId ou end2endId."
+  });
 });
 
 // Re-vérifie auprès de PayDunya les dépôts 'pending' (jusqu'à 50) et crédite ceux réellement payés.

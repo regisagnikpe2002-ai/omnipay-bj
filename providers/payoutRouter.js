@@ -70,8 +70,9 @@ async function momoStatus(txId) {
 // ---- Canal 3 : Ecobank PI-SPI (à brancher avec les accès fournis par Ecobank) ----
 // Aucun accès n'existe encore : ce canal renvoie « unavailable » et la demande reste en attente.
 // Dès réception de la documentation et des clés d'Ecobank, c'est ici (et seulement ici) que l'appel est ajouté.
-async function viaPispi() {
-  return { status: "unavailable", detail: "PI-SPI Ecobank : accès non encore fournis." };
+async function viaPispi(args) {
+  const pi = require("./piSpiSupervised.js");
+  return pi.preparePayout(args);
 }
 
 // Canal manuel : aucun tiers. La demande reste « en attente » ; l'admin paie depuis son propre compte puis clique « Payé ».
@@ -84,8 +85,27 @@ async function viaMoov() { return { status: "unavailable", detail: "Moov Money :
 async function viaCeltiis() { return { status: "unavailable", detail: "Celtiis Cash : API non encore fournie (traitement manuel)." }; }
 const CHANNELS = { manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
 const routeFor = (operator) => {
-  const r = String(process.env["PAYOUT_ROUTE_" + String(operator).toUpperCase()] || "manual").toLowerCase();
-  return CHANNELS[r] ? r : "manual";
+  const key =
+    "PAYOUT_ROUTE_" +
+    String(operator || "").toUpperCase();
+
+  const configuredRoute =
+    process.env[key];
+
+  const defaultRoute =
+    ["mtn", "moov", "celtiis"].includes(
+      String(operator || "").toLowerCase()
+    )
+      ? "pispi"
+      : "manual";
+
+  const route = String(
+    configuredRoute || defaultRoute
+  ).toLowerCase();
+
+  return CHANNELS[route]
+    ? route
+    : defaultRoute;
 };
 
 async function payout(args) {

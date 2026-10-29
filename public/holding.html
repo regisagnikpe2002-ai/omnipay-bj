@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07101f">
+<title>OMNIPAY HOLDING — Direction financière</title>
+
+<style>
+:root {
+  --navy: #07101f;
+  --navy-2: #0b1730;
+  --panel: rgba(13, 27, 52, .78);
+  --panel-strong: #0f1d36;
+  --gold: #d9a441;
+  --gold-light: #f0cd7a;
+  --gold-soft: rgba(217, 164, 65, .13);
+  --white: #f7f3ea;
+  --muted: #93a0b8;
+  --line: rgba(255,255,255,.09);
+  --green: #55d69e;
+  --red: #ff7b7b;
+  --shadow: 0 24px 70px rgba(0,0,0,.27);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--white);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 80% 5%, rgba(217,164,65,.12), transparent 28%),
+    radial-gradient(circle at 10% 75%, rgba(45,94,180,.13), tra    radial-gradient(circle at 10nt    radial-gra16    radial-grad%, #0a132    radial-gradient(c: hidden;
+}
+
+/* Lueur bancaire discrète */
+body::before {
+  content: "";
+  position: fixed;
+  width: 420px;
+  height: 420px;
+  right: -180px;
+  top: -180px;
+  border-radius: 50%;
+  background: rgba(217,164,6  background: rgb: bl  background: rgba(217,164, none;
+  background: rgba(217,16ase-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  from { transform: scale(.94); opacity: .45; }
+  t  t  t  t  t  t  tca  t  t  t  t  t  t  tca  t  t  he  t  t  t  t  t  t14  t  t  t  t  t -   t  t  t  t  t : auto;
+  padding: 34px 0 60px;
+  padding: 34px 0 60pxr {
+  display: flex;
+  align-items: center;
+  justi  justi  ju s  justi  justi  ju :   justi  justi  ju s 2p  justi  justi  ju s  justi  justi  ju :   justi  justi  ju s 2p  justx;  justi  justi  ju s  justi  justi  j48  justi  jusy:  justi  justi  ju s  justi  justi  ju :   justi  justi  ju s 2p  justi  just-weight: 900;
+  font-size: 22px;
+  background: linear-gradient(145deg, var(--gold-light), var(--gold));
+  box-shadow: 0 10px 32px rgba(217,164,65,.20);
+}
+
+.brand-name {
+  f  f  f  f  f  f  f  f  f  f  :   f  f  f  f -s  f  f  f  f }
+  f  f  f  f  f  olor: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-pill {
+  display: inline-flex;
+  ali  ali  ali  ali  a  gap: 8px;
+  border: 1px solid var(--line);
+  back  back  back  back  back  back  back  back  back  back  back  back  back  back  back  back  back  back  back  back  );  back  back  back  bpx;  back  back  back  bacr-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 12px rgba(217,164,65,.65);
+}
+
+/* ACCESS */
+
+.access {
+  max-width: 560px;
+  margin: 10vh auto 0;
+  padding: 38px;
+  border-radius: 26px;
+  border: 1px solid rgba(217,164,65,.16);
+  background:
+    linear-gradient(145deg, rgba(21,38,69,.92), rgba(9,19,38,.94));
+  box-shadow: var(--s  box-shadow: var(--s  box-shadow: var(--s  box-shadow: var(--s  box- v  box-shadow: var(--s  box-shadow: var(--s  bo
+  le  le  le  le:   le  le  le  le:   le  le  le  le:   le  le  le  le:   le  le    le  le  le  le:   le  le  le  le:    le  le  le  le:;
+  le  le  le  le:
+
+.access p {
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.access-form {
+  margin-top: 28px;
+}
+
+label {
+  display: block;
+  color: #b7c0d0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 9px;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(2,8,18,.65);
+  color: #fff;
+  outline: none;
+  border-radius: 13px;
+  padding: 14px 15px;
+}
+
+input:focus {
+  border-color: rgba(217,164,65  border-color: rgba(0 0 0 3px rgba(217,164,65,.08);
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.primary {
+  width: 100%;
+  margin-top: 13px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: #17130a;
+  font-weight: 850;
+                                                                                                                   dow: 0 10px 30px rgba(217,164,65,.18);
+}
+
+.primary:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.error {
+  color: #ff9d9d;
+  font-size: 13px;
+  margi  margi  marg    mareight: 18px;
+}
+
+/* DASHBOARD */
+
+#dashboard {
+  display: none;  display: none; pl  display: none;  displae-col  display: none;  displ:   display: none;  di15px;
+}
+
+.hero-card,
+.side-c.side-c.side-c.side-c.side-c.si  border: 1px solid var(--line);
+              var(--panel);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: var(--shadow);
+}
+
+.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hero-ca.hx;
+         ra         ra
+}}}}}}}}}}}}}}}}}ter}}}}}}}}}}}}}}}}}t  positio}}}}}}}}}te}}}}}}}}}}}}}0p}}}}}}}}}}}}}}}}}t;
+  right: -80px;
+  top:  top:  top:  top:  tus  top:  top:  top:  top:  tus  top:  top:  top:  top:  tus  top:  topan  top:  top:  t
+
+................... var(--gold-light);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.3px;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 14px 0 4px;
+  font-size: clamp(38px, 6vw, 65px);
+  letter-spacing: -2.5px;
+  line-height: 1;
+}
+
+.hero .currency {
+  color: var(--muted);
+  font-size: 14px;
+  margin-left: 7px;
+  lett  lett  let .  lett  lett  let .  lett  lett  let .  lett  lett  let .  lett  lett  let .  lett  lett  let .  lett  lett  let: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-top: 34px;
+}
+
+.mini-stat span {
+  displa  displa  displa  displa  uted);
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing:   letter-spacing:   letter-;
+}
+
+
+
+letter-spacing:   letter-spacing:   letter-;
+ett  let .  lett  lett  let .  lett  lett  l 26px;
+  padding: 29px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.coverage-number {
+  font-size: 46px;
+  font-weight: 850;
+  margin-top: 15px;
+  letter-spacing: -2px;
+}
+
+.progress {
+  height: 7px;
+  border-radius  border-radius  border-radius  borde5,  border-radius   h  border-radius  b0p  border-radius  border>   border-radius  border-rad 100%;
+  border-radius: inherit;
+  bac  bac  bac  bac  bac  bac  bac  bac81  bac  bac  bac  bac );
+                  h 1s cubic-bezier(.2,.8                  h 1 {
+  color: var(--muted);
+  font-size: 12  font-size: 12  font-size: 12  font-size: 12  font-size: 12  font-size: 12  font-size: 12  font-size: 12  font-size: 12  font-size: 12  x   font-size: 1 20px  font-sizear  font-size: 12 0;
+  font-size: 19px;
+}
+
+
+
+font-size: 19px;
+nt-size: 12  font-si: var(--muted);
+  font-size: 12  font-size: 12 {
+  display: flex;
+  gap: 9px;
+}
+
+.secondary {
+  color  color  color  color  color  color  color,25  color  color  color  color  color  color  coloer-  color  color  p  color  color px  color  color  colo;
+  fo  fo  fo  fo  fo  fo  fo  fo  foer {
+  fo  fo  fo  fo gb  fo  fo  fo  fo ;
+  fo  fo  fo  fo g--gold-soft);
+}
+
+/* RESERVES */
+
+.assets {
+  disp  disp  di
+              e-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.asset-card {
+  border-radius: 20px;
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  min-height: 1  min-height: 1  min-heilateY(12px);
+  opacity: 0;
+  animation: rise .55s ease forwards;
+  transition: transform .22s ease, border-color .22s ease;
+}
+
+.asset-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(217,164,65,.27);
+}
+
+.asset-card:nth-child(2) { animation-delay: .05s; }
+.asset-card:nth-child(3) { animation-delay: .10s; }
+.asset-card:nth-child(4) { animation-delay: .15s; }
+.asset-card:nth-child(5) { animation-delay: .20s; }
+.asset-card:nth-child(6) { animation-delay: .25s; }
+
+.asset-card.strategic {
+  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col  border-col y:  border-col  border-col  border-col  b;
+  border-col  border-col  border-cold   border-col  border-col  bordvar(--muted);
+  text-  text- m:  text-  text-let  text-  text- m:  text-  text-let  tex f  text-  tepx;
+             --             -- order:              -(21             --  backg             --   4,             --             -- orderadding: 5px 8px;
+}
+
+.asset-name {
+  margin-top: 26px;
+  color: #bac4d4;
+  font-size: 12px;
+}
+
+.asset-value {
+  margin-top: 7px;
+  font-weight: 800;
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -.8px;
+}
+
+.asset-code {
+  margin-top: 15px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #738198  color: #738198  color: #738198  color: #738198  n   color: #738198  color: #738198  color: #738198  iu  color: #738198  color: #738198  color: #738198 play: flex;
+  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  justify-conten  px;
+}
+
+.status.ok {
+  background: rgba(85,214,158,.10);
+  color: var(--green);
+  border: 1px solid rgba(85,214,158,.22);
+}
+
+.status.warning {
+  background: rgba(255,123,123,.10);
+  color: #ff9b9b;
+  border: 1px solid rgba(255,123,123,.20);
+}
+
+.alert-list {
+  margin: 17px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-list li {
+  border-top: 1px solid var(--line);
+  padding: 12px 2px;
+  color: #b9c2d1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.alert.alert.alert.alert.alert.alert.aler: .alert.alert.alert.alein-top.alert.alertrd.alert.alert.alid var(--line);
+  padding-top: 18px;
+  display: flex;
+  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-cont  justify-city: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !importa    scroll-@m    scroll-behavior: auto !import {
+    scroll-behavior: umns: 1fr;
+  }
+
+  .assets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .shell {
+    width: min(100% - 24px, 1420px);
+    padding-top: 20px;
+  }
+
+  header {
+    align-items: flex-start;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .header-right .status-pill {
+    display: no    display: no ss    display: no  :     display: no   26px     display: no    display: no ss    display: no  :     display: no   26px     display: no    display: no ss    diets {
+    grid-template    grid-templa  }
+
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions button {
+    flex: 1;
+  }
+
+  .footer {
+    gap: 10px;
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+
+body>
+
+
+direction: column;der>
+    <div c    ="brand">
+      <div cl      <div cl      <div cl      <div cl di      <div cl      <div cl      <div cl    <d      <div cl      <div cl      <div cl      <div cl di      <div cl      <div clv>      <div cl      <div cl ght">
+      <div class="status-pill">
+        <span class="dot"></span>
+        ESPACE PRIVÉ
+      </div>
+    </div>
+  </header>
+
+  <!-- CONNEXION -->
+  <section id="access" class="access">
+    <div class="access-kicker">Direction générale</div>
+    <h1>OMNIPAY<br>Holding.</h1>
+    <p>
+      Cockpit privé de supervision financière et de consolidation
+      des réserves OMNIPAY.
+    </p>
+
+    <form id="accessForm" class="access-form">
+      <label for="adminKey">Clé d'accès administrateur</label>
+      <input
+        id="ad        id="ad        id="aor        id="ad        id="ur  nt-        id=       placeholder="•�        id="ad    ��        id=�••        id      required>
+
+
+       id="ad        id="tn  class="primar   type="    it">
+                                </button>
+
+      <div id="loginError" class="error" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <!-- DASHBOARD -->
+  <main id="dashboard">
+
+    <section class="hero">
+
+      <div class="hero-card">
+        <div class="eyebrow">Trésorerie consolidée</div>
+
+        <div>
+          <h1>
+                            0<                   <span class="currency">XOF</span>
+          </h1>
+
+          <div class="hero-caption">
+            Actifs de trésorerie recensés par OMNIPAY
+          </div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="mini-stat">
+            <span>Engagements</span>
+            <strong id="due">0 XOF</strong>
+          </div>
+
+          <div class="mini-stat">
+            <span>Réserve libre</span>
+            <strong id="freeReserve">0 XOF</strong>
+          </div>
+
+          <div class="mini-stat">
+            <span>Dernière consolidation</span>
+            <strong id="generatedAt">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div>
+          <div class="eyebrow">Ratio de couverture</div>
+          <div class="coverage-number" id="ratio">—</div>
+
+          <div class="progress">
+            <div id="coverageBar"></div>
+          </div>
+        </div>
+
+        <div class="side-note">
+          Rapport entre la trésorerie recensée et les engagements suivis
+          par le module Treasury.
+        </div>
+      </div>
+
+    </section>
+
+    <div class="toolbar">
+      <div>
+        <h2>Architecture des réserves</h2>
+        <p>Vue consolidée des principales poches de trésorerie.</p>
+      </div>
+
+      <div class="actions">
+        <button id="refreshBtn" class="secondary" type="button">
+          Actualiser
+        </button>
+
+        <button id="logoutBtn" class="secondary" type="button">
+          Fermer
+        </button>
+      </div>
+    </div>
+
+    <section class="assets">
+
+      <article class="asset-card">
+        <div class="asset-top">
+          <span class="asset-kind">Rail bancaire</span>
+          <span class="asset-badge">PI-SPI</span>
+        </div>
+        <div class="asset-name">PI-SPI Ecobank</div>
+        <div class="asset-value" id="pispiValue">0 XOF</div>
+        <div class="asset-code" id="pispiCode">PISPI_ECOBANK</div>
+      </article>
+
+      <article class="asset-card">
+        <div class="asset-top">
+          <span class="asset-kind">Banque</span>
+          <span class="asset-badge">RÉSERVE</span>
+        </div>
+        <div class="asset-name">BIIC · Réserve OMNIPAY</div>
+        <div class="asset-value" id="biicValue">0 XOF</div>
+        <div class="asset-code" id="biicCode">BIIC_XOF</div>
+      </article>
+
+      <article class="asset-card">
+        <div class="ass        <div class=<s        <div clt-ki        <div class="ass        <div class=<s        <div clt-SIQUE</span>
+        </div>
+        <div class="asset-name">Cash OMNIPAY</div>
+        <div class="asset-value" id="cashValue">0 XOF</div>
+        <div class="asset-code" id="cashCode">CASH_XOF</div>
+      </article>
+
+      <article class="asset-card">
+        <div class="asset-top">
+          <span class="asset-kind">Paiement</span>
+          <span class="asset-badge">MOBILE</span>
+        </div>
+        <div class="asset-name">Mobile Money</div>
+        <div class="asset-value" id="momoValue">0 XOF</div>
+        <div class="asset-code" id="momoCode">MOMO_XOF</div>
+      </article>
+
+      <article class="asset-card">
+        <div class="asset-top">
+          <span class="asset-kind">Actifs numériques</span>
+          <span class="asset-badge">EVM</span>
+        </div>
+        <div class="asset-name">MetaMask · Crypto</div>
+        <div class="asset-value" id="cryptoValue">0 XOF</div>
+        <div class="asset-code" id="cryptoCode">METAMASK</div>
+      </article>
+
+      <article class="asset-card strategic">
+        <div class="asset-top">
+          <span class="asset-kind">Direction OMNIPAY</span>
+          <span class="asset-badge">PRIVÉE</span>
+        </div>
+        <div class="asset-name">Réserve stratégique</div>
+        <div class="asset-value" id="strategicValue">0 XOF</div>
