@@ -19,7 +19,7 @@ function pispiAlias() {
   return clean(
     process.env.PISPI_OMNIPAY_ALIAS ||
     process.env.TREASURY_PISPI_ALIAS ||
-    "853c809e-f225-46d4-8eb3-3bd0001adb76",
+    "1ced2141-456f-4a2c-af30-06b22360bb24", // alias PI-SPI officiel ETS OMNIPAY (EcobankPay)
     120
   );
 }

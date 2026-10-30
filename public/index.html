@@ -252,11 +252,7 @@ body.lg #demo{display:block}
     <div class="card" style="margin-bottom:16px"><h2>Réseau OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Un seul compte, tous vos prestataires.</p>
       <button class="pri" onclick="openLnk()">🔗 Relier mon compte (Mobile Money · banque · crypto)</button>
       <button class="sec" onclick="openCash()">💵 Mes retraits en espèces</button>
-      <div class="tx"><div>Mobile Money (MTN · Moov · Celtiis)<small>Dépôts et retraits</small></div><b class="pos">Actif</b></div>
-      <div class="tx"><div>PI-SPI Mobile Money (alias)<small>Interopérabilité BCEAO</small></div><b style="color:var(--warn)">En cours</b></div>
-      <div class="tx"><div>Banques (Ecobank · UBA · BSIC)<small>PI-SPI, virements</small></div><b style="color:var(--warn)">En cours</b></div>
-      <div class="tx"><div>Crypto (Binance · wallets)<small>Option réservée aux clients vérifiés</small></div><b style="color:var(--warn)">En cours</b></div>
-      <div class="tx"><div>Prestataires (factures, transport, livraison)<small>Paiement depuis votre solde</small></div><b style="color:var(--warn)">En cours</b></div></div>
+      <div id="net_list"><div class="tx"><div>Chargement…</div></div></div></div>
     <button class="sec" onclick="logout()">Se déconnecter</button>
   </section>
 
@@ -2915,7 +2911,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.email||u.phone||'';
-  show('dash');loadId();applyPendingTo();applyPendingPay();ppReturn()
+  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -3026,6 +3022,12 @@ function applyPendingTo(){const t=LS.get('omnipayTo');if(!t)return;LS.del('omnip
  function go(i){k=(i+sc.length)%sc.length;sc.forEach(function(x,j){x.classList.toggle('on',j===k)});dt.forEach(function(x,j){x.classList.toggle('on',j===k)});var a=sc[k].querySelector('.amt');if(a)count(a)}
  if(sc.length){go(0);setInterval(function(){if(document.body.classList.contains('lg')&&!document.hidden)go(k+1)},3800);dt.forEach(function(d,j){d.style.cursor='pointer';d.onclick=function(){go(j)}})}
 })();
+
+/* ===== Réseau OMNIPAY : catalogue dynamique (/api/services) ===== */
+const NET_ST={supervised:['Actif · supervisé','var(--mint)'],configuration_required:['Sur configuration','var(--warn)'],partnership_required:['Partenariat requis','var(--warn)'],active:['Actif','var(--mint)']};
+async function loadNet(){const box=$('net_list');if(!box)return;try{const d=await fetch('/api/services').then(r=>r.json());
+  box.innerHTML=d.services.map(x=>{const st=NET_ST[x.status]||[x.status,'var(--mut)'];return `<div class="tx"><div>${escH(x.name)}<small>${escH(x.description)}</small></div><b style="color:${st[1]}">${escH(st[0])}</b></div>`}).join('')}
+ catch(e){box.innerHTML='<div class="tx"><div>Catalogue indisponible<small>Réessayez plus tard.</small></div></div>'}}
 /* ===== Identifiant OMNIPAY + reçus ===== */
 const refOf=id=>'OMP-R'+String(id||'').replace(/-/g,'').slice(0,10).toUpperCase();
 async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}}

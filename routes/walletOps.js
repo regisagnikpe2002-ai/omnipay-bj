@@ -167,6 +167,18 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
 
     const total = amount + COMMISSION;
     const key = crypto.randomUUID();
+    // Portail de sécurité (services/paymentSafetyGate.js) : BLOQUE un retrait incohérent, ou le met en validation humaine (jamais d'envoi automatique).
+    let gateReview = false, gateId = null;
+    try {
+      const gate = require("../services/paymentSafetyGate.js");
+      const bal = (await q`SELECT balance FROM wallets WHERE user_id = ${req.user.userId}::uuid`)[0]?.balance;
+      const dec = await gate.evaluate({ userId: String(req.user.userId), rail: operator, destination: phone, amountXof: amount, feesXof: COMMISSION, idempotencyKey: key,
+        availableBalanceXof: bal == null ? null : Number(bal), perTransactionLimitXof: MAX_OUT, manualReviewAboveXof: approvalXof(),
+        verifiedBeneficiaryRequired: Boolean(guard && guard.requireLinked()), beneficiaryVerified: viaLinked });
+      gateId = dec.gateId;
+      if (dec.decision === "BLOCK") return res.status(dec.reasonCode === "SG_INSUFFICIENT_BALANCE" ? 400 : 403).json({ error: dec.reasonCode === "SG_INSUFFICIENT_BALANCE" ? `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` : (dec.reason || "Retrait refusé par le contrôle de sécurité."), code: dec.reasonCode });
+      gateReview = dec.decision === "REVIEW";
+    } catch (e) { if (e && e.code !== "MODULE_NOT_FOUND") { console.error("SAFETY_GATE", e.message); return res.status(503).json({ error: "Contrôle de sécurité indisponible. Réessayez dans un instant." }); } }
     // Débit + écriture du retrait + commission : tout ou rien, solde vérifié dans la même requête.
     const rows = await q`
       WITH w AS (UPDATE wallets SET balance = balance - ${total}, updated_at = now()
@@ -181,7 +193,7 @@ router.post("/wallet/withdraw", requireAuth, async (req, res) => {
     const newBalance = Number(rows[0].balance).toFixed(2);
 
     let message = "Demande de retrait enregistrée. Traitement sous 24h.";
-    const needsApproval = amount >= approvalXof();
+    const needsApproval = amount >= approvalXof() || gateReview;
     let capped = false;
     let paused = false;
     try { paused = Boolean(guard && (await guard.isPaused())); } catch (_) { paused = false; }
@@ -301,7 +313,7 @@ router.post("/api/ops/withdraw/:id/paid", adminOnly, async (req, res) => {
       SELECT id FROM transactions
       WHERE type = 'withdrawal'
         AND status = 'completed'
-        AND metadata->'settlement'->>'reference' = ${paymentRef}
+        AND metadata->'settlement'->>'reference' = ${paymentRef}::text
       LIMIT 1
     `;
     if (duplicate.length) {
@@ -314,8 +326,8 @@ router.post("/api/ops/withdraw/:id/paid", adminOnly, async (req, res) => {
       SET status = 'completed',
           metadata = coalesce(metadata, '{}'::jsonb) ||
             jsonb_build_object('settlement', jsonb_build_object(
-              'channel', ${channel},
-              'reference', ${paymentRef},
+              'channel', ${channel}::text,
+              'reference', ${paymentRef}::text,
               'confirmedAt', now()::text,
               'confirmedBy', 'admin'
             ))

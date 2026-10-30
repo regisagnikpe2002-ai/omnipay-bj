@@ -197,8 +197,8 @@ router.post("/admin/payout/:id/paid", adminOnly, async (req, res) => {
         SET status = 'completed',
             metadata = coalesce(metadata, '{}'::jsonb) || jsonb_build_object(
               'settlement', jsonb_build_object(
-                'channel', ${paymentChannel},
-                'reference', ${paymentRef},
+                'channel', ${paymentChannel}::text,
+                'reference', ${paymentRef}::text,
                 'confirmedAt', now()::text,
                 'confirmedBy', 'admin'
               )
