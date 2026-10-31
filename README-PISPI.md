@@ -13,6 +13,7 @@ La banque notifie OMNIPAY → le solde du client est crédité automatiquement. 
 | `PISPI_SMS_ENABLED` | `on` pour activer le relais SMS (désactivé par défaut). |
 | `PISPI_SMS_SENDERS` | Noms d'expéditeurs autorisés pour les SMS, séparés par des virgules (ex. `ECOBANK`). Obligatoire si le relais SMS est activé. |
 | `PISPI_SMS_AUTO_MAX_XOF` | Plafond de crédit automatique pour les SMS (défaut 50000). |
+| `PISPI_SMS_IGNORE` | Mots-clés de SMS à ignorer, séparés par des virgules (ex. `VERSEMENT ESPECES,APPRO` pour vos propres versements au guichet). |
 
 ## Voie 1 — API / webhook de la banque (recommandée)
 Adresse à donner à Ecobank / PI-SPI : `https://VOTRE-SITE/api/pispi/notify` (méthode POST, JSON).
@@ -27,3 +28,7 @@ Sur le téléphone qui reçoit les SMS de la banque, une application « SMS forw
 - Le secret n'est jamais affiché ni renvoyé. Ne le collez jamais dans une discussion.
 - Au début, gardez un plafond bas (ex. `PISPI_AUTO_MAX_XOF=20000`), faites un vrai test de 100 F, comparez avec l'application Ecobank, puis relevez.
 - OMNICHECK → « Clients & activité » : registre de tous les clients et de toutes les opérations, export CSV de 30 jours.
+
+## Format SMS Ecobank pris en charge
+Exemple : `XOF 120,000.00 Crédit au ac XX… REF:M22… <libellé de l'opération> on 21-OCT-26. Votre solde disponible est XOF 110,500.00.`
+Le montant lu est celui du crédit (jamais le solde), la référence d'opération vient de `REF:`, et l'identifiant client est cherché dans le libellé (`OM` + 11 chiffres, avec ou sans espace ou tiret). Un SMS sans identifiant OM est enregistré « à rapprocher » sans aucun crédit automatique.

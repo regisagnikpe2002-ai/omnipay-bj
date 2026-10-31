@@ -90,12 +90,16 @@ function parseBankText(text) {
   const t = String(text || "").replace(/[\u00a0\u202f]/g, " ").slice(0, 2000);
   const warnings = [];
   let amount = null;
-  const am = t.match(/(?:montant|re[cç]u|cr[ée]dit(?:[ée])?|de)\s*:?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[,.]\d{1,2})?\s*(?:FCFA|F\s?CFA|XOF|CFA|F)\b/i) || t.match(/(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[,.]\d{1,2})?\s*(?:FCFA|F\s?CFA|XOF|CFA)\b/i);
-  if (am) amount = parseInt(am[1].replace(/[ .]/g, ""), 10);
+  // Montant : formats « 5 000 FCFA », « XOF 120,000.00 » (devise devant, virgule = milliers, point = décimales). Les soldes (« solde disponible est XOF … ») sont écartés.
+  const toInt = (x) => { let v = String(x).replace(/[\s\u00a0]/g, ""); if (/,\d{1,2}$/.test(v) && /\.\d{3}/.test(v)) v = v.replace(/\./g, "").replace(",", "."); else v = v.replace(/,/g, ""); const n = Math.floor(Number(v)); return Number.isFinite(n) ? n : null; };
+  const tNoBal = t.replace(/solde[^.]{0,60}?(?:XOF|FCFA|F\s?CFA|CFA)\s*\d[\d\s.,]*/ig, " ").replace(/(?:XOF|FCFA|F\s?CFA|CFA)\s*\d[\d\s.,]*\s*(?:de\s+)?solde/ig, " ");
+  const am = tNoBal.match(/(?:montant|re[cç]u|cr[ée]dit(?:[ée])?|de)\s*:?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[,.]\d{1,2})?\s*(?:FCFA|F\s?CFA|XOF|CFA|F)\b/i) || tNoBal.match(/(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[,.]\d{1,2})?\s*(?:FCFA|F\s?CFA|XOF|CFA)\b/i);
+  const cf = tNoBal.match(/\b(?:XOF|FCFA|F\s?CFA|CFA)\s*(\d{1,3}(?:[ ,]\d{3})+(?:\.\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
+  if (cf) amount = toInt(cf[1]); else if (am) amount = parseInt(am[1].replace(/[ .]/g, ""), 10);
   let externalId = null;
   const rf = t.match(/(?:r[ée]f(?:[ée]rence)?|id(?:\s*(?:op[ée]ration|transaction|paiement))?|transaction|trx|n[°o])\s*[:#°]?\s*([A-Za-z0-9][A-Za-z0-9\-_]{5,39})/i) || t.match(/\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
   if (rf) externalId = rf[1];
-  const om = t.match(/\bOM\s?(\d{11})\b/i); // identifiant OM = « OM » + 11 chiffres (10 + chiffre de contrôle)
+  const om = t.match(/\bOM[\s\-_.]?(\d{11})\b/i); // identifiant OM = « OM » + 11 chiffres (10 + chiffre de contrôle)
   const pm = t.match(/(?:de|from|exp[ée]diteur|payeur|par)\s*:?\s*([A-ZÀ-Ý][A-ZÀ-Ý'\- ]{3,60}[A-ZÀ-Ý])(?=\s|$|[.,;])/);
   if (/d[ée]bit|envoy[ée]|vous avez pay|retrait/i.test(t) && !/re[cç]u|cr[ée]dit|re[cç]u de/i.test(t)) warnings.push("Ce message ressemble à une SORTIE d'argent, pas à un paiement reçu.");
   if (amount == null) warnings.push("Montant introuvable : saisissez-le.");

@@ -10,7 +10,7 @@
 //                             (PISPI_SMS_SENDERS), plafond automatique plus bas. Activé seulement si PISPI_SMS_ENABLED=on.
 //   Admin : GET /api/pispi/status · POST /api/pispi/test (essai à blanc, n'écrit rien)
 // Variables : PISPI_WEBHOOK_SECRET (≥ 32 car.) · PISPI_AUTO_MAX_XOF (défaut 200000) · PISPI_SMS_ENABLED · PISPI_SMS_SENDERS · PISPI_SMS_AUTO_MAX_XOF (défaut 50000)
-//             PISPI_OK_STATUS (défaut ACSC,ACCC,ACSP,SETTLED,COMPLETED,SUCCESS,PAID,CONFIRMED) · PISPI_MAP (JSON facultatif : {"id":["data.txId"],"amount":["data.montant"],…})
+//             PISPI_SMS_IGNORE (mots-clés de SMS à ignorer, ex. VERSEMENT ESPECES,APPRO) · PISPI_OK_STATUS (défaut ACSC,ACCC,ACSP,SETTLED,COMPLETED,SUCCESS,PAID,CONFIRMED) · PISPI_MAP (JSON facultatif : {"id":["data.txId"],"amount":["data.montant"],…})
 const crypto = require("crypto");
 const express = require("express");
 const { neon } = require("@neondatabase/serverless");
@@ -100,6 +100,9 @@ router.post("/sms", async (req, res) => {
     const from = clean(req.body?.sender || req.body?.from, 40).toLowerCase();
     if (!senders.includes(from)) { await logActivity("ignored", { source: "sms", note: "expéditeur non autorisé" }); return res.status(403).json({ error: "Expéditeur non autorisé." }); }
     const text = clean(req.body?.text || req.body?.message, 1000);
+    // SMS à ne pas traiter comme paiements de clients (vos propres versements d'espèces, approvisionnements…) : PISPI_SMS_IGNORE="VERSEMENT ESPECES,APPRO".
+    const ign = String(process.env.PISPI_SMS_IGNORE || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+    if (ign.some((w) => text.toLowerCase().includes(w))) { await logActivity("ignored", { source: "sms", note: "SMS exclu (PISPI_SMS_IGNORE)" }); return res.status(200).json({ accepted: false, reason: "exclu" }); }
     const t = require("./channels.js").parseBankText(text);
     if (/SORTIE d'argent/.test(t.warnings.join(" "))) { await logActivity("ignored", { source: "sms", note: "SMS de débit" }); return res.status(200).json({ accepted: false, reason: "débit" }); }
     if (!t.amount) { await logActivity("ignored", { source: "sms", note: "montant illisible" }); return res.status(422).json({ accepted: false, reason: "montant illisible : à saisir à la main" }); }
