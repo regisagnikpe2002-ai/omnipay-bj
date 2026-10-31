@@ -195,3 +195,6 @@ ${appState.accessToken}`;
         "Une erreur est survenue."
       );
     }
+
+  return data;
+}
