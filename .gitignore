@@ -13,3 +13,8 @@ node_modules/
 *.bak
 
 *.bak
+
+_sauvegarde_avant_v19/
+*.zip
+*.corrupt.*
+.DS_Store
