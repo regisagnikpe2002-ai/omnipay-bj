@@ -8,6 +8,9 @@
 
 require("dotenv").config();
 
+// Mode DÉMO (APP_MODE=demo) : bloque toute connexion sortante vers un service réel. Sans effet en mode live.
+try { require("./lib/demoGuard").install(); } catch (err) { console.error("demoGuard non chargé :", err.message); }
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -22,6 +25,9 @@ app.set("trust proxy", 1);
 // =========================
 
 app.use(cors());
+
+// Indique au site s'il est en mode démo (bandeau « DÉMO » affiché sur chaque écran).
+app.get("/api/mode", (req, res) => res.json({ mode: require("./lib/appMode").isDemo() ? "demo" : "live" }));
 
 // rawBody conservé : nécessaire à la vérification des webhooks (Binance Pay, PayDunya).
 app.use(
@@ -121,6 +127,7 @@ mount("/api/fund", "./routes/fundManager", "Gestionnaire de fonds et risque (adm
 mount("/api/markets", "./routes/markets", "Marchés crypto (lecture seule)");
 mount("/api/challenges", "./routes/challenges", "Défis clients");
 mount("/api/goals", "./routes/goals", "Objectif du mois (admin)");
+mount("/api/orders", "./routes/orders", "Ordres de paiement (IA rédige, marchands exécutent)");
 mount("/api/admin", "./routes/adminDash", "Tableau de bord admin");
 mount("/api/ledger", "./routes/ledger", "Ledger central");
 mount("/api/schema-inspect", "./routes/schemaInspect", "Inspection schéma READ-ONLY");
@@ -133,6 +140,8 @@ mount("/api/treasury", "./routes/treasury", "Trésorerie (PI-SPI + MetaMask)");
 mount("/api/omnicash", "./routes/omnicash", "OMNICASH (agents)");
 mount("/api/momo", "./routes/momo", "MTN MoMo (dépôts et suivi des retraits)");
 mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-SPI, Mobile Money)");
+mount("/api/pispi", "./routes/pispiBridge", "Brancheur PI-SPI (crédit automatique plafonné)");
+mount("/api/activity", "./routes/activity", "Clients et activité (admin, lecture seule)");
 mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");

@@ -35,7 +35,7 @@ const credit = (id, userId) => sql()`
   SELECT (SELECT count(*) FROM t)::int AS n`;
 
 // Enregistrement UNIQUE d'un paiement reçu (même règle pour le canal signé et pour la saisie admin) : (channel, externalId) ne passe qu'une fois.
-async function ingest({ channel, externalId, amount, reference, payer, source }) {
+async function ingest({ channel, externalId, amount, reference, payer, source, autoMax }) {
   await ensure();
   const q = sql();
   const ins = await q`INSERT INTO inbound_payments (channel, external_id, amount, reference, payer, raw)
@@ -44,6 +44,7 @@ async function ingest({ channel, externalId, amount, reference, payer, source })
   if (!ins.length) return { status: 200, body: { duplicate: true } };
   const m = reference ? await q`SELECT user_id FROM account_ids WHERE code = ${reference.toUpperCase().replace(/\s/g, "")}` : [];
   if (!m.length) return { status: 202, body: { matched: false, id: ins[0].id } }; // reste « à rapprocher »
+  if (autoMax != null && amount > autoMax) return { status: 202, body: { matched: true, credited: false, held: true, id: ins[0].id } }; // au-dessus du plafond automatique : validation humaine (« à rapprocher »)
   const r = await credit(ins[0].id, m[0].user_id);
   return { status: 201, body: { matched: true, credited: r[0]?.n === 1, id: ins[0].id } };
 }
@@ -94,7 +95,7 @@ function parseBankText(text) {
   let externalId = null;
   const rf = t.match(/(?:r[ée]f(?:[ée]rence)?|id(?:\s*(?:op[ée]ration|transaction|paiement))?|transaction|trx|n[°o])\s*[:#°]?\s*([A-Za-z0-9][A-Za-z0-9\-_]{5,39})/i) || t.match(/\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
   if (rf) externalId = rf[1];
-  const om = t.match(/\bOM\s?(\d{10})\b/i);
+  const om = t.match(/\bOM\s?(\d{11})\b/i); // identifiant OM = « OM » + 11 chiffres (10 + chiffre de contrôle)
   const pm = t.match(/(?:de|from|exp[ée]diteur|payeur|par)\s*:?\s*([A-ZÀ-Ý][A-ZÀ-Ý'\- ]{3,60}[A-ZÀ-Ý])(?=\s|$|[.,;])/);
   if (/d[ée]bit|envoy[ée]|vous avez pay|retrait/i.test(t) && !/re[cç]u|cr[ée]dit|re[cç]u de/i.test(t)) warnings.push("Ce message ressemble à une SORTIE d'argent, pas à un paiement reçu.");
   if (amount == null) warnings.push("Montant introuvable : saisissez-le.");
@@ -103,6 +104,7 @@ function parseBankText(text) {
 }
 router.post("/parse-text", adminOnly, (req, res) => res.json(parseBankText(req.body?.text)));
 router._test = { parseBankText };
+router.ingest = ingest; router.parseBankText = parseBankText;
 
 
 // ---- Rapprochement par lot (MTN · Moov · Celtiis · PI-SPI) ----

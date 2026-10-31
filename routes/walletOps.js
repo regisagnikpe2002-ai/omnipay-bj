@@ -52,6 +52,16 @@ const validLocal = (p) => { const d = String(p || "").replace(/\D/g, ""); return
 const autoDayMax = () => { const v = Number(process.env.AUTO_PAYOUT_DAY_MAX_XOF); return Number.isFinite(v) && v >= 0 ? v : 1000000; };
 const approvalXof = () => { const v = Number(process.env.APPROVAL_XOF); return Number.isFinite(v) && v > 0 ? v : 200000; };
 
+// Un retrait « pris » par un marchand (circuit des ordres) ne doit JAMAIS être payé ni remboursé en parallèle par l'administrateur (double paiement).
+async function activeOrderFor(q, txId) {
+  try {
+    const has = await q`SELECT to_regclass('public.payment_orders') AS t`;
+    if (!has[0] || !has[0].t) return false;
+    const r = await q`SELECT id FROM payment_orders WHERE tx_id = ${txId}::uuid AND status IN ('taken','executed') LIMIT 1`;
+    return r.length > 0;
+  } catch (_) { return false; }
+}
+
 // Envoi d'UN retrait vers le canal choisi pour l'opérateur. Le statut 'pending' est « réservé » (→ 'processing') AVANT l'appel,
 // donc un même retrait ne peut jamais partir deux fois (clic double, lot + validation, etc.).
 async function dispatchPayout(q, txId, operator, phone, amount) {
@@ -301,6 +311,7 @@ router.post("/api/ops/refund", adminOnly, async (req, res) => {
     const done = [], skipped = [];
     for (const id of ids) {
       try {
+        if (await activeOrderFor(sql(), id)) { skipped.push({ id, reason: "pris par un marchand (circuit des ordres) : rejetez l'ordre d'abord" }); continue; }
         const r = await refundOne(id, includeFee, note);
         if (r.length) done.push({ id, refunded: Number(r[0].refunded) }); else skipped.push({ id, reason: "déjà traité ou introuvable" });
       } catch (e) { console.error("REFUND", id, e.message); skipped.push({ id, reason: "erreur" }); }
@@ -322,11 +333,12 @@ router.post("/api/ops/withdraw/:id/paid", adminOnly, async (req, res) => {
         error: "Reference reelle requise: txId ou end2endId PI-SPI."
       });
     }
+    if (await activeOrderFor(sql(), req.params.id)) return res.status(409).json({ error: "Un marchand a pris ce retrait dans le circuit des ordres. Rejetez d'abord l'ordre (OMNICHECK → Ordres de paiement) avant de le clôturer ici." });
     const duplicate = await sql()`
       SELECT id FROM transactions
       WHERE type = 'withdrawal'
         AND status = 'completed'
-        AND metadata->'settlement'->>'reference' = ${paymentRef}::text
+        AND lower(metadata->'settlement'->>'reference') = lower(${paymentRef}::text)
       LIMIT 1
     `;
     if (duplicate.length) {

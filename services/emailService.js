@@ -37,6 +37,7 @@ function fromParts() {
   return m ? { name: m[1].trim() || "OMNIPAY", email: m[2].trim() } : { name: "OMNIPAY", email: raw };
 }
 async function deliver(mail) {
+  if (require("../lib/appMode").isDemo()) { console.log(`[DÉMO] e-mail NON envoyé à ${mail.to} : ${mail.subject}\n${String(mail.text || "").slice(0, 300)}`); return { messageId: "demo", accepted: [mail.to], rejected: [] }; }
   const brevo = (process.env.BREVO_API_KEY || "").trim();
   const resend = (process.env.RESEND_API_KEY || "").trim();
   if (brevo || resend) {

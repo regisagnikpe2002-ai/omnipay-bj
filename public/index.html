@@ -143,8 +143,10 @@ body.lg #demo{display:block}
 .mkrow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:8px 0 0;color:var(--txt);font-weight:400;cursor:pointer}
 .mkrow.sel{border-color:var(--mint)}.mkrow small{display:block;color:var(--mut);font-size:12px}.mkrow .r{text-align:right}.up{color:#16a34a!important}.dn{color:#dc2626!important}
 .mkbox{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}.mkiv{display:flex;gap:6px;margin-top:8px}.mkiv button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--txt);font-size:13px;margin:0}.mkiv button.on{background:var(--mint);color:#06231a;border-color:var(--mint)}
+.olav{width:38px;height:38px;border-radius:50%;object-fit:cover;display:block;margin:0 auto;border:2px solid var(--mint);box-shadow:0 0 0 0 rgba(31,185,138,.5);animation:olp 2.6s ease-out infinite}.olav.big{width:64px;height:64px;margin:0}.olh{display:flex;align-items:center;gap:12px;margin-bottom:6px}@keyframes olp{0%{box-shadow:0 0 0 0 rgba(31,185,138,.45)}70%{box-shadow:0 0 0 10px rgba(31,185,138,0)}100%{box-shadow:0 0 0 0 rgba(31,185,138,0)}}@media (prefers-reduced-motion:reduce){.olav{animation:none}}
+.mkrow{flex-wrap:wrap}.mkrow .sp{flex:0 0 84px}.mkrow .bs{flex-basis:100%;text-align:right;border-top:1px dashed var(--line);padding-top:6px;color:var(--mut);font-size:12px}.mkrow .sp svg{display:block}.mkrow .l{flex:1;min-width:0}.mkst{display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--mut)}.mkst b{color:var(--txt)}.mkcv{display:flex;gap:8px;margin-top:8px}.mkcv input,.mkcv select{margin:0;flex:1;min-width:0}.mkbadge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);margin-left:6px}.wkb{display:flex;align-items:flex-end;gap:8px;height:90px;margin-top:10px}.wkb div{flex:1;text-align:center;font-size:10px;color:var(--mut)}.wkb i{display:block;background:linear-gradient(180deg,var(--mint),var(--mint2));border-radius:6px 6px 0 0;min-height:2px;margin-bottom:3px}.lvl{display:flex;gap:6px;margin-top:8px}.lvl span{flex:1;text-align:center;font-size:11px;padding:6px 2px;border-radius:8px;border:1px solid var(--line);color:var(--mut)}.lvl span.on{background:var(--mint);color:#06231a;border-color:var(--mint);font-weight:700}
 .chc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}.chc.done{border-color:var(--mint)}.chc small{color:var(--mut)}.pbar{height:8px;border-radius:6px;background:var(--line);margin-top:8px;overflow:hidden}.pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--mint2),var(--mint))}
-/* OMNIPAY-LIVE-BG */body{background:var(--omni-live-bg,linear-gradient(135deg,#07111f,#102843 52%,#0b5d62))!important;background-attachment:fixed!important;transition:background 1.4s ease}</style>
+/* OMNIPAY-LIVE-BG */:root[data-theme=dark] body{background:var(--omni-live-bg,linear-gradient(135deg,#07111f,#102843 52%,#0b5d62));background-attachment:fixed;transition:background 1.4s ease}</style>
 <script>
 /* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
 (function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
@@ -247,7 +249,7 @@ body.lg #demo{display:block}
     </div>
     <div class="grp">Assistance &amp; boutique</div>
     <div class="rb">
-      <button class="tile" onclick="openOlat()"><span>💬</span>Olatounde<em>assistante</em></button>
+      <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.jpg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde<em>assistante</em></button>
       <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<em>bientôt</em></button>
     </div>
     <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
@@ -278,17 +280,20 @@ body.lg #demo{display:block}
   </section>
 
   <section id="mk" class="card hide">
-    <h1>Marchés crypto</h1><p class="sub">Cours en direct (lecture seule). Aucune opération n'est lancée depuis cet écran.</p>
+    <h1>Marchés crypto</h1><p class="sub">Prix par crypto en direct (lecture seule). Aucune opération n'est lancée depuis cet écran.</p>
     <div class="mkbox"><div id="mk_h" style="display:flex;justify-content:space-between;align-items:baseline"><b id="mk_s">BTC</b><span id="mk_c"></span></div><div id="mk_g"></div>
-      <div class="mkiv"><button data-i="15m" onclick="mkIv('15m')">15 min</button><button data-i="1h" class="on" onclick="mkIv('1h')">1 h</button><button data-i="4h" onclick="mkIv('4h')">4 h</button><button data-i="1d" onclick="mkIv('1d')">1 jour</button></div></div>
+      <div class="mkiv"><button data-i="15m" onclick="mkIv('15m')">15 min</button><button data-i="1h" class="on" onclick="mkIv('1h')">1 h</button><button data-i="4h" onclick="mkIv('4h')">4 h</button><button data-i="1d" onclick="mkIv('1d')">1 jour</button></div>
+      <div class="mkst" id="mk_st"></div></div>
+    <div class="mkbox"><b>Convertisseur indicatif</b><div class="mkcv"><input id="cv_a" type="number" inputmode="decimal" min="0" step="any" value="1" oninput="mkConv()" aria-label="Quantité"><select id="cv_c" onchange="mkConv()" aria-label="Crypto"></select></div><p class="sub" id="cv_r" style="margin:8px 0 0"></p></div>
     <div id="mk_list"></div><p class="sub" id="mk_t" style="margin-top:10px"></p>
-    <p class="sub">Les cours sont des informations de marché, pas un conseil d'investissement. Les cryptos peuvent perdre de la valeur.</p>
+    <p class="sub">Les cours sont des informations de marché, pas un conseil d'investissement ni un prix garanti. Le montant réel d'une opération est confirmé avant validation. Les cryptos peuvent perdre de la valeur.</p>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
   <section id="chl" class="card hide">
     <h1>Mes défis</h1><p class="sub">Calculés automatiquement à partir de vos opérations réelles terminées.</p>
-    <div class="mkbox"><div style="display:flex;justify-content:space-between;align-items:baseline"><b id="ch_lv">—</b><span id="ch_pt"></span></div><small class="sub" id="ch_nx"></small></div>
+    <div class="mkbox"><div style="display:flex;justify-content:space-between;align-items:baseline"><b id="ch_lv">—</b><span id="ch_pt"></span></div><small class="sub" id="ch_nx"></small><div class="lvl" id="ch_lvs"></div></div>
+    <div class="mkbox"><b>Mon activité (6 dernières semaines)</b><div class="wkb" id="ch_wk"></div></div>
     <div id="ch_list"></div><p class="sub" id="ch_n" style="margin-top:10px"></p>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
@@ -450,7 +455,7 @@ body.lg #demo{display:block}
     <button class="sec" onclick="show('dash')">← Retour</button>
   </section>
   <section id="olat" class="card hide">
-    <h1>OLATOUNDE</h1><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
+    <div class="olh"><img class="olav big" src="/olatounde-avatar.jpg" alt="OLATOUNDE" width="64" height="64" onerror="this.style.display='none'"><div><h1 style="margin:0">OLATOUNDE</h1><small class="sub" style="display:block">Assistante OMNIPAY · en ligne</small></div></div><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
     <div id="ol_log" style="min-height:160px;max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0"></div>
     <div class="row"><input id="ol_in" placeholder="Votre question…" maxlength="500" autocomplete="off"><button class="pri" style="width:auto;margin:0;padding:0 18px" onclick="olSend()">Envoyer</button></div>
     <button class="sec" onclick="show('dash')">← Retour</button>
@@ -2968,25 +2973,45 @@ async function doXfer(){
 /* DEPOT (pay-in via PayDunya) / RETRAIT (pay-out) */
 let ioMode='in';
 const OPS=[['mtn','MTN Mobile Money'],['moov','Moov Money'],['celtiis','Celtiis Cash']];
-var MKT=null,MKS='BTCUSDT',MKI='1h';
+var MKT=null,MKS='BTCUSDT',MKI='1h',MKD=null,MKSP={};
 const mkN=(n,d)=>Number(n).toLocaleString('fr-FR',{maximumFractionDigits:d==null?2:d});
-function mkSvg(pts,h){if(!pts||pts.length<2)return'';const cs=pts.map(p=>p.c),mn=Math.min(...cs),mx=Math.max(...cs),r=(mx-mn)||1,w=300,up=cs[cs.length-1]>=cs[0];
- const d=cs.map((c,i)=>(i*w/(cs.length-1)).toFixed(1)+','+(h-3-((c-mn)/r)*(h-6)).toFixed(1)).join(' ');
- return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" role="img" aria-label="Graphique des prix"><polyline fill="none" stroke="'+(up?'#16a34a':'#dc2626')+'" stroke-width="2" stroke-linejoin="round" points="'+d+'"/></svg>'}
+const mkP=p=>mkN(p,p<1?4:p<10?3:2);
+function mkSvg(pts,h,fill){if(!pts||pts.length<2)return'';const cs=pts.map(p=>p.c),mn=Math.min(...cs),mx=Math.max(...cs),r=(mx-mn)||1,w=300,up=cs[cs.length-1]>=cs[0],col=up?'#16a34a':'#dc2626';
+ const xy=cs.map((c,i)=>(i*w/(cs.length-1)).toFixed(1)+','+(h-3-((c-mn)/r)*(h-6)).toFixed(1));
+ return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" role="img" aria-label="Graphique des prix">'+(fill?'<polygon fill="'+col+'" opacity=".12" points="0,'+h+' '+xy.join(' ')+' '+w+','+h+'"/>':'')+'<polyline fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="'+xy.join(' ')+'"/></svg>'}
+function mkSpark(arr){return arr&&arr.length>1?mkSvg(arr.map(c=>({c:c})),32,false):''}
 async function openMk(){show('mk');await mkLoad();clearInterval(MKT);MKT=setInterval(mkLoad,15000)}
 function mkSel(s){MKS=s;mkLoad()}
 function mkIv(i){MKI=i;document.querySelectorAll('.mkiv button').forEach(b=>b.classList.toggle('on',b.dataset.i===i));mkChart()}
-async function mkLoad(){try{const r=await fetch('/api/markets/tickers');const d=await r.json();if(!r.ok)throw new Error(d.error||'Cours indisponibles.');
- $('mk_list').innerHTML=d.items.map(x=>'<button class="mkrow'+(x.symbol===MKS?' sel':'')+'" onclick="mkSel(\''+x.symbol+'\')"><div><b>'+escH(x.asset)+'</b><small>'+escH(x.name)+'</small></div><div class="r"><b>'+mkN(x.price,x.price<10?4:2)+' $</b>'+(x.priceXof?'<small>≈ '+mkN(x.priceXof,0)+' F</small>':'')+'<small class="'+(x.changePct>=0?'up':'dn')+'">'+(x.changePct>=0?'▲':'▼')+' '+Math.abs(x.changePct).toFixed(2)+' % (24 h)</small></div></button>').join('');
- $('mk_t').textContent=(d.stale?'Données en cache : la source est momentanément indisponible. ':'Mis à jour à ')+new Date(d.updatedAt).toLocaleTimeString('fr-FR');
- await mkChart()}catch(e){$('mk_t').textContent=e.message}}
+function mkConv(){if(!MKD)return;const x=MKD.items.find(i=>i.symbol===$('cv_c').value),q=Number($('cv_a').value);
+ if(!x||!(q>=0)){$('cv_r').textContent='';return}
+ $('cv_r').innerHTML='≈ <b>'+mkN(q*x.price,2)+' $</b>'+(x.priceXof?' ≈ <b>'+mkN(q*x.priceXof,0)+' FCFA</b>':'')+'<br><small>Indicatif, d’après le cours du marché. Le montant exact est confirmé avant toute opération.</small>'}
+async function mkLoad(){try{const r=await fetch('/api/markets/tickers');const d=await r.json();if(!r.ok)throw new Error(d.error||'Cours indisponibles.');MKD=d;
+ const sel=$('cv_c');if(sel&&sel.options.length!==d.items.length){const cur=sel.value;sel.innerHTML=d.items.map(x=>'<option value="'+x.symbol+'">'+escH(x.asset)+'</option>').join('');if(cur)sel.value=cur}
+ $('mk_list').innerHTML=d.items.map(x=>'<button class="mkrow'+(x.symbol===MKS?' sel':'')+'" onclick="mkSel(\''+x.symbol+'\')"><div class="l"><b>'+escH(x.asset)+'</b><small>'+escH(x.name)+'</small></div><div class="sp">'+mkSpark(MKSP[x.symbol])+'</div><div class="r"><b>'+(x.priceXof?mkN(x.priceXof,0)+' F':mkP(x.price)+' $')+'</b>'+(x.priceXof?'<small>'+mkP(x.price)+' $</small>':'')+'<small class="'+(x.changePct>=0?'up':'dn')+'">'+(x.changePct>=0?'▲':'▼')+' '+Math.abs(x.changePct).toFixed(2)+' %</small>'+'</div>'+(x.buyXof?'<div class="bs">Achat '+mkN(x.buyXof,0)+' F · Vente '+mkN(x.sellXof,0)+' F <span class="mkbadge">indicatif</span></div>':'')+'</button>').join('');
+ $('mk_t').textContent=(d.stale?'Données en cache : la source est momentanément indisponible. ':'Mis à jour à ')+new Date(d.updatedAt).toLocaleTimeString('fr-FR')+(d.rateXof?' · 1 USDT ≈ '+mkN(d.rateXof,2)+' F ('+d.rateSource+')':' · FCFA indisponible');
+ const cur=d.items.find(x=>x.symbol===MKS);if(cur)$('mk_st').innerHTML='<span>Plus haut 24 h <b>'+mkP(cur.high)+' $</b></span><span>Plus bas 24 h <b>'+mkP(cur.low)+' $</b></span>';
+ mkConv();await mkChart();mkSparks()}catch(e){$('mk_t').textContent=e.message}}
+async function mkSparks(){try{const r=await fetch('/api/markets/sparklines');if(!r.ok)return;const d=await r.json();MKSP=d.series||{};
+ document.querySelectorAll('#mk_list .mkrow').forEach(function(b){const m=/mkSel\('([A-Z]+)'\)/.exec(b.getAttribute('onclick')||'');const h=m&&b.querySelector('.sp');if(h&&MKSP[m[1]])h.innerHTML=mkSpark(MKSP[m[1]])})}catch(e){}}
 async function mkChart(){try{const r=await fetch('/api/markets/klines?symbol='+MKS+'&interval='+MKI);const d=await r.json();if(!r.ok)throw new Error(d.error||'Graphique indisponible.');
- const p=d.points,a=p[0].c,z=p[p.length-1].c,ch=(z-a)/a*100;$('mk_s').textContent=MKS.replace('USDT','')+' / USDT';
- $('mk_c').innerHTML='<b>'+mkN(z,z<10?4:2)+' $</b> <span class="'+(ch>=0?'up':'dn')+'">'+(ch>=0?'▲':'▼')+' '+Math.abs(ch).toFixed(2)+' %</span>';$('mk_g').innerHTML=mkSvg(p,120)}catch(e){$('mk_g').innerHTML='<small class="sub">'+escH(e.message)+'</small>'}}
-async function openChl(){show('chl');try{const d=await api('/api/challenges');$('ch_lv').textContent='Niveau '+d.level;$('ch_pt').textContent=d.points+' points';
+ const p=d.points,a=p[0].c,z=p[p.length-1].c,ch=(z-a)/a*100,fx=MKD&&MKD.rateXof;$('mk_s').textContent=MKS.replace('USDT','')+' / USDT';
+ $('mk_c').innerHTML='<b>'+(fx?mkN(z*fx,0)+' F':mkP(z)+' $')+'</b> <span class="'+(ch>=0?'up':'dn')+'">'+(ch>=0?'▲':'▼')+' '+Math.abs(ch).toFixed(2)+' %</span>';$('mk_g').innerHTML=mkSvg(p,120,true)}catch(e){$('mk_g').innerHTML='<small class="sub">'+escH(e.message)+'</small>'}}
+async function openChl(){show('chl');try{const d=await api('/api/challenges');$('ch_lv').textContent='Niveau '+d.level;$('ch_pt').textContent=d.points+' / '+d.totalPoints+' points';
  $('ch_nx').textContent=d.nextLevelAt?('Prochain niveau à '+d.nextLevelAt+' points'):'Niveau maximal atteint';
+ $('ch_lvs').innerHTML=d.levels.map(l=>'<span class="'+(l.name===d.level?'on':'')+'">'+escH(l.name)+'<br>'+l.at+'</span>').join('');
+ const mx=Math.max(1,...(d.weekly||[]).map(w=>w.ops));$('ch_wk').innerHTML=(d.weekly||[]).length?d.weekly.map(w=>'<div><i style="height:'+Math.round(w.ops/mx*70)+'px"></i>'+w.ops+'<br>'+w.week.slice(5).split('-').reverse().join('/')+'</div>').join(''):'<small class="sub">Pas encore d’activité.</small>';
  $('ch_list').innerHTML=d.challenges.map(c=>'<div class="chc'+(c.done?' done':'')+'"><div style="display:flex;justify-content:space-between"><b>'+(c.done?'✅ ':'')+escH(c.title)+'</b><span>+'+c.points+' pts</span></div><small>'+escH(c.desc)+'</small><div class="pbar"><i style="width:'+Math.round(c.value/c.target*100)+'%"></i></div><small>'+mkN(c.value,0)+' / '+mkN(c.target,0)+' '+escH(c.unit)+'</small></div>').join('');
  $('ch_n').textContent=d.note}catch(e){$('ch_list').innerHTML='<p class="sub">'+escH(e.message)+'</p>'}}
+async function ordLoad(){const box=$('ord_box');if(!box)return;try{const d=await api('/api/orders/available');
+ let h='<div class="tx"><div>Statut<small>'+(d.online?'Vous recevez les ordres disponibles.':'Passez en ligne pour voir et prendre des ordres.')+'</small></div><button class="'+(d.online?'sec':'pri')+'" style="width:auto;padding:8px 14px;margin:0" onclick="ordPresence('+(!d.online)+')">'+(d.online?'Passer hors ligne':'Passer en ligne')+'</button></div>';
+ if(d.mine.length)h+='<h3 style="margin:12px 0 4px">Mes ordres en cours</h3>'+d.mine.map(function(m){return '<div class="chc"><b>Payer '+fmt(m.amount)+'</b> au <b>'+escH(m.phone)+'</b> ('+escH(String(m.operator).toUpperCase())+')<br><small>'+(m.status==='executed'?'Confirmé : en attente de validation de l\'administrateur.':'À payer dans les '+d.takeMinutes+' min après la prise.')+'</small>'+(m.status==='taken'?'<input id="ord_ref_'+m.id+'" placeholder="Référence réelle de l\'opération" autocomplete="off" style="margin-top:8px"><button class="pri" onclick="ordExec(\''+m.id+'\')">J\'ai payé : confirmer</button><button class="lnk" onclick="ordRelease(\''+m.id+'\')">Rendre l\'ordre</button>':'')+'</div>'}).join('');
+ if(d.online)h+='<h3 style="margin:12px 0 4px">Ordres disponibles</h3>'+(d.available.length?d.available.map(function(a){return '<div class="chc"><div style="display:flex;justify-content:space-between"><b>'+fmt(a.amount)+' · '+escH(String(a.operator).toUpperCase())+'</b><span>'+escH(a.client)+'</span></div><small>'+(a.route?'Voie recommandée : '+escH(a.route.label)+(a.route.backup?' (secours)':''):'Paiement manuel')+(a.needsAdmin?' · validation admin requise':'')+'</small><button class="sec" onclick="ordTake(\''+a.id+'\')">Prendre cet ordre</button></div>'}).join(''):'<p class="sub">Aucun ordre disponible pour le moment.</p>');
+ box.innerHTML=h}catch(e){box.textContent=e.message}}
+async function ordPresence(on){try{await api('/api/orders/presence',{body:{online:on}});await ordLoad()}catch(e){msg('oc_msg',e.message)}}
+async function ordTake(id){try{const r=await api('/api/orders/'+id+'/take',{body:{}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message);await ordLoad()}}
+async function ordRelease(id){try{const r=await api('/api/orders/'+id+'/release',{body:{}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message)}}
+async function ordExec(id){try{const v=($('ord_ref_'+id)||{}).value||'';const r=await api('/api/orders/'+id+'/execute',{body:{reference:v.trim()}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message);await ordLoad()}}
 function openDep(){show('dep')}
 function openIO(m){if(m==='in'){return openDep()}ioMode=m;$('io_msg').className='msg';
   $('io_t').textContent=m==='in'?'Dépôt : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
@@ -3013,12 +3038,13 @@ async function openOc(){$('oc_msg').className='msg';show('oc');
    if(!a){h+=`<h2 style="margin-top:18px">Devenir agent OMNICASH</h2><p class="sub" style="margin-bottom:8px">Recevez des espèces, créditez vos clients, gagnez une commission. Votre demande est validée par OMNIPAY, qui charge votre trésorerie.</p>
     <label>Nom de votre point</label><input id="oc_nm" maxlength="80"><label>Ville / quartier</label><input id="oc_ct" maxlength="80"><button class="sec" onclick="ocApply()">Envoyer ma demande</button>`}
    else if(a.status!=='active'){h+=`<div class="tx"><div>Compte agent<small>${escH(a.name)} · ${escH(a.city)}</small></div><b style="color:var(--warn)">${a.status==='pending'?'En attente de validation':'Suspendu'}</b></div>`}
-   else{h+=`<h2 style="margin-top:18px">Mon espace agent</h2><div class="tx"><div>Trésorerie disponible<small>${escH(a.name)} · ${escH(a.city)}</small></div><b>${fmt(a.float)}</b></div>
+   else{h+=`<h2 style="margin-top:18px">Ordres de paiement</h2><p class="sub" style="margin-bottom:8px">L'IA prépare les paiements locaux ; vous les exécutez depuis votre compte puis confirmez avec la référence réelle.</p><div id="ord_box" class="sub">Chargement…</div>`;
+   h+=`<h2 style="margin-top:18px">Mon espace agent</h2><div class="tx"><div>Trésorerie disponible<small>${escH(a.name)} · ${escH(a.city)}</small></div><b>${fmt(a.float)}</b></div>
     <h2 style="margin-top:14px">Dépôt en espèces (client → compte)</h2><label>Identifiant OM du client</label><input id="oc_ci_c" placeholder="OM1234567890"><label>Montant remis par le client (FCFA)</label><input id="oc_ci_a" type="number" min="100"><button class="pri" onclick="ocCashin()">Créditer le client</button>
     <h2 style="margin-top:14px">Retrait en espèces (compte → client)</h2><label>Identifiant OM du client</label><input id="oc_cx_c" placeholder="OM1234567890"><label>Code à 6 chiffres du client</label><input id="oc_cx_k" inputmode="numeric" maxlength="6"><button class="pri" onclick="ocCashout()">Valider le retrait</button>
     <h2 style="margin-top:14px">Ma trésorerie</h2><label>Montant (FCFA)</label><input id="oc_fl" type="number" min="100"><label>N° MTN pour la recharge MoMo</label><input id="oc_mmph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><button class="pri" onclick="momoDeposit('float')">Recharger ma trésorerie par MTN MoMo</button><div class="row"><button class="sec" onclick="ocFloat('load')">Recharger depuis mon compte</button><button class="sec" onclick="ocFloat('unload')">Reverser sur mon compte</button></div>
     <h2 style="margin-top:14px">Dernières opérations</h2>`+(d.ops.length?d.ops.map(o=>`<div class="tx"><div>${({cashin:'Dépôt espèces',cashout:'Retrait espèces',float_load:'Recharge',float_unload:'Reversement',float_admin:'Trésorerie OMNIPAY'})[o.kind]||escH(o.kind)}<small>${escH(o.ref)} · ${new Date(o.created_at).toLocaleString('fr-FR')}</small></div><b>${fmt(o.amount)}</b></div>`).join(''):'<p class="sub">Aucune opération.</p>')}
-   $('oc_body').innerHTML=h}catch(e){msg('oc_msg',e.message)}}
+   $('oc_body').innerHTML=h;if(a&&a.status==='active')ordLoad()}catch(e){msg('oc_msg',e.message)}}
 async function ocCoReq(){try{const d=await api('/api/omnicash/cashout/request',{body:{amount:parseInt($('oc_co_am').value,10)}});
   $('oc_co_res').innerHTML=`<div class="tx" style="display:block;text-align:center"><small>Donnez ce code à l'agent (valable ${d.expiresInMinutes} min)</small><div style="font-size:34px;font-weight:800;letter-spacing:6px;margin:8px 0">${escH(d.code)}</div><small>Vous recevrez ${fmt(d.amount)} · frais ${fmt(d.fee)} · total débité ${fmt(d.total)}</small></div>`;msg('oc_msg','Code généré.',true)}catch(e){msg('oc_msg',e.message)}}
 async function ocApply(){try{const d=await api('/api/omnicash/apply',{body:{name:$('oc_nm').value,city:$('oc_ct').value}});msg('oc_msg',d.message,true);openOc()}catch(e){msg('oc_msg',e.message)}}
@@ -3287,5 +3313,6 @@ function copyAff(){const l=affLink();(navigator.clipboard?navigator.clipboard.wr
 function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un : '+affLink();window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 (function(){try{const r=new URLSearchParams(location.search).get('ref');if(r){LS.set('omnipayRef',r.slice(0,80));$('r_ref').textContent='Vous êtes invité(e) par un membre OMNIPAY.';if(!S.token){show('reg')}}}catch(e){}})();
 </script>
+<script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
 </body>
 </html>
