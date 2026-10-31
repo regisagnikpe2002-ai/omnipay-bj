@@ -144,7 +144,7 @@ body.lg #demo{display:block}
 .mkrow.sel{border-color:var(--mint)}.mkrow small{display:block;color:var(--mut);font-size:12px}.mkrow .r{text-align:right}.up{color:#16a34a!important}.dn{color:#dc2626!important}
 .mkbox{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}.mkiv{display:flex;gap:6px;margin-top:8px}.mkiv button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--txt);font-size:13px;margin:0}.mkiv button.on{background:var(--mint);color:#06231a;border-color:var(--mint)}
 .chc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}.chc.done{border-color:var(--mint)}.chc small{color:var(--mut)}.pbar{height:8px;border-radius:6px;background:var(--line);margin-top:8px;overflow:hidden}.pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--mint2),var(--mint))}
-</style>
+/* OMNIPAY-LIVE-BG */body{background:var(--omni-live-bg,linear-gradient(135deg,#07111f,#102843 52%,#0b5d62))!important;background-attachment:fixed!important;transition:background 1.4s ease}</style>
 <script>
 /* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
 (function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
@@ -156,7 +156,7 @@ body.lg #demo{display:block}
  apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
 </script>
 
-</head>
+<script src="/liveServiceBackground.js" defer></script></head>
 <body>
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
