@@ -58,11 +58,24 @@ async function dispatchPayout(q, txId, operator, phone, amount) {
   const claim = await q`UPDATE transactions SET status = 'processing' WHERE id = ${txId}::uuid AND type = 'withdrawal' AND status = 'pending' RETURNING id`;
   if (!claim.length) return { status: "skipped" };
   let r;
+  // Gestionnaire de fonds (FUND_ROUTER = off | advise | guard). advise : note la voie recommandée dans le dossier. guard : en plus, suspend l'envoi si la couverture passerait sous le plancher.
+  let fundMeta = null;
+  const fundMode = String(process.env.FUND_ROUTER || "off").toLowerCase();
+  if (fundMode === "advise" || fundMode === "guard") {
+    try {
+      const fd = await require("../lib/fundManager.js").checkPayout({ operator, amount });
+      fundMeta = { fund: { ok: fd.ok, hard: fd.hard, route: fd.choice ? fd.choice.code : null, reasons: fd.reasons, at: new Date().toISOString() } };
+      if (fundMode === "guard" && fd.hard) {
+        await q`UPDATE transactions SET status = 'pending', metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify(fundMeta)}::jsonb WHERE id = ${txId}::uuid AND status = 'processing'`;
+        return { status: "unavailable", route: "fund-guard", detail: "Suspendu par le gestionnaire de fonds : " + fd.reasons.join(" ") };
+      }
+    } catch (e) { console.error("FUND_GUARD", e.message); }
+  }
   try {
     const router = require("../providers/payoutRouter.js");
     r = await router.payout({ txId, operator, phone, amount, callbackUrl: `${baseUrl()}/wallet/withdraw/callback?id=${txId}&sig=${sig(txId)}` });
   } catch (e) { r = { status: "uncertain", detail: String(e.response?.data?.response_text || e.message).slice(0, 160), route: "?" }; }
-  const meta = JSON.stringify({ payout: { route: r.route, result: r.status, detail: r.detail || null, at: new Date().toISOString() } });
+  const meta = JSON.stringify({ ...(fundMeta || {}), payout: { route: r.route, result: r.status, detail: r.detail || null, at: new Date().toISOString() } });
   if (r.status === "sent" || r.status === "uncertain") {
     // sent : en attente de confirmation ; uncertain : reste 'processing' pour vérification humaine (jamais de renvoi automatique)
     await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${meta}::jsonb WHERE id = ${txId}::uuid`;
