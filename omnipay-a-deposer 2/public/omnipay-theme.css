@@ -1,0 +1,13 @@
+/* OMNIPAY — habillage commun : clair le jour, bleu nuit la nuit, logo en filigrane */
+html[data-theme] body{background:linear-gradient(180deg,#071433 0,#0a1d4a 55%,#06122e 100%) fixed!important;color:#f2f6fc!important;position:relative}
+html[data-theme=light] body{background:linear-gradient(180deg,#e7efff 0,#f6f9ff 320px,#f2f5fb 100%) fixed!important;color:#0b1426!important}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:url(/logo.svg) center 42%/min(70vw,380px) no-repeat;opacity:.07}
+html[data-theme=light] body:before{opacity:.09}
+html[data-theme] .card{background:rgba(10,29,74,.78)!important;border-color:#1f3566!important;color:#f2f6fc!important}
+html[data-theme=light] .card{background:#fff!important;border-color:#d8e1ef!important;color:#0b1426!important;box-shadow:0 8px 28px rgba(20,40,90,.10)}
+html[data-theme=light] .muted,html[data-theme=light] .mut,html[data-theme=light] p{color:#5b6b86}
+html[data-theme=light] input,html[data-theme=light] select,html[data-theme=light] textarea{background:#fff!important;color:#0b1426!important;border-color:#c9d5e8!important}
+html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] textarea{background:#f4f7fb!important;color:#0b1426!important}
+html[data-theme=light] .step,html[data-theme=light] .field label,html[data-theme=light] label,html[data-theme=light] h1,html[data-theme=light] h2,html[data-theme=light] h3{color:#0b1426}
+html[data-theme=light] table th,html[data-theme=light] table td{color:#0b1426;border-color:#d8e1ef}
+.om-logo{display:block;width:60px;height:60px;border-radius:16px;margin:0 auto 14px;box-shadow:0 6px 22px rgba(15,157,115,.35)}
