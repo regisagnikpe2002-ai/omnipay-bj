@@ -151,7 +151,7 @@ body.lg #demo{display:block}
 .mkrow.sel{border-color:var(--mint)}.mkrow small{display:block;color:var(--mut);font-size:12px}.mkrow .r{text-align:right}.up{color:#16a34a!important}.dn{color:#dc2626!important}
 .mkbox{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}.mkiv{display:flex;gap:6px;margin-top:8px}.mkiv button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--txt);font-size:13px;margin:0}.mkiv button.on{background:var(--mint);color:#06231a;border-color:var(--mint)}
 .olav{width:38px;height:38px;border-radius:50%;object-fit:cover;display:block;margin:0 auto;border:2px solid var(--mint);box-shadow:0 0 0 0 rgba(31,185,138,.5);animation:olp 2.6s ease-out infinite}.olav.big{width:64px;height:64px;margin:0}.olh{display:flex;align-items:center;gap:12px;margin-bottom:6px}@keyframes olp{0%{box-shadow:0 0 0 0 rgba(31,185,138,.45)}70%{box-shadow:0 0 0 10px rgba(31,185,138,0)}100%{box-shadow:0 0 0 0 rgba(31,185,138,0)}}@media (prefers-reduced-motion:reduce){.olav{animation:none}}
-.tile{position:relative}.tinfo{position:absolute;top:4px;right:4px;width:22px;height:22px;line-height:20px;text-align:center;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer}.tinfo:hover,.tinfo:focus-visible{border-color:var(--mint);color:var(--mint);outline:none}
+.tile{position:relative}.tinfo{font-style:normal;position:absolute;top:4px;right:4px;width:22px;height:22px;line-height:20px;text-align:center;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer}.tinfo:hover,.tinfo:focus-visible{border-color:var(--mint);color:var(--mint);outline:none}
 .svs{position:fixed;inset:0;z-index:60;background:rgba(5,10,20,.62);display:flex;align-items:flex-end;justify-content:center;animation:svf .18s ease-out}.svs.hide{display:none}
 .svb{width:100%;max-width:520px;max-height:86vh;overflow:auto;background:var(--card);color:var(--txt);border-radius:22px 22px 0 0;padding:18px 18px 22px;box-shadow:0 -10px 40px rgba(0,0,0,.35);animation:svu .22s ease-out}
 .svb h2{margin:0;font-size:20px}.svb h3{margin:14px 0 4px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}.svb p,.svb li{font-size:14px;line-height:1.5}.svb ul,.svb ol{margin:4px 0 0;padding-left:20px}
@@ -3057,7 +3057,7 @@ function svcClose(){$('svcSheet').classList.add('hide');if(SVTILE&&SVTILE.focus)
 function svcGo(){var t=SVTILE;svcClose();if(t)t.click()}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('svcSheet').classList.contains('hide'))svcClose()});
 function svcAttach(){document.querySelectorAll('.tile').forEach(function(t){if(t.querySelector('.tinfo'))return;var lb=(t.childNodes[1]&&t.childNodes[1].textContent||'').trim()||t.textContent.replace(/(bientôt|nouveau|en cours|assistante)$/i,'').trim();var k=SVMAP[lb];if(!k){for(var n in SVMAP){if(t.textContent.indexOf(n)===0){k=SVMAP[n];break}}}if(!k)return;
- var i=document.createElement('span');i.className='tinfo';i.setAttribute('role','button');i.setAttribute('tabindex','0');i.setAttribute('aria-label','À propos de '+SVC[k].t);i.textContent='i';
+ var i=document.createElement('i');i.className='tinfo';i.setAttribute('role','button');i.setAttribute('tabindex','0');i.setAttribute('aria-label','À propos de '+SVC[k].t);i.textContent='i';
  i.onclick=function(ev){ev.stopPropagation();ev.preventDefault();svcOpen(k,t)};i.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.stopPropagation();ev.preventDefault();svcOpen(k,t)}};t.appendChild(i)})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',svcAttach);else svcAttach();
 
@@ -3353,7 +3353,7 @@ async function openMan(f){f=MAN_F[f]?f:'';$('m_msg').className='msg';manTab('in'
   $('mm_box').dataset.f=f;
   try{const d=await api('/api/manual/instructions');$('m_ref').value=d.reference;
     const acc=f?(d.accounts||[]).filter(a=>MAN_F[f].includes(a.type)):(d.accounts||[]);
-    $('m_accs').innerHTML=acc.length?acc.map((a,i)=>`<div class="tx" style="display:block"><div><b>${escH(a.label)}</b>${a.network?`<small>Réseau : ${escH(a.network)}</small>`:''}</div>
+    $('m_accs').innerHTML=acc.length?acc.map((a,i)=>`<div class="tx" style="display:block"><div style="display:flex;gap:10px;align-items:center"><img src="/partners/${encodeURIComponent(String(a.type||'x').toLowerCase())}.png" alt="" width="34" height="34" style="border-radius:8px;object-fit:contain" onerror="this.remove()"><span><b>${escH(a.label)}</b>${a.network?`<small>Réseau : ${escH(a.network)}</small>`:''}</span></div>
       <div style="word-break:break-all;margin:6px 0;font-weight:600">${escH(a.detail)}</div>
       <div class="row"><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="copy">Copier</button><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="qr">QR</button></div>
       <div id="qra${i}" class="qrbox hide" style="margin-top:8px"></div></div>`).join('')

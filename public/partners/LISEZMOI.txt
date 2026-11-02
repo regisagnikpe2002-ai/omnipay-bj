@@ -1,0 +1,5 @@
+Logos des partenaires (facultatif).
+Déposez ici un fichier PNG carré nommé comme le « type » du compte dans OMNIPAY_PAYIN_ACCOUNTS
+(ex. pispi.png, mtn.png, moov.png, binance.png, crypto.png).
+N'ajoutez un logo qu'avec l'accord écrit du partenaire ou son fichier officiel de marque.
+Sans fichier, l'écran s'affiche normalement, sans logo.
