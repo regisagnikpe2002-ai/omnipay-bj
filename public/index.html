@@ -177,7 +177,8 @@ body.lg #demo{display:block}
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
   <div id="hero"><img class="lg1" src="/logo.svg" alt="OMNIPAY" width="84" height="84">
-    <a class="dom" href="https://www.omnipay-bj.com" rel="noopener">🔒 <span>https://</span><b>www.omnipay-bj.com</b></a></div>
+    <a class="dom" href="https://www.omnipay-bj.com" rel="noopener">🔒 <span>https://</span><b>www.omnipay-bj.com</b></a>
+    <div id="nl" class="hide" style="margin-top:14px"></div></div>
   <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="64" height="64" style="border-radius:16px;display:block;box-shadow:0 0 0 2px var(--mint),0 6px 22px rgba(0,214,143,.45)"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
 
   <!-- CONNEXION -->
@@ -261,6 +262,8 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
       <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
     </div>
+    <div class="card" id="dn" style="margin-bottom:16px"><h2>📣 Nouveautés</h2><div id="dn_t"></div><p class="sub" id="dn_v" style="margin:8px 0 0;font-size:12px"></p></div>
+    <div id="ops_g" class="hide"><div class="grp">Opérateurs</div><div class="rb" id="ops_b"></div></div>
     <div class="grp">Assistance</div>
     <div class="rb">
       <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde<em>assistante</em></button>
@@ -489,6 +492,7 @@ body.lg #demo{display:block}
   </section>
   <section id="olat" class="card hide">
     <div class="olh"><img class="olav big" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="64" height="64" onerror="this.style.display='none'"><div><h1 style="margin:0">OLATOUNDE</h1><small class="sub" style="display:block">Assistante OMNIPAY · en ligne</small></div></div><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
+    <div id="ol_news" class="chc hide" style="margin:8px 0"></div>
     <div id="ol_log" style="min-height:160px;max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0"></div>
     <div class="row"><input id="ol_in" placeholder="Votre question…" maxlength="500" autocomplete="off"><button class="pri" style="width:auto;margin:0;padding:0 18px" onclick="olSend()">Envoyer</button></div>
     <button class="sec" onclick="show('dash')">← Retour</button>
@@ -3074,6 +3078,20 @@ async function fcfLoad(){try{const d=await api('/api/bundles/mine');const st={pe
  $('fc_list').innerHTML=d.orders.length?d.orders.map(o=>'<div class="tx"><div>'+escH(o.kindLabel)+' · '+escH(String(o.operator).toUpperCase())+'<small>'+escH(o.phone)+' · '+new Date(o.created_at).toLocaleString('fr-FR')+' · '+(st[o.status]||o.status)+'</small></div><b class="neg">-'+fmt(o.amount)+'</b></div>').join(''):'<p class="sub" style="margin:0">Aucune commande pour le moment.</p>'}catch(e){$('fc_list').textContent=e.message}}
 async function fcfSend(){try{const am=parseInt($('fc_am').value,10);const r=await api('/api/bundles/order',{body:{operator:$('fc_op').value,kind:$('fc_kind').value,phone:$('fc_ph').value,amount:am,note:$('fc_note').value}});
  msg('fc_msg',r.message,true);$('fc_am').value='';$('fc_note').value='';if(S.wallet&&r.newBalance!=null){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}fcfLoad();if(typeof loadAll==='function')loadAll()}catch(e){msg('fc_msg',e.message)}}
+
+/* NOUVEAUTÉS (annonces du jour, version) + RACCOURCIS OPÉRATEURS : contenu lu dans /annonces.json et /operateurs.json */
+var NEWS=null;
+function newsToday(){if(!NEWS||!NEWS.items||!NEWS.items.length)return null;return NEWS.items[Math.floor(Date.now()/864e5)%NEWS.items.length]}
+function newsHtml(x){return '<b>'+escH(x.tag||'Info')+' · '+escH(x.title)+'</b><br><small>'+escH(x.text)+'</small>'}
+function newsPaint(){var x=newsToday();if(!x)return;
+ var nl=$('nl');if(nl){nl.innerHTML='<div class="chc" style="text-align:left">'+newsHtml(x)+'</div><p class="sub" style="margin:8px 0 0;font-size:12px">Version '+escH(NEWS.version||'')+(NEWS.versionNote?' · '+escH(NEWS.versionNote):'')+'</p>';nl.classList.remove('hide')}
+ var dt=$('dn_t');if(dt){dt.innerHTML=NEWS.items.slice(0,4).map(function(i){return '<div class="chc" style="margin-bottom:8px">'+newsHtml(i)+'</div>'}).join('');var dv=$('dn_v');if(dv)dv.textContent='Version '+(NEWS.version||'')+(NEWS.versionNote?' · '+NEWS.versionNote:'')}
+ var on=$('ol_news');if(on){on.innerHTML='<b>📣 Annonce du jour</b><br>'+newsHtml(x);on.classList.remove('hide')}}
+async function newsLoad(){try{var r=await fetch('/annonces.json',{cache:'no-cache'});if(!r.ok)return;NEWS=await r.json();newsPaint()}catch(e){}}
+async function opsLinksLoad(){try{var r=await fetch('/operateurs.json',{cache:'no-cache'});if(!r.ok)return;var d=await r.json();
+ var L=(d.operators||[]).filter(function(o){return o&&o.name&&/^(https:\/\/|tel:)/i.test(String(o.url||''))});if(!L.length)return;
+ $('ops_b').innerHTML=L.map(function(o){var tel=/^tel:/i.test(o.url);return '<a class="tile" href="'+escH(o.url)+'"'+(tel?'':' target="_blank" rel="noopener noreferrer"')+' style="text-decoration:none;color:inherit"><span>'+(tel?'📞':'🔗')+'</span>'+escH(o.name)+'</a>'}).join('');$('ops_g').classList.remove('hide')}catch(e){}}
+newsLoad();opsLinksLoad();
 async function ordLoad(){const box=$('ord_box');if(!box)return;try{const d=await api('/api/orders/available');
  let h='<div class="tx"><div>Statut<small>'+(d.online?'Vous recevez les ordres disponibles.':'Passez en ligne pour voir et prendre des ordres.')+'</small></div><button class="'+(d.online?'sec':'pri')+'" style="width:auto;padding:8px 14px;margin:0" onclick="ordPresence('+(!d.online)+')">'+(d.online?'Passer hors ligne':'Passer en ligne')+'</button></div>';
  if(d.mine.length)h+='<h3 style="margin:12px 0 4px">Mes ordres en cours</h3>'+d.mine.map(function(m){return '<div class="chc"><b>Payer '+fmt(m.amount)+'</b> au <b>'+escH(m.phone)+'</b> ('+escH(String(m.operator).toUpperCase())+')<br><small>'+(m.status==='executed'?'Confirmé : en attente de validation de l\'administrateur.':'À payer dans les '+d.takeMinutes+' min après la prise.')+'</small>'+(m.status==='taken'?'<input id="ord_ref_'+m.id+'" placeholder="Référence réelle de l\'opération" autocomplete="off" style="margin-top:8px"><button class="pri" onclick="ordExec(\''+m.id+'\')">J\'ai payé : confirmer</button><button class="lnk" onclick="ordRelease(\''+m.id+'\')">Rendre l\'ordre</button>':'')+'</div>'}).join('');
