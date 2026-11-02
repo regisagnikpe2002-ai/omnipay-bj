@@ -32,9 +32,16 @@ button{cursor:pointer;border:0;border-radius:12px;padding:14px;font-size:16px;fo
 .sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
 
 /* ===== v16 : connexion nouvelle génération + accueil par groupes ===== */
-html[data-theme] body.lg,body.lg{background:radial-gradient(900px 520px at 85% -5%,rgba(0,168,120,.22),transparent 60%),radial-gradient(900px 600px at -10% 10%,rgba(30,90,255,.28),transparent 62%),linear-gradient(180deg,#010b22 0,#031232 55%,#020a1e 100%);color:#f2f6fc;--card:rgba(10,24,56,.72);--card2:#0f2148;--line:#1f3566;--txt:#f2f6fc;--mut:#9db0d3;--mint:#34e8b0;--mint2:#1fb98a}
+html[data-theme=dark] body.lg{background:linear-gradient(180deg,#071433 0,#0a1d4a 55%,#06122e 100%);color:#f2f6fc;--card:rgba(10,24,56,.72);--card2:#0f2148;--line:#1f3566;--txt:#f2f6fc;--mut:#9db0d3;--mint:#34e8b0;--mint2:#1fb98a}
 body.lg .brand{display:none}
 body.lg .card{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,.45)}
+:root[data-theme=light] body.lg .card{box-shadow:0 10px 34px rgba(20,40,90,.10)}
+body.lg:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:url(/logo.svg) center 42%/min(70vw,380px) no-repeat;opacity:.07}
+:root[data-theme=light] body.lg:before{opacity:.09}
+#hero img.lg1{mix-blend-mode:normal;-webkit-mask-image:none;mask-image:none;animation:none;max-width:84px}
+:root[data-theme=light] #hero .dom{background:#e5f7ef;border-color:#b5e6d0;color:#0a7d5c}
+:root[data-theme=light] #hero .dom b{color:#0b1426}
+#hero .lg1{width:84px;height:84px;border-radius:22px;display:block;margin:6px auto 14px;box-shadow:0 8px 28px rgba(15,157,115,.35)}
 #hero{display:none;text-align:center;margin:6px 0 14px}
 body.lg #hero{display:block}
 #hero img{width:100%;max-width:420px;height:auto;mix-blend-mode:screen;-webkit-mask-image:radial-gradient(ellipse at center,#000 52%,transparent 76%);mask-image:radial-gradient(ellipse at center,#000 52%,transparent 76%);animation:hfloat 6s ease-in-out infinite}
@@ -144,9 +151,16 @@ body.lg #demo{display:block}
 .mkrow.sel{border-color:var(--mint)}.mkrow small{display:block;color:var(--mut);font-size:12px}.mkrow .r{text-align:right}.up{color:#16a34a!important}.dn{color:#dc2626!important}
 .mkbox{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}.mkiv{display:flex;gap:6px;margin-top:8px}.mkiv button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--txt);font-size:13px;margin:0}.mkiv button.on{background:var(--mint);color:#06231a;border-color:var(--mint)}
 .olav{width:38px;height:38px;border-radius:50%;object-fit:cover;display:block;margin:0 auto;border:2px solid var(--mint);box-shadow:0 0 0 0 rgba(31,185,138,.5);animation:olp 2.6s ease-out infinite}.olav.big{width:64px;height:64px;margin:0}.olh{display:flex;align-items:center;gap:12px;margin-bottom:6px}@keyframes olp{0%{box-shadow:0 0 0 0 rgba(31,185,138,.45)}70%{box-shadow:0 0 0 10px rgba(31,185,138,0)}100%{box-shadow:0 0 0 0 rgba(31,185,138,0)}}@media (prefers-reduced-motion:reduce){.olav{animation:none}}
+.tile{position:relative}.tinfo{position:absolute;top:4px;right:4px;width:22px;height:22px;line-height:20px;text-align:center;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer}.tinfo:hover,.tinfo:focus-visible{border-color:var(--mint);color:var(--mint);outline:none}
+.svs{position:fixed;inset:0;z-index:60;background:rgba(5,10,20,.62);display:flex;align-items:flex-end;justify-content:center;animation:svf .18s ease-out}.svs.hide{display:none}
+.svb{width:100%;max-width:520px;max-height:86vh;overflow:auto;background:var(--card);color:var(--txt);border-radius:22px 22px 0 0;padding:18px 18px 22px;box-shadow:0 -10px 40px rgba(0,0,0,.35);animation:svu .22s ease-out}
+.svb h2{margin:0;font-size:20px}.svb h3{margin:14px 0 4px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}.svb p,.svb li{font-size:14px;line-height:1.5}.svb ul,.svb ol{margin:4px 0 0;padding-left:20px}
+.svh{display:flex;gap:12px;align-items:center}.svh .ic{font-size:30px;line-height:1}.svx{margin-left:auto;background:none;border:1px solid var(--line);color:var(--txt);border-radius:10px;width:36px;height:36px;font-size:18px;cursor:pointer;padding:0}
+.svst{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;margin-top:6px}.svst.on{background:rgba(22,163,74,.15);color:#16a34a}.svst.rv{background:rgba(217,119,6,.15);color:#d97706}.svst.so{background:rgba(100,116,139,.18);color:var(--mut)}
+@keyframes svu{from{transform:translateY(28px);opacity:.4}to{transform:none;opacity:1}}@keyframes svf{from{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){.svb,.svs{animation:none}}
 .mkrow{flex-wrap:wrap}.mkrow .sp{flex:0 0 84px}.mkrow .bs{flex-basis:100%;text-align:right;border-top:1px dashed var(--line);padding-top:6px;color:var(--mut);font-size:12px}.mkrow .sp svg{display:block}.mkrow .l{flex:1;min-width:0}.mkst{display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--mut)}.mkst b{color:var(--txt)}.mkcv{display:flex;gap:8px;margin-top:8px}.mkcv input,.mkcv select{margin:0;flex:1;min-width:0}.mkbadge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);margin-left:6px}.wkb{display:flex;align-items:flex-end;gap:8px;height:90px;margin-top:10px}.wkb div{flex:1;text-align:center;font-size:10px;color:var(--mut)}.wkb i{display:block;background:linear-gradient(180deg,var(--mint),var(--mint2));border-radius:6px 6px 0 0;min-height:2px;margin-bottom:3px}.lvl{display:flex;gap:6px;margin-top:8px}.lvl span{flex:1;text-align:center;font-size:11px;padding:6px 2px;border-radius:8px;border:1px solid var(--line);color:var(--mut)}.lvl span.on{background:var(--mint);color:#06231a;border-color:var(--mint);font-weight:700}
 .chc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}.chc.done{border-color:var(--mint)}.chc small{color:var(--mut)}.pbar{height:8px;border-radius:6px;background:var(--line);margin-top:8px;overflow:hidden}.pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--mint2),var(--mint))}
-/* OMNIPAY-LIVE-BG */:root[data-theme=dark] body{background:var(--omni-live-bg,linear-gradient(135deg,#07111f,#102843 52%,#0b5d62));background-attachment:fixed;transition:background 1.4s ease}</style>
+/* OMNIPAY-LIVE-BG */:root[data-theme=dark] body{background:var(--omni-live-bg,linear-gradient(180deg,#071433,#0a1d4a 55%,#06122e));background-attachment:fixed;transition:background 1.4s ease}</style>
 <script>
 /* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
 (function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
@@ -162,14 +176,12 @@ body.lg #demo{display:block}
 <body>
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
-  <div id="hero"><img src="/omnipay-hero.jpg" alt="OMNIPAY" width="930" height="240"><div class="tag">Votre quotidien financier tout-en-un</div>
-    <a class="dom" href="https://www.omnipay-bj.com" onclick="return false">🔒 <span>https://</span><b>www.omnipay-bj.com</b></a>
-    <div class="chips"><i>MTN</i><i>Moov</i><i>Celtiis</i><i>PI-SPI</i><i>Ecobank</i><i>Crypto</i><i>OMNIXPAY Cash</i></div></div>
+  <div id="hero"><img class="lg1" src="/logo.svg" alt="OMNIPAY" width="84" height="84">
+    <a class="dom" href="https://www.omnipay-bj.com" rel="noopener">🔒 <span>https://</span><b>www.omnipay-bj.com</b></a></div>
   <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="64" height="64" style="border-radius:16px;display:block;box-shadow:0 0 0 2px var(--mint),0 6px 22px rgba(0,214,143,.45)"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
 
   <!-- CONNEXION -->
   <section id="login" class="card">
-    <span class="badge">OMNICHECK ACTIF</span>
     <h1>Connexion</h1><p class="sub">Accédez à votre espace financier.</p>
     <label>Email ou téléphone</label><input id="l_id" autocomplete="username" placeholder="E-mail ou numéro de téléphone">
     <label>Mot de passe</label><input id="l_pw" type="password" autocomplete="current-password">
@@ -217,13 +229,14 @@ body.lg #demo{display:block}
       <button onclick="openIO('in')"><span>⬇️</span>Dépôt</button>
       <button onclick="openIO('out')"><span>⬆️</span>Retrait</button>
     </div>
-    <div class="card" style="margin-bottom:16px"><h2>Dernières opérations</h2><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button></div>
+    <div class="card" id="dmk" style="margin-bottom:16px"><h2>📈 Cours crypto en direct</h2><div id="dmk_l"><p class="sub" style="margin:0">Chargement des cours…</p></div><p class="sub" id="dmk_t" style="margin:8px 0 0;font-size:12px"></p>
+      <div id="dmk_c" class="chc" style="margin-top:10px;cursor:pointer" onclick="openChl()"><b>🏆 Défis</b><br><small id="dmk_cs">Relevez des défis et gagnez des points.</small></div>
+      <div class="row" style="margin-top:10px"><button class="sec" style="margin:0" onclick="openMk()">Tous les marchés</button><button class="sec" style="margin:0" onclick="openHist()">🕘 Historique</button></div></div>
     <div class="grp ex">OMNIEXCHANGE</div>
     <div class="rb ex">
       <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
       <button class="tile" onclick="show('cry')"><span>🪙</span>Crypto</button>
       <button class="tile" onclick="openMan()"><span>💸</span>Directs</button>
-      <button class="tile" onclick="toast('PI-SPI : déposez ou retirez via « Directs » avec l\'alias Ecobank. L\'automatisation complète est en cours.')"><span>🔗</span>PI-SPI<em>en cours</em></button>
     </div>
     <div class="grp">Marchés &amp; Défis</div>
     <div class="rb">
@@ -233,13 +246,14 @@ body.lg #demo{display:block}
     <div class="grp">OMNICASH · Cash</div>
     <div class="rb">
       <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH</button>
-      <button class="tile" onclick="toast('Paiement chez un prestataire : bientôt disponible')"><span>💳</span>Payer</button>
+      <button class="tile" onclick="openFcf()"><span>📶</span>Recharges</button>
       <button class="tile" onclick="openOps()"><span>📱</span>Numéros</button>
     </div>
     <div class="grp">Mon compte</div>
     <div class="rb">
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
       <button class="tile" onclick="openQr()"><span>▦</span>Mes QR</button>
+      <button class="tile" onclick="openHist()"><span>🕘</span>Historique</button>
       <button class="tile" onclick="openRc()"><span>🧾</span>Reçus</button>
       <button class="tile" onclick="window.print()"><span>🖨️</span>Reçus PDF</button>
       <button class="tile" onclick="$('ib_out').className='msg';show('iban')"><span>🏦</span>IBAN</button>
@@ -247,10 +261,9 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
       <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
     </div>
-    <div class="grp">Assistance &amp; boutique</div>
+    <div class="grp">Assistance</div>
     <div class="rb">
-      <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.jpg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde<em>assistante</em></button>
-      <button class="tile" onclick="toast('Boutique : bientôt disponible')"><span>🏪</span>Boutique<em>bientôt</em></button>
+      <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde<em>assistante</em></button>
     </div>
     <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
       <div class="row"><input id="id_v" readonly style="font-weight:800;font-size:16px;letter-spacing:1px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyId()">Copier</button></div>
@@ -269,6 +282,26 @@ body.lg #demo{display:block}
 
 
 
+
+  <section id="hist" class="card hide">
+    <h1>Historique</h1><p class="sub">Vos dernières opérations. Touchez une ligne pour voir le reçu.</p>
+    <div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="fcf" class="card hide">
+    <h1>Recharges &amp; forfaits</h1><p class="sub">Crédit d'appel, forfait internet, forfait appel ou autre, pour votre numéro ou celui d'un proche. Payé depuis votre solde OMNIPAY.</p>
+    <label>Opérateur</label><select id="fc_op"><option value="mtn">MTN</option><option value="moov">Moov</option><option value="celtiis">Celtiis</option></select>
+    <label>Type</label><select id="fc_kind"><option value="airtime">Crédit d'appel</option><option value="data">Forfait internet</option><option value="voice">Forfait appel</option><option value="combo">Forfait internet + appel</option><option value="other">Autre</option></select>
+    <label>Numéro à recharger</label><input id="fc_ph" inputmode="tel" placeholder="Ex : 0197112233" autocomplete="off">
+    <label>Montant (FCFA)</label><input id="fc_am" type="number" inputmode="numeric" min="200" placeholder="Ex : 1000">
+    <label>Précision (facultatif)</label><input id="fc_note" maxlength="200" placeholder="Ex : forfait internet 1 Go, valable 7 jours" autocomplete="off">
+    <button class="pri" onclick="fcfSend()">Commander</button>
+    <div id="fc_msg" class="msg"></div>
+    <p class="sub" style="font-size:12px">Le montant est débité tout de suite. Votre numéro est rechargé après exécution par OMNIPAY ; en cas d'échec, vous êtes remboursé.</p>
+    <h3 style="margin:12px 0 4px">Mes dernières commandes</h3><div id="fc_list"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
 
   <section id="iban" class="card hide">
     <h1>Vérificateur IBAN</h1><p class="sub">Contrôlez un IBAN avant un virement (structure et clé de contrôle). Le contrôle se fait sur votre appareil, rien n'est envoyé.</p>
@@ -455,7 +488,7 @@ body.lg #demo{display:block}
     <button class="sec" onclick="show('dash')">← Retour</button>
   </section>
   <section id="olat" class="card hide">
-    <div class="olh"><img class="olav big" src="/olatounde-avatar.jpg" alt="OLATOUNDE" width="64" height="64" onerror="this.style.display='none'"><div><h1 style="margin:0">OLATOUNDE</h1><small class="sub" style="display:block">Assistante OMNIPAY · en ligne</small></div></div><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
+    <div class="olh"><img class="olav big" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="64" height="64" onerror="this.style.display='none'"><div><h1 style="margin:0">OLATOUNDE</h1><small class="sub" style="display:block">Assistante OMNIPAY · en ligne</small></div></div><p class="sub">Votre assistante OMNIPAY. Elle explique et suit vos opérations, mais ne déplace jamais d'argent. Ne lui donnez jamais vos mots de passe ni vos codes.</p>
     <div id="ol_log" style="min-height:160px;max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0"></div>
     <div class="row"><input id="ol_in" placeholder="Votre question…" maxlength="500" autocomplete="off"><button class="pri" style="width:auto;margin:0;padding:0 18px" onclick="olSend()">Envoyer</button></div>
     <button class="sec" onclick="show('dash')">← Retour</button>
@@ -548,21 +581,8 @@ body.lg #demo{display:block}
     <div id="receipt" class="hide"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
-  <div id="demo"><h2>OMNIPAY en 20 secondes</h2>
-    <div class="phone" aria-label="Démonstration animée des services OMNIPAY">
-      <div class="scene on"><div class="ico">⬇️</div><h3>Déposez</h3><p>MTN · Moov · Celtiis · PI-SPI · crypto.<br>Votre ID OM en référence : crédit automatique.</p><div class="amt" data-n="25000">0 FCFA</div><div class="bar"><i></i></div></div>
-      <div class="scene"><div class="ico">🔁</div><h3>Envoyez en 1 seconde</h3><p>Par numéro ou ID OM, vers un autre compte OMNIPAY. Reçu immédiat.</p><div class="amt" data-n="5000">0 FCFA</div><div class="bar"><i></i></div></div>
-      <div class="scene"><div class="ico">▦</div><h3>Payez par QR</h3><p>Le commerçant affiche son QR, vous scannez, c'est réglé.</p><div class="qrm"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="scene"><div class="ico">📲</div><h3>Retirez</h3><p>Vers vos comptes reliés et vérifiés : MTN, Moov, Celtiis, banque.</p><div class="amt" data-n="10000">0 FCFA</div><div class="bar"><i></i></div></div>
-      <div class="scene"><div class="ico">💱</div><h3>OMNIEXCHANGE</h3><p>P2P et crypto, avec garde-fou : libération seulement après argent réel reçu.</p></div>
-      <div class="scene"><div class="ico">🏧</div><h3>OMNIXPAY Cash</h3><p>Envoyez de l'argent, le receveur retire des espèces avec son code.</p></div>
-    </div><div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div>
 
-  <div id="foot" class="foot">
-    <div><b style="color:var(--txt)">OMNIPAY</b> · holding fintech · Abomey-Calavi, Bénin</div>
-    <div><a href="https://www.omnipay-bj.com">omnipay-bj.com</a> · <a href="mailto:regisagnikpe2002@gmail.com">regisagnikpe2002@gmail.com</a></div>
-    <div><a href="#" onclick="openHelp();return false">Centre d'aide &amp; avis OMNICHECK</a></div>
-  </div>
+
 </div>
 
 
@@ -2871,7 +2891,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd'].forEach(s=>$(s).classList.toggle('hide',s!==id));$('foot').classList.toggle('hide',id!=='login'&&id!=='reg'&&id!=='fp'&&id!=='help');document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -2944,15 +2964,15 @@ async function enter(){
   show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
-const LABEL={deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
+const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
 const CREDIT=['deposit','transfer_in','refund'];
 function render(){
-  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();
+  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();
   const el=$('txs');
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
   el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
     const st=t.status==='pending'?' · en attente':t.status==='failed'?' · échoué':t.status==='processing'?' · en cours':t.status==='refunded'?' · remboursé':'';
-    return `<div class="tx" style="cursor:pointer" onclick="openReceipt('${refOf(t.id)}')"><div>${LABEL[t.type]||t.type}<small>${d}${st}</small></div><b class="${c?'pos':'neg'}">${c?'+':'-'}${fmt(t.amount)}</b></div>`}).join('')
+    return `<div class="tx" style="cursor:pointer" onclick="openReceipt('${refOf(t.id)}')"><div>${t.provider==='bundle'?LABEL.bundle:(LABEL[t.type]||t.type)}<small>${d}${st}</small></div><b class="${c?'pos':'neg'}">${c?'+':'-'}${fmt(t.amount)}</b></div>`}).join('')
 }
 
 /* TRANSFERT OMNIPAY -> OMNIPAY (par téléphone) */
@@ -3003,6 +3023,57 @@ async function openChl(){show('chl');try{const d=await api('/api/challenges');$(
  const mx=Math.max(1,...(d.weekly||[]).map(w=>w.ops));$('ch_wk').innerHTML=(d.weekly||[]).length?d.weekly.map(w=>'<div><i style="height:'+Math.round(w.ops/mx*70)+'px"></i>'+w.ops+'<br>'+w.week.slice(5).split('-').reverse().join('/')+'</div>').join(''):'<small class="sub">Pas encore d’activité.</small>';
  $('ch_list').innerHTML=d.challenges.map(c=>'<div class="chc'+(c.done?' done':'')+'"><div style="display:flex;justify-content:space-between"><b>'+(c.done?'✅ ':'')+escH(c.title)+'</b><span>+'+c.points+' pts</span></div><small>'+escH(c.desc)+'</small><div class="pbar"><i style="width:'+Math.round(c.value/c.target*100)+'%"></i></div><small>'+mkN(c.value,0)+' / '+mkN(c.target,0)+' '+escH(c.unit)+'</small></div>').join('');
  $('ch_n').textContent=d.note}catch(e){$('ch_list').innerHTML='<p class="sub">'+escH(e.message)+'</p>'}}
+/* ===== Fiches services : ce que fait chaque bouton, comment l'utiliser, frais, sécurité. Le statut dit la vérité : « Disponible », « Sur validation OMNIPAY » ou « Bientôt ». ===== */
+var SVC={
+'recharges':{i:'📶',t:'Recharges & forfaits',s:'rv',what:'Achetez du crédit d\u2019appel, un forfait internet, un forfait appel ou autre, pour votre numéro ou celui d\u2019un proche, directement depuis votre solde.',steps:['Choisissez l\u2019opérateur, le type, le numéro et le montant.','Votre solde est débité tout de suite.','OMNIPAY exécute la recharge auprès de l\u2019opérateur, puis la commande passe à « fait ».'],fees:['Aucune commission OMNIPAY n\u2019est ajoutée au montant.','Montant minimum 200 FCFA ; un maximum par commande s\u2019applique.','Jusqu\u2019à 5 commandes en attente à la fois.'],safe:['Vérifiez bien le numéro : une recharge exécutée ne peut pas être annulée.','Si OMNIPAY ne peut pas exécuter la commande, elle est refusée et vous êtes remboursé.']},
+'omnip2p':{i:'💱',t:'OMNIP2P',s:'on',what:'Achat et vente d\u2019USDT entre particuliers, sur Binance P2P. L\u2019échange lui-même se fait sur Binance, hors OMNIPAY.',steps:['Ouvrez Binance P2P depuis ce service et réalisez votre échange sur Binance.','Si vous avez payé OMNIPAY par P2P, déclarez le numéro d\u2019ordre Binance dans « Dépôt & retrait directs » (moyen Binance P2P).','Après vérification, votre solde est crédité.'],fees:['Les frais de l\u2019échange sont ceux de Binance.'],safe:['OMNIPAY ne libère rien avant d\u2019avoir vérifié la réception réelle.','Ne payez jamais en dehors des consignes de l\u2019ordre Binance.']},
+'crypto':{i:'🪙',t:'Crypto',s:'rv',what:'Alimentez votre solde avec des cryptos (BTC, ETH, USDT…) : votre solde est crédité en FCFA après confirmation du réseau. D\u2019autres moyens existent : Binance Pay, PayPal ou carte.',steps:['Choisissez le moyen de dépôt et le montant à créditer.','Payez avec le moyen choisi, en suivant les instructions affichées.','Votre solde FCFA est crédité après confirmation.'],fees:['Frais du réseau crypto ou de PayPal indiqués avant paiement.'],safe:['Certains moyens peuvent être indisponibles selon leur activation.','Vérifiez deux fois le réseau : une erreur peut faire perdre les fonds.','OMNIPAY ne vous demande jamais votre phrase secrète ni vos clés privées.']},
+'directs':{i:'💸',t:'Dépôt & retrait directs',s:'rv',what:'Rechargez votre solde en payant OMNIPAY avec votre référence personnelle (PI-SPI, Mobile Money, crypto, virement), ou retirez vers votre numéro ou votre compte. Le dépôt automatique MTN MoMo est aussi proposé ici.',steps:['Dépôt : copiez votre référence, payez, puis touchez « J\u2019ai envoyé mon paiement » avec la preuve (hash ou référence).','OMNIPAY vérifie la réception réelle, puis crédite votre solde.','Retrait : indiquez le moyen, le numéro ou le compte et le montant ; le montant et la commission sont réservés tout de suite.'],fees:['Commission de retrait : 50 FCFA.','Montant minimum 500 FCFA ; un maximum par demande s\u2019applique (affiché avant validation).','Jusqu\u2019à 3 demandes en attente à la fois.'],safe:['Indiquez toujours votre référence : sans elle, le paiement doit être rapproché à la main.','Aucun crédit sans vérification de la réception réelle : un retard n\u2019est pas une perte.']},
+'pispi':{i:'🔗',t:'PI-SPI',s:'rv',what:'PI-SPI est le système de paiement instantané de la BCEAO. Payez OMNIPAY depuis n’importe quelle banque, microfinance ou portefeuille Mobile Money connecté, par QR ou par alias.',steps:['Dans votre application bancaire ou Mobile Money, ouvrez PI-SPI.','Scannez le QR d’OMNIPAY ou saisissez l’alias, et écrivez votre identifiant OM dans le motif.','Vérifiez que le nom du bénéficiaire affiché est bien ETS OMNIPAY, puis validez.'],fees:['Voir les conditions de votre banque ou de votre opérateur.'],safe:['Le crédit automatique de votre solde est en cours de mise en service : il peut être validé à la main en attendant.','Ne payez jamais un QR reçu par message si le nom affiché n’est pas ETS OMNIPAY.']},
+'marches':{i:'📈',t:'Marchés',s:'on',what:'Prix des principales cryptos en direct, en dollars et en FCFA, avec un graphique et un convertisseur indicatif.',steps:['Touchez une crypto pour voir son graphique (15 min, 1 h, 4 h, 1 jour).','Utilisez le convertisseur pour estimer une valeur en FCFA.'],fees:['Gratuit. Écran en lecture seule.'],safe:['Ce sont des cours de marché, pas un prix garanti ni un conseil d’investissement.','Aucune opération n’est lancée depuis cet écran.']},
+'defis':{i:'🏆',t:'Défis',s:'on',what:'Des objectifs calculés à partir de vos vraies opérations terminées. Vous gagnez des points de fidélité et montez de niveau.',steps:['Ouvrez Défis pour voir votre niveau et votre activité des 6 dernières semaines.','Réalisez des opérations réelles pour faire avancer les défis.'],fees:['Gratuit.'],safe:['Les points n’ont aucune valeur monétaire pour l’instant.','Impossible de tricher : seuls les paiements réellement terminés comptent.']},
+'omnicash':{i:'🏧',t:'OMNICASH',s:'rv',what:'Déposez ou retirez des espèces auprès d\u2019un agent OMNICASH, ou devenez agent vous-même.',steps:['Ouvrez OMNICASH pour voir vos opérations ou déposer une demande d\u2019agent.','Remettez ou recevez des espèces uniquement après confirmation dans l\u2019application.','Une demande d\u2019agent est étudiée par l\u2019équipe OMNIPAY avant activation.'],fees:['Les frais appliqués sont affichés avant confirmation.'],safe:['Ne donnez votre code qu\u2019à la personne qui vous remet les espèces, et seulement après avoir reçu le montant complet.']},
+'payer':{i:'💳',t:'Payer',s:'so',what:'Régler un prestataire (facture, abonnement, service) depuis votre solde OMNIPAY.',steps:['Ce service n’est pas encore ouvert.'],fees:['Annoncés à l’ouverture.'],safe:['Vous serez prévenu dès qu’il est disponible.']},
+'numeros':{i:'📱',t:'Numéros Mobile Money',s:'on',what:'Enregistrez vos numéros MTN, Moov ou Celtiis pour les retrouver en un clic lors de vos retraits.',steps:['Ajoutez un numéro, choisissez l’opérateur.','Marquez-en un par défaut pour aller plus vite.'],fees:['Gratuit.'],safe:['Pour votre sécurité, les retraits peuvent exiger un compte relié et validé par OMNIPAY.','OMNIPAY ne vous demande jamais le code PIN de votre Mobile Money.']},
+'alias':{i:'🆔',t:'Mon alias',s:'on',what:'Votre identifiant OMNIPAY (OM + 11 chiffres) : donnez-le pour recevoir de l’argent d’un autre client OMNIPAY.',steps:['Ouvrez Mon alias et copiez votre identifiant.','Communiquez-le à la personne qui doit vous payer.'],fees:['Gratuit.'],safe:['Ce n’est pas un IBAN bancaire : il ne fonctionne qu’entre clients OMNIPAY.','Un dernier chiffre de contrôle détecte les fautes de frappe avant l’envoi.']},
+'qr':{i:'▦',t:'Mes QR',s:'on',what:'Des QR codes à faire scanner pour recevoir un paiement : votre QR de réception, des demandes avec montant et libellé, un QR commerçant et un QR de parrainage.',steps:['Générez le QR et le lien d\u2019une demande (montant et libellé).','Faites-le scanner ou partagez le lien (WhatsApp, copie).','Le paiement apparaît dans vos reçus dès qu\u2019il est terminé.'],fees:['Voir les frais affichés avant confirmation.'],safe:['Une demande à montant fixe ne peut être payée qu\u2019une fois et expire au bout de 24 h.','Sans montant, le QR est réutilisable : ne le partagez qu\u2019avec les personnes concernées.','Le QR de retrait chez un terminal partenaire arrive plus tard.']},
+'recus':{i:'🧾',t:'Reçus',s:'on',what:'L’historique de vos opérations avec la référence de chacune.',steps:['Touchez une opération pour afficher son reçu.','Gardez la référence si vous contactez l’assistance.'],fees:['Gratuit.'],safe:['Une opération « en attente » n’est pas perdue : elle attend sa vérification.']},
+'recuspdf':{i:'🖨️',t:'Reçus PDF',s:'on',what:'Imprimez ou enregistrez en PDF la page affichée (reçu, historique).',steps:['Ouvrez le reçu voulu, puis touchez Reçus PDF.','Choisissez « Enregistrer au format PDF » dans la fenêtre d’impression.'],fees:['Gratuit.'],safe:['Ne partagez pas un reçu qui montre votre identifiant à n’importe qui.']},
+'iban':{i:'🏦',t:'Vérificateur IBAN',s:'on',what:'Contrôle la structure et la clé de vérification d’un IBAN avant un virement.',steps:['Saisissez l’IBAN.','Le contrôle se fait sur votre appareil : rien n’est envoyé.'],fees:['Gratuit.'],safe:['Un IBAN valide a la bonne structure, mais cela ne prouve pas que le compte existe ni qu’il appartient à la bonne personne.']},
+'carte':{i:'💳',t:'Ma carte OMNIPAY',s:'on',what:'Votre carte d’identité de paiement : montrez votre identifiant ou votre alias pour recevoir de l’argent d’un autre client OMNIPAY.',steps:['Ouvrez Carte.','Faites copier ou scanner votre identifiant.'],fees:['Gratuit.'],safe:['Ce n’est pas une carte bancaire : elle ne permet pas de payer chez un commerçant.']},
+'affiliation':{i:'🎁',t:'Affiliation',s:'on',what:'Invitez des clients avec votre lien et gagnez 50 FCFA pour chaque client parrainé qui rejoint OMNIPAY (un seul niveau : vos filleuls directs).',steps:['Copiez votre lien d\u2019affiliation ou faites scanner votre QR de parrainage.','Le gain est enregistré quand votre filleul rejoint.'],fees:['Gratuit.'],safe:['Seuls vos filleuls directs comptent.']},
+'aide':{i:'🛟',t:'Aide & avis',s:'on',what:'Des réponses à vos questions et la possibilité de nous dire ce qui ne va pas ou ce que vous aimeriez voir.',steps:['Consultez l’aide ou écrivez-nous.','Gardez la référence de l’opération concernée.'],fees:['Gratuit.'],safe:['L’équipe OMNIPAY ne vous demandera jamais votre mot de passe, votre code PIN ou un code reçu par SMS.']},
+'olatounde':{i:'💬',t:'OLATOUNDE',s:'on',what:'Votre assistante OMNIPAY. Elle explique, suit vos opérations et répond à vos questions, mais ne déplace jamais d’argent.',steps:['Posez une question : « où en est mon dépôt ? », « comment retirer ? »…'],fees:['Gratuit.'],safe:['Ne lui donnez jamais vos mots de passe ni vos codes.','Elle peut se tromper : pour un montant important, vérifiez dans vos reçus.']},
+'boutique':{i:'🏪',t:'Boutique',s:'so',what:'Achats de services et de produits depuis votre solde OMNIPAY.',steps:['Ce service n’est pas encore ouvert.'],fees:['Annoncés à l’ouverture.'],safe:['Vous serez prévenu dès qu’il est disponible.']}
+};
+var SVMAP={'OMNIP2P':'omnip2p','Crypto':'crypto','Directs':'directs','PI-SPI':'pispi','Marchés':'marches','Défis':'defis','OMNICASH':'omnicash','Payer':'payer','Numéros':'numeros','Recharges':'recharges','Historique':'recus','Mon alias':'alias','Mes QR':'qr','Reçus':'recus','Reçus PDF':'recuspdf','IBAN':'iban','Carte':'carte','Affiliation':'affiliation','Aide':'aide','Olatounde':'olatounde','Boutique':'boutique'};
+var SVCUR=null,SVTILE=null;
+function svcOpen(k,tile){var d=SVC[k];if(!d)return;SVCUR=k;SVTILE=tile||null;
+ $('svc_i').textContent=d.i;$('svc_t').textContent=d.t;var st=$('svc_s');st.className='svst '+(d.s==='on'?'on':d.s==='rv'?'rv':'so');st.textContent=d.s==='on'?'Disponible':d.s==='rv'?'Sur validation OMNIPAY':'Bientôt';
+ $('svc_b').innerHTML='<h3>À quoi ça sert</h3><p>'+escH(d.what)+'</p><h3>Comment faire</h3><ol>'+d.steps.map(function(x){return '<li>'+escH(x)+'</li>'}).join('')+'</ol><h3>Frais et limites</h3><ul>'+d.fees.map(function(x){return '<li>'+escH(x)+'</li>'}).join('')+'</ul><h3>Sécurité</h3><ul>'+d.safe.map(function(x){return '<li>'+escH(x)+'</li>'}).join('')+'</ul>';
+ var g=$('svc_go');g.style.display=(d.s==='so'||!SVTILE)?'none':'';g.textContent='Ouvrir « '+d.t+' »';
+ $('svcSheet').classList.remove('hide');if(g.style.display!=='none')g.focus()}
+function svcClose(){$('svcSheet').classList.add('hide');if(SVTILE&&SVTILE.focus)try{SVTILE.focus()}catch(e){}}
+function svcGo(){var t=SVTILE;svcClose();if(t)t.click()}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('svcSheet').classList.contains('hide'))svcClose()});
+function svcAttach(){document.querySelectorAll('.tile').forEach(function(t){if(t.querySelector('.tinfo'))return;var lb=(t.childNodes[1]&&t.childNodes[1].textContent||'').trim()||t.textContent.replace(/(bientôt|nouveau|en cours|assistante)$/i,'').trim();var k=SVMAP[lb];if(!k){for(var n in SVMAP){if(t.textContent.indexOf(n)===0){k=SVMAP[n];break}}}if(!k)return;
+ var i=document.createElement('span');i.className='tinfo';i.setAttribute('role','button');i.setAttribute('tabindex','0');i.setAttribute('aria-label','À propos de '+SVC[k].t);i.textContent='i';
+ i.onclick=function(ev){ev.stopPropagation();ev.preventDefault();svcOpen(k,t)};i.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.stopPropagation();ev.preventDefault();svcOpen(k,t)}};t.appendChild(i)})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',svcAttach);else svcAttach();
+
+/* ACCUEIL : cours crypto + défi, historique, recharges */
+async function dashMk(){try{const r=await fetch('/api/markets/tickers');const d=await r.json();if(!r.ok)throw new Error(d.error||'Cours indisponibles.');
+ if(!window.MKSP||!Object.keys(MKSP).length){try{const q=await fetch('/api/markets/sparklines');if(q.ok){MKSP=(await q.json()).series||{}}}catch(e){}}
+ $('dmk_l').innerHTML=d.items.slice(0,5).map(x=>'<button class="mkrow" onclick="MKS=\''+x.symbol+'\';openMk()"><div class="l"><b>'+escH(x.asset)+'</b><small>'+escH(x.name)+'</small></div><div class="sp">'+mkSpark(MKSP[x.symbol])+'</div><div class="r"><b>'+(x.priceXof?mkN(x.priceXof,0)+' F':mkP(x.price)+' $')+'</b><small class="'+(x.changePct>=0?'up':'dn')+'">'+(x.changePct>=0?'▲':'▼')+' '+Math.abs(x.changePct).toFixed(2)+' %</small></div></button>').join('');
+ $('dmk_t').textContent=(d.stale?'Données en cache. ':'Mis à jour à ')+new Date(d.updatedAt).toLocaleTimeString('fr-FR')+' · cours indicatifs'}catch(e){if($('dmk_t'))$('dmk_t').textContent=e.message}
+ try{if(S&&S.token){const c=await api('/api/challenges');$('dmk_cs').textContent='Niveau '+c.level+' · '+c.points+' / '+c.totalPoints+' points. Touchez pour voir vos défis.'}}catch(e){}}
+setInterval(function(){var d=$('dash');if(d&&!d.classList.contains('hide'))dashMk()},30000);
+function openHist(){show('hist')}
+async function openFcf(){show('fcf');$('fc_msg').className='msg';fcfLoad()}
+async function fcfLoad(){try{const d=await api('/api/bundles/mine');const st={pending:'en attente',done:'fait',rejected:'refusé, remboursé'};
+ $('fc_list').innerHTML=d.orders.length?d.orders.map(o=>'<div class="tx"><div>'+escH(o.kindLabel)+' · '+escH(String(o.operator).toUpperCase())+'<small>'+escH(o.phone)+' · '+new Date(o.created_at).toLocaleString('fr-FR')+' · '+(st[o.status]||o.status)+'</small></div><b class="neg">-'+fmt(o.amount)+'</b></div>').join(''):'<p class="sub" style="margin:0">Aucune commande pour le moment.</p>'}catch(e){$('fc_list').textContent=e.message}}
+async function fcfSend(){try{const am=parseInt($('fc_am').value,10);const r=await api('/api/bundles/order',{body:{operator:$('fc_op').value,kind:$('fc_kind').value,phone:$('fc_ph').value,amount:am,note:$('fc_note').value}});
+ msg('fc_msg',r.message,true);$('fc_am').value='';$('fc_note').value='';if(S.wallet&&r.newBalance!=null){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}fcfLoad();if(typeof loadAll==='function')loadAll()}catch(e){msg('fc_msg',e.message)}}
 async function ordLoad(){const box=$('ord_box');if(!box)return;try{const d=await api('/api/orders/available');
  let h='<div class="tx"><div>Statut<small>'+(d.online?'Vous recevez les ordres disponibles.':'Passez en ligne pour voir et prendre des ordres.')+'</small></div><button class="'+(d.online?'sec':'pri')+'" style="width:auto;padding:8px 14px;margin:0" onclick="ordPresence('+(!d.online)+')">'+(d.online?'Passer hors ligne':'Passer en ligne')+'</button></div>';
  if(d.mine.length)h+='<h3 style="margin:12px 0 4px">Mes ordres en cours</h3>'+d.mine.map(function(m){return '<div class="chc"><b>Payer '+fmt(m.amount)+'</b> au <b>'+escH(m.phone)+'</b> ('+escH(String(m.operator).toUpperCase())+')<br><small>'+(m.status==='executed'?'Confirmé : en attente de validation de l\'administrateur.':'À payer dans les '+d.takeMinutes+' min après la prise.')+'</small>'+(m.status==='taken'?'<input id="ord_ref_'+m.id+'" placeholder="Référence réelle de l\'opération" autocomplete="off" style="margin-top:8px"><button class="pri" onclick="ordExec(\''+m.id+'\')">J\'ai payé : confirmer</button><button class="lnk" onclick="ordRelease(\''+m.id+'\')">Rendre l\'ordre</button>':'')+'</div>'}).join('');
@@ -3108,7 +3179,7 @@ let rcLast=null;
 async function openReceipt(ref){try{const r=await api('/api/receipts/'+encodeURIComponent(ref));rcLast=r;
   const st={completed:'Réussie',pending:'En attente',failed:'Échouée',processing:'En cours',refunded:'Remboursée',cancelled:'Annulée'}[r.status]||r.status;
   const row=(a,b)=>b?`<div class="tx"><div>${a}</div><b style="font-weight:600">${escH(b)}</b></div>`:'';
-  $('rc_body').innerHTML=`<h1>Reçu OMNIPAY</h1><p class="sub">${escH(r.issuer)}</p>`+row('Référence',r.reference)+row('Opération',r.label)+row('Statut',st)+row('Date',new Date(r.date).toLocaleString('fr-FR'))
+  $('rc_body').innerHTML=`<div style="text-align:center;margin-bottom:8px"><img src="/logo-mail.png" alt="OMNIPAY" width="64" height="64" style="border-radius:16px"></div><h1>Reçu OMNIPAY</h1><p class="sub">${escH(r.issuer)}</p>`+row('Référence',r.reference)+row('Opération',r.label)+row('Statut',st)+row('Date',new Date(r.date).toLocaleString('fr-FR'))
    +row('Montant',fmt(r.amount))+(r.fee?row('Commission',fmt(r.fee)):'')+row('Total',fmt(r.total))+row('Solde après',fmt(r.balanceAfter))
    +(r.counterparty?row('Contrepartie',r.counterparty.name+(r.counterparty.accountId?' · '+r.counterparty.accountId:'')):'')+row('Canal',r.channel)+row('Destination',r.destination)+row('Libellé',r.note)
    +'<p class="sub" style="font-size:12px;margin-top:10px">Conservez cette référence pour toute réclamation auprès d\'OMNIPAY.</p>';
@@ -3314,5 +3385,6 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 (function(){try{const r=new URLSearchParams(location.search).get('ref');if(r){LS.set('omnipayRef',r.slice(0,80));$('r_ref').textContent='Vous êtes invité(e) par un membre OMNIPAY.';if(!S.token){show('reg')}}}catch(e){}})();
 </script>
 <script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
+<div id="svcSheet" class="svs hide" role="dialog" aria-modal="true" aria-labelledby="svc_t" onclick="if(event.target===this)svcClose()"><div class="svb"><div class="svh"><span class="ic" id="svc_i"></span><div><h2 id="svc_t"></h2><span class="svst" id="svc_s"></span></div><button class="svx" onclick="svcClose()" aria-label="Fermer">✕</button></div><div id="svc_b"></div><button class="pri" id="svc_go" style="margin-top:16px" onclick="svcGo()">Ouvrir ce service</button></div></div>
 </body>
 </html>

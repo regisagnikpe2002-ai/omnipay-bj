@@ -76,11 +76,9 @@ async function sendOtpEmail({ email, code, expiresInMinutes }) {
       <div style="background:#f4f7fb;padding:32px;font-family:Arial,sans-serif;color:#0f172a">
         <div style="max-width:520px;margin:auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 35px rgba(15,23,42,.10)">
           <div style="padding:28px;background:linear-gradient(135deg,#0f172a,#1d4ed8,#10b981);color:#fff">
-            <div style="font-size:26px;font-weight:800;letter-spacing:1px">
+            <img src="https://www.omnipay-bj.com/logo-mail.png" alt="OMNIPAY" width="64" height="64" style="display:block;border:0;border-radius:16px">
+            <div style="margin-top:10px;font-size:26px;font-weight:800;letter-spacing:1px">
               OMNIPAY
-            </div>
-            <div style="margin-top:6px;opacity:.88">
-              Votre quotidien financier tout-en-un
             </div>
           </div>
 
