@@ -143,6 +143,7 @@ mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-S
 mount("/api/pispi", "./routes/pispiBridge", "Brancheur PI-SPI (crédit automatique plafonné)");
 mount("/api/activity", "./routes/activity", "Clients et activité (admin, lecture seule)");
 mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
+mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
 mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");

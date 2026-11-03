@@ -83,7 +83,22 @@ async function viaManual() { return { status: "unavailable", detail: "Traitement
 // l'appel s'ajoute dans viaMoov / viaCeltiis (même contrat {status, detail}) sans toucher au reste. Les dépôts entrants passent déjà par /api/channels/inbound.
 async function viaMoov() { return { status: "unavailable", detail: "Moov Money : API non encore fournie (traitement manuel)." }; }
 async function viaCeltiis() { return { status: "unavailable", detail: "Celtiis Cash : API non encore fournie (traitement manuel)." }; }
-const CHANNELS = { manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
+
+// ---- Canal PawaPay (MTN_MOMO_BEN, MOOV_BEN) : retrait envoyé par API ; le statut final est relu chez PawaPay (routes/pawapay.js). ----
+// Activé seulement par PAYOUT_ROUTE_MTN=pawapay / PAYOUT_ROUTE_MOOV=pawapay. Plafond par retrait : PAWAPAY_PAYOUT_MAX_XOF (défaut 50000).
+async function viaPawapay({ txId, operator, phone, amount }) {
+  const pw = require("./pawapay.js");
+  if (!pw.ready()) return { status: "unavailable", detail: "PawaPay non configuré." };
+  const provider = pw.providerCode(operator);
+  if (!provider) return { status: "unavailable", detail: "PawaPay ne couvre que MTN et Moov au Bénin (traitement manuel pour cet opérateur)." };
+  const cap = Number(process.env.PAWAPAY_PAYOUT_MAX_XOF) > 0 ? Number(process.env.PAWAPAY_PAYOUT_MAX_XOF) : 50000;
+  if (Number(amount) > cap) return { status: "unavailable", detail: `Au-dessus du plafond automatique (${cap} F) : traitement manuel.` };
+  const r = await pw.initiatePayout({ payoutId: String(txId), amount, phone, provider });
+  if (r.status === "ACCEPTED" || r.status === "DUPLICATE_IGNORED") return { status: "sent", detail: "PawaPay accepté", ref: String(txId) };
+  if (r.status === "REJECTED") return { status: "refused", detail: "PawaPay refuse : " + (r.failureCode || "REJECTED") };
+  return { status: "uncertain", detail: "PawaPay : réponse incertaine" };
+}
+const CHANNELS = { pawapay: viaPawapay, manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
 const routeFor = (operator) => {
   const key =
     "PAYOUT_ROUTE_" +

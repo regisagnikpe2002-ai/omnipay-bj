@@ -356,6 +356,11 @@ body.lg #demo{display:block}
         <h2 style="margin:0 0 4px">Dépôt automatique MTN MoMo</h2><p class="sub" style="margin-bottom:8px">Entrez votre numéro MTN : vous validez sur votre téléphone, votre solde est crédité automatiquement.</p>
         <label>Numéro MTN</label><input id="mm_ph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><label>Montant (FCFA)</label><input id="mm_am" type="number" min="500" value="5000">
         <button class="pri" id="mm_btn" onclick="momoDeposit('wallet')">Payer avec MTN MoMo</button><div id="mm_msg" class="msg"></div></div>
+      <div id="pp_box" class="hide" style="border:1px solid var(--mint);border-radius:14px;padding:12px;margin-top:14px">
+        <h2 style="margin:0 0 4px">Dépôt automatique Mobile Money</h2><p class="sub" style="margin-bottom:8px">MTN ou Moov : vous validez sur votre téléphone avec votre code secret, votre solde est crédité automatiquement.</p>
+        <label>Opérateur</label><select id="pp_op"><option value="mtn">MTN MoMo</option><option value="moov">Moov Money</option></select>
+        <label>Numéro</label><input id="pp_ph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><label>Montant (FCFA)</label><input id="pp_am" type="number" min="100" value="5000">
+        <button class="pri" id="pp_btn" onclick="ppDeposit()">Payer par Mobile Money</button><div id="pp_msg" class="msg"></div></div>
       <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
       <div id="m_accs"><p class="sub">Chargement…</p></div>
       <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
@@ -3271,6 +3276,19 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
       if(s.status==='failed'){msg(mid,'Paiement refusé ou expiré. Rien n\'a été débité.');mmBusy=false;return}}
     msg(mid,'Toujours en attente : votre solde sera crédité automatiquement dès la confirmation de MTN.',true)}catch(e){msg(mid,e.message)}mmBusy=false}
 
+
+/* ===== PawaPay : dépôt automatique MTN / Moov ===== */
+let ppMin=100;
+async function ppInit(){try{const d=await api('/api/pawapay/status');ppMin=d.min||100;const f=$('mm_box').dataset.f||'';$('pp_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'));$('pp_am').min=ppMin}catch(e){$('pp_box').classList.add('hide')}}
+let ppBusy=false;
+async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,10),ph=($('pp_ph').value||'').trim(),op=$('pp_op').value;
+  if(!(am>=ppMin))return msg('pp_msg','Montant minimum : '+ppMin+' FCFA.');if(ph.replace(/\D/g,'').length<8)return msg('pp_msg','Numéro invalide.');
+  ppBusy=true;try{const d=await api('/api/pawapay/deposit',{body:{amount:am,phone:ph,provider:op}});msg('pp_msg',d.message,true);
+    for(let i=0;i<45;i++){await new Promise(r=>setTimeout(r,4000));const s=await api('/api/pawapay/deposit/'+d.reference);
+      if(s.status==='completed'){msg('pp_msg','Dépôt crédité : '+fmt(am)+'.',true);await refresh();ppBusy=false;return}
+      if(s.status==='failed'){msg('pp_msg','Paiement refusé ou expiré. Rien n\'a été débité.');ppBusy=false;return}}
+    msg('pp_msg','Toujours en attente : votre solde sera crédité automatiquement dès la confirmation.',true)}catch(e){msg('pp_msg',e.message)}ppBusy=false}
+
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
 
@@ -3374,7 +3392,7 @@ function manTab(t){$('m_in').classList.toggle('hide',t!=='in');$('m_out').classL
   $('mTabIn').style.borderColor=t==='in'?'var(--mint)':'var(--line)';$('mTabOut').style.borderColor=t==='out'?'var(--mint)':'var(--line)'}
 const MAN_STATUS={pending:'en attente',credited:'crédité',paid:'payé',rejected:'refusé'};
 const MAN_F={momo:['momo'],pispi:['pispi'],crypto:['binance','crypto'],bank:['bank']},MAN_T={momo:'Recharge par Mobile Money',pispi:'Recharge par PI-SPI / QR',crypto:'Recharge par crypto',bank:'Recharge par virement bancaire'},MAN_M={momo:'momo',pispi:'pispi',crypto:'usdt',bank:'virement'};
-async function openMan(f){f=MAN_F[f]?f:'';$('m_msg').className='msg';manTab('in');show('man');momoInit();$('man_t').textContent=f?MAN_T[f]:'Dépôt & retrait directs';if(f&&$('m_meth'))$('m_meth').value=MAN_M[f];
+async function openMan(f){f=MAN_F[f]?f:'';$('m_msg').className='msg';manTab('in');show('man');momoInit();ppInit();$('man_t').textContent=f?MAN_T[f]:'Dépôt & retrait directs';if(f&&$('m_meth'))$('m_meth').value=MAN_M[f];
   $('mm_box').dataset.f=f;
   try{const d=await api('/api/manual/instructions');$('m_ref').value=d.reference;
     const acc=f?(d.accounts||[]).filter(a=>MAN_F[f].includes(a.type)):(d.accounts||[]);
