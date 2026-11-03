@@ -1,0 +1,9 @@
+{
+  "_aide": "Raccourcis opérateurs affichés aux clients. 'url' = lien iPhone/par défaut, 'android' = lien Android (facultatif). Seuls les liens https:// ou tel: sont acceptés ; une ligne sans lien reste cachée. Ne mettez jamais de mot de passe, PIN ou clé ici : ce fichier est public.",
+  "operators": [
+    {"name":"MTN MoMo","note":"Application MyMTN Bénin","icon":"🟡","url":"https://apps.apple.com/app/id6480581002","android":"https://play.google.com/store/search?q=MyMTN%20BN&c=apps"},
+    {"name":"Moov Money","note":"Application Moov Money BJ","icon":"🔵","url":"https://apps.apple.com/us/app/-/id6745018971","android":"https://play.google.com/store/search?q=Moov%20Money%20BJ&c=apps"},
+    {"name":"Celtiis Cash","note":"Application MyCeltiis Cash","icon":"🟢","url":"https://apps.apple.com/bj/app/myceltiis-cash/id6443397512","android":"https://play.google.com/store/search?q=MyCeltiis%20Cash&c=apps"},
+    {"name":"EcobankPay / PI-SPI","note":"Banque Ecobank","url":""}
+  ]
+}
