@@ -89,6 +89,8 @@ async function viaCeltiis() { return { status: "unavailable", detail: "Celtiis C
 async function viaPawapay({ txId, operator, phone, amount }) {
   const pw = require("./pawapay.js");
   if (!pw.ready()) return { status: "unavailable", detail: "PawaPay non configuré." };
+  // En mode test (sandbox) PawaPay ne déplace aucun argent : un retrait « terminé » serait faux. Refusé sauf essai volontaire (PAWAPAY_SANDBOX_PAYOUTS=on).
+  if (pw.env() !== "live" && !["on", "true", "1", "yes"].includes(String(process.env.PAWAPAY_SANDBOX_PAYOUTS || "off").toLowerCase())) return { status: "unavailable", detail: "PawaPay est en mode test (aucun argent réel) : traitement manuel." };
   const provider = pw.providerCode(operator);
   if (!provider) return { status: "unavailable", detail: "PawaPay ne couvre que MTN et Moov au Bénin (traitement manuel pour cet opérateur)." };
   const cap = Number(process.env.PAWAPAY_PAYOUT_MAX_XOF) > 0 ? Number(process.env.PAWAPAY_PAYOUT_MAX_XOF) : 50000;
