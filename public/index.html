@@ -264,6 +264,7 @@ body.lg #demo{display:block}
     </div>
     <div class="card" id="dn" style="margin-bottom:16px"><h2>📣 Nouveautés</h2><div id="dn_t"></div><p class="sub" id="dn_v" style="margin:8px 0 0;font-size:12px"></p></div>
     <div id="ops_g" class="hide"><div class="grp">Opérateurs</div><div class="rb" id="ops_b"></div></div>
+    <div id="gd_g" class="hide"><div class="grp">Services recommandés</div><div class="card" style="margin-bottom:16px"><div id="gd_l"></div><p class="sub" id="gd_w" style="margin:8px 0 0;font-size:12px"></p></div></div>
     <div class="grp">Assistance</div>
     <div class="rb">
       <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde<em>assistante</em></button>
@@ -3063,7 +3064,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('svcShee
 function svcAttach(){document.querySelectorAll('.tile').forEach(function(t){if(t.querySelector('.tinfo'))return;var lb=(t.childNodes[1]&&t.childNodes[1].textContent||'').trim()||t.textContent.replace(/(bientôt|nouveau|en cours|assistante)$/i,'').trim();var k=SVMAP[lb];if(!k){for(var n in SVMAP){if(t.textContent.indexOf(n)===0){k=SVMAP[n];break}}}if(!k)return;
  var i=document.createElement('i');i.className='tinfo';i.setAttribute('role','button');i.setAttribute('tabindex','0');i.setAttribute('aria-label','À propos de '+SVC[k].t);i.textContent='i';
  i.onclick=function(ev){ev.stopPropagation();ev.preventDefault();svcOpen(k,t)};i.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.stopPropagation();ev.preventDefault();svcOpen(k,t)}};t.appendChild(i)})}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',svcAttach);else svcAttach();
+/* boutons « i » retirés à la demande : les fiches restent disponibles via svcOpen() */
 
 /* ACCUEIL : cours crypto + défi, historique, recharges */
 async function dashMk(){try{const r=await fetch('/api/markets/tickers');const d=await r.json();if(!r.ok)throw new Error(d.error||'Cours indisponibles.');
@@ -3088,10 +3089,16 @@ function newsPaint(){var x=newsToday();if(!x)return;
  var dt=$('dn_t');if(dt){dt.innerHTML=NEWS.items.slice(0,4).map(function(i){return '<div class="chc" style="margin-bottom:8px">'+newsHtml(i)+'</div>'}).join('');var dv=$('dn_v');if(dv)dv.textContent='Version '+(NEWS.version||'')+(NEWS.versionNote?' · '+NEWS.versionNote:'')}
  var on=$('ol_news');if(on){on.innerHTML='<b>📣 Annonce du jour</b><br>'+newsHtml(x);on.classList.remove('hide')}}
 async function newsLoad(){try{var r=await fetch('/annonces.json',{cache:'no-cache'});if(!r.ok)return;NEWS=await r.json();newsPaint()}catch(e){}}
-async function opsLinksLoad(){try{var r=await fetch('/operateurs.json',{cache:'no-cache'});if(!r.ok)return;var d=await r.json();
- var L=(d.operators||[]).filter(function(o){return o&&o.name&&/^(https:\/\/|tel:)/i.test(String(o.url||''))});if(!L.length)return;
- $('ops_b').innerHTML=L.map(function(o){var tel=/^tel:/i.test(o.url);return '<a class="tile" href="'+escH(o.url)+'"'+(tel?'':' target="_blank" rel="noopener noreferrer"')+' style="text-decoration:none;color:inherit"><span>'+(tel?'📞':'🔗')+'</span>'+escH(o.name)+'</a>'}).join('');$('ops_g').classList.remove('hide')}catch(e){}}
+async function opsLinksLoad(){try{var r=await fetch('/operateurs.json',{cache:'no-cache'});if(!r.ok)return;var d=await r.json();var and=/Android/i.test(navigator.userAgent);
+ var L=(d.operators||[]).map(function(o){var u=String((and&&o.android)||o.url||'');return o&&o.name?{n:o.name,i:o.icon,u:u}:null}).filter(function(o){return o&&/^(https:\/\/|tel:)/i.test(o.u)});if(!L.length)return;
+ $('ops_b').innerHTML=L.map(function(o){var tel=/^tel:/i.test(o.u);return '<a class="tile" href="'+escH(o.u)+'"'+(tel?'':' target="_blank" rel="noopener noreferrer"')+' style="text-decoration:none;color:inherit"><span>'+(o.i||(tel?'📞':'🔗'))+'</span>'+escH(o.n)+'</a>'}).join('');$('ops_g').classList.remove('hide')}catch(e){}}
 newsLoad();opsLinksLoad();
+
+async function guideLoad(){try{var r=await fetch('/partenaires.json',{cache:'no-cache'});if(!r.ok)return;var d=await r.json();
+ var L=(d.services||[]).filter(function(x){return x&&x.name&&/^https:\/\//i.test(String(x.url||''))});if(!L.length)return;
+ $('gd_l').innerHTML=L.map(function(x){return '<div class="tx"><div style="display:flex;gap:12px;align-items:center"><span style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--card2);border:1px solid var(--line)">'+escH(x.icon||'🔗')+'</span><span><b>'+escH(x.name)+'</b><small>'+escH(x.category||'')+(x.text?' · '+escH(x.text):'')+'</small></span></div><a class="pri" href="'+escH(x.url)+'" target="_blank" rel="noopener noreferrer" style="width:auto;margin:0;padding:10px 16px;border-radius:12px;font-weight:700;text-decoration:none">Ouvrir</a></div>'}).join('');
+ $('gd_w').textContent=d.avertissement||'';$('gd_g').classList.remove('hide')}catch(e){}}
+guideLoad();
 async function ordLoad(){const box=$('ord_box');if(!box)return;try{const d=await api('/api/orders/available');
  let h='<div class="tx"><div>Statut<small>'+(d.online?'Vous recevez les ordres disponibles.':'Passez en ligne pour voir et prendre des ordres.')+'</small></div><button class="'+(d.online?'sec':'pri')+'" style="width:auto;padding:8px 14px;margin:0" onclick="ordPresence('+(!d.online)+')">'+(d.online?'Passer hors ligne':'Passer en ligne')+'</button></div>';
  if(d.mine.length)h+='<h3 style="margin:12px 0 4px">Mes ordres en cours</h3>'+d.mine.map(function(m){return '<div class="chc"><b>Payer '+fmt(m.amount)+'</b> au <b>'+escH(m.phone)+'</b> ('+escH(String(m.operator).toUpperCase())+')<br><small>'+(m.status==='executed'?'Confirmé : en attente de validation de l\'administrateur.':'À payer dans les '+d.takeMinutes+' min après la prise.')+'</small>'+(m.status==='taken'?'<input id="ord_ref_'+m.id+'" placeholder="Référence réelle de l\'opération" autocomplete="off" style="margin-top:8px"><button class="pri" onclick="ordExec(\''+m.id+'\')">J\'ai payé : confirmer</button><button class="lnk" onclick="ordRelease(\''+m.id+'\')">Rendre l\'ordre</button>':'')+'</div>'}).join('');
