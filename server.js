@@ -137,6 +137,7 @@ mount("/api", "./routes/accountIds", "Identifiants et reçus");
 mount("/api/coingate", "./routes/coingate", "CoinGate");
 mount("/api/binance-pay", "./routes/binancePay", "Binance Pay");
 mount("/api/treasury", "./routes/treasury", "Trésorerie (PI-SPI + MetaMask)");
+mount("/api/treasury-accounts", "./routes/treasuryAccounts", "Trésoreries externes OMNIPAY");
 mount("/api/omnicash", "./routes/omnicash", "OMNICASH (agents)");
 mount("/api/momo", "./routes/momo", "MTN MoMo (dépôts et suivi des retraits)");
 mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-SPI, Mobile Money)");
