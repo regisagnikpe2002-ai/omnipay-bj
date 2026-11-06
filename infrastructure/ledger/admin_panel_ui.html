@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omnigift Admin</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0e1a2c;
+      --panel2: #13263e;
+      --primary: #12c2a6;
+      --accent: #a78bfa;
+      --light: #eafaf6;
+      --muted: #a7b7cb;
+      --danger: #ff6b6b;
+      --warning: #ffd166;
+      --success: #63d39a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #07111f, #0c1d32);
+      color: var(--light);
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 26px;
+      background: rgba(10, 20, 30, 0.9);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand { font-weight: 700; font-size: 1.4rem; }
+    .brand small {
+      color: var(--primary);
+      margin-left: 8px;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .layout {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 26px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 10px 0 4px;
+    }
+    .stat-label { color: var(--muted); font-size: 0.88rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+    }
+    .panel {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.02);
+    }
+    .panel-body {
+      padding: 18px 20px 22px;
+    }
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    input, select, button, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: var(--light);
+      font-size: 0.96rem;
+      outline: none;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    button {
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--primary), #24a3d9);
+      color: #04131f;
+      transition: transform 0.15s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    .danger { background: linear-gradient(135deg, #ff7b7b, #ff4d6d); color: white; }
+    .muted-btn { background: rgba(255,255,255,0.08); color: var(--light); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align: left;
+      font-size: 0.92rem;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .badge {
+      display: inline-block;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: rgba(99, 211, 154, 0.15);
+      color: var(--success);
+    }
+    .danger-badge {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--danger);
+    }
+    .warning-badge {
+      background: rgba(255, 209, 102, 0.14);
+      color: var(--warning);
+    }
+    .file-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .mini { font-size: 0.75rem; color: var(--muted); }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Omnigift <small>admin</small></div>
+    <div class="mini">Retour plateforme : https://www.omnipay-bj.com</div>
+  </div>
+
+  <div class="layout">
+    <div class="stats">
+      <div class="card">
+        <div class="stat-label">Offres actives</div>
+        <div class="stat-value" id="activeOffers">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Codes disponibles</div>
+        <div class="stat-value" id="availableCodes">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Ventes aujourd'hui</div>
+        <div class="stat-value" id="salesToday">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Commission estimée</div>
+        <div class="stat-value" id="commissionEstimate">0</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-header">
+          <strong>Créer une offre</strong>
+          <span class="mini">gift cards / coupons</span>
+        </div>
+        <div class="panel-body">
+          <form id="offerForm">
+            <input type="text" name="provider" placeholder="Provider (paysafecard / pcs / transcash)" required />
+            <input type="text" name="provider_label" placeholder="Libellé de l'offre" required />
+            <input type="number" name="nominal_value" placeholder="Valeur nominale" step="0.01" required />
+            <select name="currency">
+              <option value="EUR">EUR</option>
+              <option value="XOF">XOF</option>
+              <option value="USD">USD</option>
+            </select>
+            <input type="number" name="sale_price" placeholder="Prix de vente" step="0.01" required />
+            <input type="number" name="markup_pct" placeholder="Markup %" step="0.01" value="0.04" />
+            <label style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" name="active" checked />
+              Active
+            </label>
+            <button type="submit">Créer l'offre</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <strong>Stock / upload CSV</strong>
+        </div>
+        <div class="panel-body">
+          <div class="file-input-wrap">
+            <input type="file" id="csvFile" accept=".csv" />
+            <button class="muted-btn" id="uploadCsvBtn">Uploader</button>
+          </div>
+          <div class="mini" style="margin-top: 10px;">
+            Format attendu : offer_id, code, status, expires_at, metadata_json
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: 22px;">
+      <div class="panel-header">
+        <strong>Offres</strong>
+      </div>
+      <div class="panel-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Nominal</th>
+              <th>Prix</th>
+              <th>Devise</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="offersTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: 22px;">
+      <div class="panel-header">
+        <strong>Vente / codes</strong>
+      </div>
+      <div class="panel-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Offre</th>
+              <th>Client</th>
+              <th>Statut</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_TOKEN = localStorage.getItem('omnipay_admin_token') || 'change_me_admin';
+    const BASE_URL = 'https://www.omnipay-bj.com';
+
+    async function fetchJson(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': ADMIN_TOKEN,
+          ...(options.headers || {})
+        }
+      });
+      return res.json();
+    }
+
+    async function loadOverview() {
+      try {
+        const offers = await fetchJson('/admin/offers');
+        const inventory = await fetchJson('/admin/inventory');
+        const sales = await fetchJson('/admin/sales');
+        document.getElementById('activeOffers').textContent = offers.length || 0;
+        const available = inventory.filter(x => x.status === 'available').length;
+        document.getElementById('availableCodes').textContent = available || 0;
+        document.getElementById('salesToday').textContent = sales.length || 0;
+        document.getElementById('commissionEstimate').textContent = `${sales.length * 10 || 0} XOF`;
+
+        renderOffers(offers);
+        renderInventory(inventory);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderOffers(offers) {
+      const tbody = document.getElementById('offersTable');
+      tbody.innerHTML = offers.map(o => `
+        <tr>
+          <td>${o.provider}</td>
+          <td>${o.nominal_value}</td>
+          <td>${o.sale_price}</td>
+          <td>${o.currency}</td>
+          <td><span class="badge ${o.active ? '' : 'warning-badge'}">${o.active ? 'Active' : 'Inactive'}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderInventory(items) {
+      const tbody = document.getElementById('inventoryTable');
+      tbody.innerHTML = items.map(it => `
+        <tr>
+          <td>${it.code}</td>
+          <td>${it.offer_id || '—'}</td>
+          <td>${it.redeemed_by || '—'}</td>
+          <td><span class="badge ${it.status === 'available' ? '' : (it.status === 'redeemed' ? 'danger-badge' : 'warning-badge')}">${it.status}</span></td>
+          <td><button class="muted-btn" data-id="${it.id}">Valider</button></td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('offerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const body = {
+        provider: fd.get('provider'),
+        provider_label: fd.get('provider_label'),
+        nominal_value: Number(fd.get('nominal_value')),
+        currency: fd.get('currency'),
+        sale_price: Number(fd.get('sale_price')),
+        markup_pct: Number(fd.get('markup_pct') || 0),
+        active: fd.get('active') === 'on'
+      };
+      await fetchJson('/admin/offers/create', { method: 'POST', body: JSON.stringify(body) });
+      e.target.reset();
+      loadOverview();
+    });
+
+    document.getElementById('uploadCsvBtn').addEventListener('click', async () => {
+      const file = document.getElementById('csvFile').files[0];
+      if (!file) return alert('Sélectionne un CSV');
+      const text = await file.text();
+      const rows = text.split(/\r?\n/).filter(Boolean);
+      const payload = rows.slice(1).map(line => {
+        const [offer_id, code, status, expires_at, metadata] = line.split(',');
+        return { offer_id, code, status: status || 'available', expires_at: expires_at || null, metadata: metadata ? JSON.parse(metadata) : {} };
+      });
+      await fetchJson('/admin/inventory/upload', { method: 'POST', body: JSON.stringify({ rows: payload }) });
+      loadOverview();
+    });
+
+    loadOverview();
+  </script>
+</body>
+</html>
