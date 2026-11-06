@@ -2,7 +2,26 @@
   "_aide": "Services recommandés aux clients. Un service s'affiche seulement si son lien commence par https://. N'ajoutez un logo ou une mention de partenariat qu'avec l'accord écrit du service. Ne mettez jamais de mot de passe, PIN ou clé ici : ce fichier est public.",
   "avertissement": "Services tiers : OMNIPAY n'en est pas responsable. Ne partagez jamais vos codes, mots de passe ni PIN.",
   "services": [
-    {"icon":"₿","name":"Acheter du Bitcoin","category":"Crypto","text":"Achat de crypto sur Binance (service tiers).","url":"https://www.binance.com/"},
-    {"icon":"🌍","name":"Transfert international","category":"Envoi","text":"Envoi d'argent à l'étranger avec Wise (service tiers).","url":"https://wise.com/"}
+    {
+      "icon": "₿",
+      "name": "Acheter du Bitcoin",
+      "category": "Crypto",
+      "text": "Achat de crypto sur Binance (service tiers).",
+      "url": "https://www.binance.com/"
+    },
+    {
+      "icon": "💱",
+      "name": "Binance P2P",
+      "category": "Crypto",
+      "text": "Achat et vente d'USDT entre particuliers (service tiers).",
+      "url": "https://p2p.binance.com/fr"
+    },
+    {
+      "icon": "🌍",
+      "name": "Transfert international",
+      "category": "Envoi",
+      "text": "Envoi d'argent à l'étranger avec Wise (service tiers).",
+      "url": "https://wise.com/"
+    }
   ]
 }
