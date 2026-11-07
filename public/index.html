@@ -316,7 +316,7 @@ body.lg #demo{display:block}
     <div class="grp ex">OMNIEXCHANGE</div>
     <div class="rb ex">
       <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
-      <button class="tile" onclick="show('cry')"><span>🪙</span>Crypto</button>
+      <button class="tile" onclick="openConv()"><span>💱</span>Convertir</button>
       <button class="tile" onclick="openMan()"><span>💸</span>Directs</button>
     </div>
     <div class="grp">Marchés &amp; Défis</div>
@@ -358,7 +358,7 @@ body.lg #demo{display:block}
       <div class="row"><input id="alias_v" readonly style="font-weight:700;font-size:14px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyAlias()">Copier</button></div>
       <div id="alias_msg" class="msg"></div>
       <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable aujourd'hui entre comptes OMNIPAY. Compatible PI-SPI : en cours d'homologation avec notre banque partenaire.</p></div>
-    <div class="card" style="margin-bottom:16px"><h2>Réseau OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Un seul compte, tous vos prestataires.</p>
+    <div class="card" style="margin-bottom:16px"><h2>Recharger &amp; payer</h2><p class="sub" style="margin-bottom:10px">PI-SPI pour Mobile Money et banques, wallets pour la crypto.</p>
       <button class="pri" onclick="openLnk()">🔗 Relier mon compte (Mobile Money · banque · crypto)</button>
       <button class="sec" onclick="openCash()">💵 Mes retraits en espèces</button>
       <div id="net_list"><div class="tx"><div>Chargement…</div></div></div></div>
@@ -418,13 +418,10 @@ body.lg #demo{display:block}
   </section>
 
   <section id="dep" class="card hide">
-    <h1>Choisir la méthode de recharge</h1><p class="sub">Choisissez comment vous voulez alimenter votre solde OMNIPAY. Les détails de paiement s'affichent seulement après votre choix.</p>
-    <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Via Mobile Money</b><small>MTN, Moov, Celtiis : payez depuis votre téléphone</small></span></button>
-    <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>Via PI-SPI / QR</b><small>Scannez le QR avec n'importe quelle banque ou Mobile Money</small></span></button>
-    <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Via Crypto</b><small>Envoyez des USDT vers l'adresse Binance d'OMNIPAY</small></span></button>
-    <button class="opt" onclick="openMan('bank')"><i>🏦</i><span><b>Via Virement bancaire</b><small>Depuis le compte de votre banque</small></span></button>
-    <button class="opt off" onclick="toast('Paiement par carte : bientôt disponible')"><i>💳</i><span><b>Via Carte bancaire<em class="soon2">Bientôt</em></b><small>Visa / Mastercard</small></span></button>
-    <button class="opt off" onclick="toast('Gift Card : bientôt disponible')"><i>🎁</i><span><b>Via Gift Card<em class="soon2">Bientôt</em></b><small>Rechargez avec une carte cadeau</small></span></button>
+    <h1>Déposer sur mon solde</h1><p class="sub">Choisissez comment payer. Vous envoyez l'argent sur le compte OMNIPAY indiqué, puis vous nous le déclarez : votre solde est crédité dès que la réception est vérifiée.</p>
+    <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Mobile Money</b><small>MTN, Moov, Celtiis : envoi depuis votre téléphone</small></span></button>
+    <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
+    <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur l'adresse Binance OMNIPAY</small></span></button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -615,24 +612,17 @@ body.lg #demo{display:block}
   </section>
 
   <section id="cry" class="card hide">
-    <h1>Crypto &amp; P2P</h1><p class="sub">Alimentez votre compte avec des USDT, sous contrôle.</p>
-    <button class="pri" onclick="window.open('https://p2p.binance.com/fr','_blank','noopener')">Ouvrir Binance P2P</button>
-    <p class="sub" style="margin:8px 0 16px;font-size:12px">Achat/vente d'USDT entre particuliers, sur Binance. Les opérations P2P se font sur Binance, hors OMNIPAY.</p>
-    <h2>Dépôt par crypto (CoinGate)</h2><p class="sub" style="margin-bottom:8px">BTC, ETH, USDT… Votre solde est crédité en FCFA après confirmation du réseau.</p>
-    <label>Montant à créditer (FCFA)</label><input id="cg_am" type="number" min="1000" value="5000">
-    <button class="pri" onclick="doCg()">Payer en crypto</button>
-    <h2 style="margin-top:18px">Dépôt USDT (Binance Pay)</h2><p class="sub" style="margin-bottom:8px">Payez avec votre application Binance. Crédit automatique au taux affiché.</p>
-    <label>Montant (USDT)</label><input id="bn_am" type="number" min="2" step="0.01" value="5">
-    <button class="pri" onclick="doBn()">Payer avec Binance Pay</button>
-    <h2 style="margin-top:18px">Dépôt par PayPal</h2><p class="sub" style="margin-bottom:8px">Payez avec PayPal ou carte. Les frais PayPal sont ajoutés au prix affiché avant paiement.</p>
-    <label>Montant à créditer (FCFA)</label><input id="pp_am" type="number" min="1000" value="5000">
-    <button class="pri" onclick="doPp()">Payer avec PayPal</button>
-    <h2 style="margin-top:18px">Dépôt Binance P2P</h2><p class="sub" style="margin-bottom:8px">Vous avez payé OMNIPAY par P2P ? Déclarez le n° d'ordre Binance dans « Dépôt &amp; retrait directs » (moyen « Binance P2P »). Crédit après vérification.</p>
-    <button class="pri" id="p2p_btn" onclick="p2pDeclare()">Déclarer mon ordre P2P</button>
+    <h1>Convertir</h1><p class="sub">Calculez la valeur de vos devises et de vos cryptos en FCFA, d'après les cours du marché.</p>
+    <div class="mkbox"><div class="mkcv"><input id="cx_a" type="number" inputmode="decimal" min="0" step="any" value="100" oninput="cxCalc()" aria-label="Montant"><select id="cx_f" onchange="cxCalc()" aria-label="De"></select></div>
+    <div style="text-align:center;margin:6px 0"><button class="sec" style="width:auto;margin:0;padding:6px 18px" onclick="cxSwap()" aria-label="Inverser">⇅</button></div>
+    <div class="mkcv"><input id="cx_r" readonly aria-label="Résultat" style="font-weight:800"><select id="cx_t" onchange="cxCalc()" aria-label="Vers"></select></div>
+    <p class="sub" id="cx_n" style="margin:8px 0 0;font-size:12px"></p></div>
+    <h2 style="margin-top:18px">Passer à l'action</h2>
+    <button class="opt" onclick="openDep()"><i>⬇️</i><span><b>Déposer sur mon solde</b><small>Mobile Money, PI-SPI ou crypto (USDT)</small></span></button>
+    <button class="opt" onclick="window.open('https://p2p.binance.com/fr','_blank','noopener')"><i>🔁</i><span><b>Acheter ou vendre des USDT</b><small>Binance P2P, entre particuliers (hors OMNIPAY)</small></span></button>
+    <button class="opt" onclick="openIO('out')"><i>⬆️</i><span><b>Retirer</b><small>Vers Mobile Money, PI-SPI ou crypto</small></span></button>
+    <p class="sub" style="margin-top:12px;font-size:12px">Les montants affichés sont indicatifs. Votre solde OMNIPAY est en FCFA : le taux exact est confirmé avant toute opération.</p>
     <div id="cry_msg" class="msg"></div>
-    <div class="tx"><div>Mon adresse portefeuille<small>Adresse personnelle générée pour vous</small></div><b style="color:var(--warn)">En cours</b></div>
-    <div class="tx"><div>Portefeuille local / bancaire<small>Lier un compte pour gérer vos fonds</small></div><b style="color:var(--warn)">En cours</b></div>
-    <p class="sub" style="margin-top:14px;font-size:12px">Ces fonctions sont activées après validation de nos partenaires. Aucune adresse de dépôt n'est affichée tant que le suivi automatique n'est pas actif, pour protéger vos fonds.</p>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3310,9 +3300,13 @@ function applyPendingTo(){const t=LS.get('omnipayTo');if(!t)return;LS.del('omnip
 
 /* ===== Réseau OMNIPAY : catalogue dynamique (/api/services) ===== */
 const NET_ST={supervised:['Actif · supervisé','var(--mint)'],configuration_required:['Sur configuration','var(--warn)'],partnership_required:['Partenariat requis','var(--warn)'],active:['Actif','var(--mint)']};
-async function loadNet(){const box=$('net_list');if(!box)return;try{const d=await fetch('/api/services').then(r=>r.json());
-  box.innerHTML=d.services.map(x=>{const st=NET_ST[x.status]||[x.status,'var(--mut)'];return `<div class="tx"><div>${escH(x.name)}<small>${escH(x.description)}</small></div><b style="color:${st[1]}">${escH(st[0])}</b></div>`}).join('')}
- catch(e){box.innerHTML='<div class="tx"><div>Catalogue indisponible<small>Réessayez plus tard.</small></div></div>'}}
+async function loadNet(){const box=$('net_list');if(!box)return;
+  box.innerHTML='<div class="tx" style="display:block"><b>Mobile Money &amp; banques</b><small style="display:block;margin:4px 0 8px">MTN MoMo, Moov Money, Celtiis Cash et banques : payez via PI-SPI vers l\'alias OMNIPAY. Le paiement arrive sur le compte OMNIPAY, puis votre solde est crédité.</small><button class="pri" style="margin:0" onclick="openMan(\'pispi\')">Payer par PI-SPI</button></div><div id="net_w"><div class="tx"><div>Chargement des wallets…</div></div></div>';
+  try{const d=await api('/api/manual/instructions');const W=(d.accounts||[]).filter(a=>a.type==='binance');
+   $('net_w').innerHTML=W.length?'<div class="grp" style="margin-top:14px">Wallets crypto OMNIPAY</div>'+W.map((a,i)=>'<div class="tx" style="display:block"><b>'+escH(a.label)+'</b>'+(a.network?'<small style="display:block">Réseau : '+escH(a.network)+'</small>':'')+'<div style="word-break:break-all;margin:6px 0;font-weight:600;font-size:13px">'+escH(a.detail)+'</div><div class="row"><button class="sec" style="margin:0;padding:8px" data-w="'+i+'">Copier l\'adresse</button><button class="sec" style="margin:0;padding:8px" onclick="openMan(\'crypto\')">J\'ai envoyé</button></div></div>').join('')+'<p class="sub" style="font-size:12px;margin-top:8px">Envoyez uniquement l\'actif indiqué, sur le réseau indiqué. Une erreur de réseau fait perdre les fonds.</p>'
+     :'<p class="sub" style="margin-top:12px">Wallets crypto : adresses en cours d\'activation.</p>';
+   box.onclick=e=>{const b=e.target.closest('button[data-w]');if(b)copyTxt(W[+b.dataset.w].detail,'alias_msg')}}
+  catch(e){$('net_w').innerHTML='<p class="sub">Wallets indisponibles pour le moment.</p>'}}
 /* ===== Identifiant OMNIPAY + reçus ===== */
 const refOf=id=>'OMP-R'+String(id||'').replace(/-/g,'').slice(0,10).toUpperCase();
 async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}}
@@ -3565,6 +3559,14 @@ async function openMan(f){f=MAN_F[f]?f:'';$('m_msg').className='msg';manTab('in'
         if(e.target.closest('button[data-go]')){const am=Math.round(Number($('tp_am').value));if(!(am>=MINX&&am<=MAXX))return msg('m_msg','Montant : entre '+MINX+' et '+MAXX+' FCFA.');msg('m_msg','');$('tp_card').innerHTML=card(am);return}
         const pd=e.target.closest('button[data-paid]');if(pd){pd.disabled=true;try{const r=await api('/api/manual/deposit',{method:'POST',body:{amount:Number(pd.dataset.paid),currency:'XOF',method:'pispi',note:'TPE PI-SPI'+(op?' via '+OPS[op]:'')+' ref '+ref}});$('tp_card').innerHTML='<div class="tx" style="display:block;text-align:center"><b>Merci.</b><p class="sub">'+escH(r.message||'Demande enregistr\u00e9e.')+'</p></div>';manList()}catch(err){pd.disabled=false;msg('m_msg',err.message)}}};
       manList();return}}
+    if(f==='momo'){const MA=(d.accounts||[]).filter(x=>x.type==='momo');const OPM={mtn:'MTN MoMo',moov:'Moov Money',celtiis:'Celtiis Cash'};
+      const pickA=o=>MA.find(x=>(x.ops||[]).includes(o))||MA.find(x=>!(x.ops&&x.ops.length));
+      $('m_accs').innerHTML='<div class="sub" style="font-size:13px;margin-bottom:6px">1. Votre opérateur</div><div class="row" id="mo_ops">'+Object.keys(OPM).map(k=>'<button class="sec" style="margin:0;padding:8px" data-op="'+k+'">'+OPM[k]+'</button>').join('')+'</div><div id="mo_card" style="margin-top:10px"></div>'
+        +'<p class="sub" style="font-size:12px;margin-top:8px">2. Envoyez le montant au numéro affiché (même opérateur), puis déclarez votre paiement plus bas avec le n° de transaction.</p>';
+      $('m_accs').onclick=e=>{const c=e.target.closest('button[data-c]');if(c)return copyTxt(c.dataset.c,'m_msg');const o=e.target.closest('button[data-op]');if(!o)return;const op=o.dataset.op;MOOP=op;
+        document.querySelectorAll('#mo_ops button').forEach(x=>x.style.outline=x===o?'2px solid var(--mint)':'');if($('m_meth'))$('m_meth').value='momo';
+        const a=pickA(op);$('mo_card').innerHTML=a?'<div class="tx" style="display:block"><b>'+escH(a.label||OPM[op])+'</b><div style="font-size:20px;font-weight:800;margin:6px 0;word-break:break-all">'+escH(a.detail)+'</div><div class="row"><button class="sec" style="margin:0;padding:8px" data-c="'+escH(a.detail)+'">Copier le numéro</button></div><p class="sub" style="font-size:12px;margin:8px 0 0">Référence à indiquer : <b>'+escH(d.omId||d.reference||'')+'</b></p></div>':'<p class="sub">Compte '+OPM[op]+' bientôt disponible.</p>'};
+      manList();return}
     $('m_accs').innerHTML=acc.length?acc.map((a,i)=>`<div class="tx" style="display:block"><div style="display:flex;gap:10px;align-items:center"><img src="/partners/${encodeURIComponent(String(a.type||'x').toLowerCase())}.png" alt="" width="34" height="34" style="border-radius:8px;object-fit:contain" onerror="this.remove()"><span><b>${escH(a.label)}</b>${a.network?`<small>Réseau : ${escH(a.network)}</small>`:''}</span></div>
       <div style="word-break:break-all;margin:6px 0;font-weight:600">${escH(a.detail)}</div>
       <div class="row"><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="copy">Copier</button><button class="sec" style="margin:0;padding:8px" data-i="${i}" data-a="qr">QR</button></div>
@@ -3579,9 +3581,23 @@ async function manList(){try{const d=await api('/api/manual/mine');
   const rows=[...(d.deposits||[]).map(x=>({t:'Dépôt '+x.method,a:x.amount+' '+x.currency+(x.credited_xof?' → '+fmt(x.credited_xof):''),s:x.status,d:x.created_at,n:x.decided_note})),
     ...(d.payouts||[]).map(x=>({t:'Retrait '+x.method,a:fmt(x.amount),s:x.status,d:x.created_at,n:x.decided_note}))].sort((a,b)=>new Date(b.d)-new Date(a.d));
   $('m_list').innerHTML=rows.length?rows.map(r=>`<div class="tx"><div>${escH(r.t)}<small>${new Date(r.d).toLocaleString('fr-FR')} · ${escH(MAN_STATUS[r.s]||r.s)}${r.n?' · '+escH(r.n):''}</small></div><b>${escH(r.a)}</b></div>`).join(''):'<p class="sub">Aucune demande.</p>'}catch(e){}}
+
+/* ===== Convertir (indicatif) ===== */
+var CXU={};
+function cxUnits(){CXU={};if(!MKD)return;var r=MKD.rateXof||0;CXU.FCFA=1;CXU.EUR=655.957;if(r)CXU.USD=r;
+ (MKD.items||[]).forEach(function(x){var u=x.priceXof||(r?x.price*r:0);if(u)CXU[String(x.symbol).replace(/USDT$/,'')||x.symbol]=u});if(r&&!CXU.USDT)CXU.USDT=r}
+function cxFill(){var k=Object.keys(CXU),f=$('cx_f'),t=$('cx_t');if(!f||!k.length||f.options.length===k.length)return;
+ var o=k.map(function(c){return '<option value="'+c+'">'+c+'</option>'}).join('');f.innerHTML=o;t.innerHTML=o;f.value=CXU.USDT?'USDT':k[0];t.value='FCFA'}
+function cxCalc(){var f=$('cx_f').value,t=$('cx_t').value,q=Number($('cx_a').value);
+ if(!CXU[f]||!CXU[t]||!(q>=0)){$('cx_r').value='';return}
+ var v=q*CXU[f]/CXU[t];$('cx_r').value=v>=100?Math.round(v).toLocaleString('fr-FR'):v.toLocaleString('fr-FR',{maximumSignificantDigits:6});
+ $('cx_n').textContent='1 '+f+' ≈ '+(CXU[f]/CXU[t]).toLocaleString('fr-FR',{maximumSignificantDigits:6})+' '+t}
+function cxSwap(){var f=$('cx_f'),t=$('cx_t'),x=f.value;f.value=t.value;t.value=x;cxCalc()}
+async function openConv(){show('cry');try{if(!MKD)await mkLoad()}catch(e){}cxUnits();cxFill();cxCalc();if(!MKD)$('cx_n').textContent='Cours indisponibles pour le moment. Réessayez dans un instant.'}
+let MOOP='';
 async function manDeposit(){const am=Number($('m_am').value);if(!(am>0))return msg('m_msg','Indiquez le montant envoyé.');
   if(!$('m_tx').value.trim())return msg('m_msg','Indiquez la preuve (hash ou n° de transaction).');
-  try{const d=await api('/api/manual/deposit',{body:{method:$('m_meth').value,currency:$('m_cur').value,amount:am,txRef:$('m_tx').value.trim()}});
+  try{const d=await api('/api/manual/deposit',{body:{method:$('m_meth').value,currency:$('m_cur').value,amount:am,txRef:$('m_tx').value.trim(),note:($('m_meth').value==='momo'&&MOOP?'Opérateur '+MOOP+' · trésorerie '+MOOP:'')}});
     msg('m_msg',d.message,true);$('m_am').value='';$('m_tx').value='';manList()}catch(e){msg('m_msg',e.message)}}
 async function manPayout(){const am=parseInt($('mo_am').value,10),ds=$('mo_dst').value.trim();
   if(!(am>0)||ds.length<5)return msg('m_msg','Renseignez le montant et la destination.');
