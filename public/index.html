@@ -307,7 +307,7 @@ body.lg #demo{display:block}
       <button onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
       <button onclick="openIO('out')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></svg></span>Retrait</button>
     </div>
-    <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Recevez vos codes SMS sans carte SIM. Remboursé si aucun SMS n'arrive.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
+    <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Un numéro temporaire pour recevoir vos codes de vérification, sans carte SIM et sans exposer votre numéro personnel.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
 
     <div class="card" id="hc" style="margin-bottom:16px"><h2>🪙 Déposer en crypto (USDT)</h2><div id="hc_l"><p class="sub" style="margin:0">Chargement des adresses…</p></div><div id="hc_m" class="msg"></div></div>
     <div class="card" id="dmk" style="margin-bottom:16px"><h2>📈 Cours crypto en direct</h2><div id="dmk_l"><p class="sub" style="margin:0">Chargement des cours…</p></div><p class="sub" id="dmk_t" style="margin:8px 0 0;font-size:12px"></p>
@@ -482,9 +482,9 @@ body.lg #demo{display:block}
     <h1>Numéros virtuels</h1><p class="sub">Choisissez un pays et un service, recevez un numéro, puis votre code SMS s'affiche ici.</p>
     <div id="vn_off" class="msg er hide" style="display:none">Service en cours d'activation. Revenez bientôt.</div>
     <div id="vn_form">
-      <label class="sub">Pays</label><select id="vn_c"></select>
+      <label class="sub">Pays</label><select id="vn_c" onchange="vnPrice()"></select>
       <label class="sub">Service</label><input id="vn_q" placeholder="Rechercher (WhatsApp, Telegram…)" oninput="clearTimeout(window._vq);window._vq=setTimeout(vnSearch,350)"><select id="vn_s"></select>
-      <p class="sub" style="margin:8px 0">Prix : <b id="vn_p"></b> par numéro · remboursé si aucun SMS</p>
+      <p class="sub" style="margin:8px 0">Prix : <b id="vn_p"></b> · débit annulé automatiquement si aucun code n'arrive dans le délai</p>
       <button id="vn_b" onclick="vnRent()">Obtenir un numéro</button>
     </div>
     <div id="vn_m" class="msg"></div>
@@ -3057,7 +3057,7 @@ async function refresh(){
 }
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
-  const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.email||u.phone||'';pfApply();
+  const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.name||u.fullName||u.username||u.email||u.phone||'Mon compte OMNIPAY';pfApply();
   show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad()
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
@@ -3497,12 +3497,13 @@ function checkIban(){const r=ibanOk($('ib_v').value);
 const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* NUMÉROS VIRTUELS (codes SMS) et ADRESSES CRYPTO de l'accueil */
-var VNT=null,VNO=null;
+var VNT=null,VNO=null,VNP={};
+function vnPrice(){var i=$('vn_c').value;$('vn_p').textContent=i&&VNP[i]?fmt(VNP[i]):'selon le pays'}
 const VNST={active:'En attente du SMS',done:'Code reçu',expired:'Expiré · remboursé',failed:'Annulé',renting:'En cours'};
 async function openVn(){$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');
- try{const d=await api('/api/vn/info');$('vn_p').textContent=fmt(d.price);
+ try{const d=await api('/api/vn/info');VNP=Object.fromEntries((d.countries||[]).map(c=>[c.iso,c.price]));vnPrice();
   if(!d.enabled){$('vn_form').classList.add('hide');$('vn_off').style.display='block'}else{$('vn_form').classList.remove('hide');$('vn_off').style.display='none';
-   $('vn_c').innerHTML='<option value="">Choisir un pays…</option>'+(d.countries||[]).map(c=>`<option value="${escH(c.iso)}">${escH(c.name)}</option>`).join('');vnSearch()}}catch(e){msg('vn_m',e.message)}
+   $('vn_c').innerHTML='<option value="">Choisir un pays…</option>'+(d.countries||[]).map(c=>`<option value="${escH(c.iso)}">${escH(c.name)} · ${fmt(c.price)}</option>`).join('');vnSearch()}}catch(e){msg('vn_m',e.message)}
  vnHist()}
 async function vnSearch(){try{const d=await api('/api/vn/services?q='+encodeURIComponent($('vn_q').value.trim()));const L=d.services||[];
  $('vn_s').innerHTML=L.length?L.map(s=>`<option value="${escH(s.id)}" data-n="${escH(s.name)}">${escH(s.name)}</option>`).join(''):'<option value="">Aucun service trouvé</option>'}catch(e){msg('vn_m',e.message)}}

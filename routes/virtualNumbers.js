@@ -19,7 +19,11 @@ const POLL_GAP_MS = 4000;
 let ready = false;
 
 const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
-const price = () => { const p = Math.round(Number(process.env.VN_PRICE_XOF || 500)); return Number.isFinite(p) && p >= 100 ? p : 500; };
+const price = () => { const p = Math.round(Number(process.env.VN_PRICE_XOF || 500)); return Number.isFinite(p) && p >= 100 ? p : 500; }; // prix minimum
+// Prix par pays : coût fournisseur (USD) x taux x (1 + marge), arrondi aux 50 FCFA supérieurs, jamais sous le minimum.
+const usdXof = () => { const r = Number(process.env.VN_USD_XOF || 620); return Number.isFinite(r) && r >= 300 && r <= 2000 ? r : 620; };
+const marginPct = () => { const m = Number(process.env.VN_MARGIN_PCT == null ? 30 : process.env.VN_MARGIN_PCT); return Number.isFinite(m) && m >= 0 && m <= 300 ? m : 30; };
+const priceFor = (cost) => { const c = Number(cost); if (!Number.isFinite(c) || c <= 0) return null; return Math.max(price(), Math.ceil((c * usdXof() * (1 + marginPct() / 100)) / 50) * 50); };
 const ttlMin = () => { const t = Number(process.env.VN_TTL_MIN || 20); return Number.isFinite(t) && t >= 5 && t <= 120 ? t : 20; };
 const enabled = () => String(process.env.VN_ENABLED || "on").toLowerCase() !== "off";
 const hasKey = () => Boolean(process.env.SMSCODES_KEY);
@@ -69,7 +73,8 @@ function toList(v) {
 const normCountries = (d) => toList(d && d.Countries).map((c) => {
   if (typeof c === "string") return { iso: c.toUpperCase().slice(0, 8), name: c };
   const iso = String(pick(c, ["iso", "ISO", "Iso", "code", "Code", "id", "Id", "ID"])).toUpperCase().slice(0, 8);
-  return { iso, name: clean(pick(c, ["name", "Name", "country", "Country"]) || iso, 60) };
+  const cost = Number(String(pick(c, ["SingleServicePrice", "singleServicePrice", "price", "Price"])).replace(",", "."));
+  return { iso, name: clean(pick(c, ["name", "Name", "country", "Country"]) || iso, 60), cost: Number.isFinite(cost) && cost > 0 ? cost : null };
 }).filter((c) => c.iso);
 const normServices = (d) => toList(d && d.Services).map((s) => {
   if (typeof s === "string") return { id: s, name: s };
@@ -113,7 +118,7 @@ router.get("/info", requireAuth, async (req, res) => {
     const ok = enabled() && hasKey();
     let countries = [];
     if (ok) { try { countries = await cached("countries", async () => normCountries(await supplier("GetRentalCountries"))); } catch (e) { console.error("VN_COUNTRIES", e.message); } }
-    res.json({ enabled: ok, price: price(), ttlMin: ttlMin(), openMax: MAX_OPEN, countries: countries.slice(0, 300),
+    res.json({ enabled: ok, price: price(), minPrice: price(), ttlMin: ttlMin(), openMax: MAX_OPEN, countries: countries.slice(0, 300).map((c) => ({ iso: c.iso, name: c.name, price: priceFor(c.cost) })).filter((c) => c.price),
       message: ok ? undefined : "Service en cours d'activation." });
   } catch (e) { console.error("VN_INFO", e.message); res.status(500).json({ error: "Erreur." }); }
 });
@@ -149,7 +154,9 @@ router.post("/rent", requireAuth, async (req, res) => {
     const [c] = await q`SELECT count(*) FILTER (WHERE status = 'active' AND code IS NULL)::int AS open, count(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS day FROM vn_orders WHERE user_id = ${uid}`;
     if (c.open >= MAX_OPEN) return res.status(429).json({ error: "Vous avez déjà des numéros en attente de code. Patientez ou attendez leur expiration." });
     if (c.day >= MAX_DAY) return res.status(429).json({ error: "Limite journalière atteinte." });
-    const amount = price();
+    let amount = null;
+    try { const cl = await cached("countries", async () => normCountries(await supplier("GetRentalCountries"))); const cc = cl.find((x) => x.iso === iso); amount = cc ? priceFor(cc.cost) : null; } catch (e) { console.error("VN_PRICE", e.message); }
+    if (!amount) return res.status(400).json({ error: "Ce pays n'est pas disponible pour le moment." });
     const key = "vn-" + crypto.randomUUID();
     const rows = await q`
       WITH w AS (UPDATE wallets SET balance = balance - ${amount} WHERE user_id = ${uid} AND balance >= ${amount} RETURNING id, balance),
@@ -237,7 +244,7 @@ router.get("/admin/probe", adminOnly, async (req, res) => {
     for (const m of ["GetRentalCountries", "GetServiceCodes", "GetLiveRentedNumbers"]) {
       try { const d = await supplier(m); out[m] = JSON.parse(JSON.stringify(d, (k, v) => (Array.isArray(v) ? v.slice(0, 5) : v))); } catch (e) { out[m] = { error: e.message }; }
     }
-    res.json({ configured: hasKey(), enabled: enabled(), price: price(), probe: out });
+    res.json({ configured: hasKey(), enabled: enabled(), minPrice: price(), usdXof: usdXof(), marginPct: marginPct(), probe: out });
   } catch (e) { res.status(500).json({ error: "Erreur." }); }
 });
 router.get("/admin/orders", adminOnly, async (req, res) => {
