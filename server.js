@@ -8,6 +8,9 @@
 
 require("dotenv").config();
 
+// Clés API regroupées dans OMNIPAY_API_KEYS (une seule variable Render) : à charger AVANT tout le reste.
+try { require("./lib/apiKeys").install(); } catch (err) { console.error("apiKeys non chargé :", err.message); }
+
 // Mode DÉMO (APP_MODE=demo) : bloque toute connexion sortante vers un service réel. Sans effet en mode live.
 try { require("./lib/demoGuard").install(); } catch (err) { console.error("demoGuard non chargé :", err.message); }
 
@@ -145,6 +148,7 @@ mount("/api/pispi", "./routes/pispiBridge", "Brancheur PI-SPI (crédit automatiq
 mount("/api/activity", "./routes/activity", "Clients et activité (admin, lecture seule)");
 mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
 mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
+mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
 mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");

@@ -160,7 +160,59 @@ body.lg #demo{display:block}
 @keyframes svu{from{transform:translateY(28px);opacity:.4}to{transform:none;opacity:1}}@keyframes svf{from{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){.svb,.svs{animation:none}}
 .mkrow{flex-wrap:wrap}.mkrow .sp{flex:0 0 84px}.mkrow .bs{flex-basis:100%;text-align:right;border-top:1px dashed var(--line);padding-top:6px;color:var(--mut);font-size:12px}.mkrow .sp svg{display:block}.mkrow .l{flex:1;min-width:0}.mkst{display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--mut)}.mkst b{color:var(--txt)}.mkcv{display:flex;gap:8px;margin-top:8px}.mkcv input,.mkcv select{margin:0;flex:1;min-width:0}.mkbadge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);margin-left:6px}.wkb{display:flex;align-items:flex-end;gap:8px;height:90px;margin-top:10px}.wkb div{flex:1;text-align:center;font-size:10px;color:var(--mut)}.wkb i{display:block;background:linear-gradient(180deg,var(--mint),var(--mint2));border-radius:6px 6px 0 0;min-height:2px;margin-bottom:3px}.lvl{display:flex;gap:6px;margin-top:8px}.lvl span{flex:1;text-align:center;font-size:11px;padding:6px 2px;border-radius:8px;border:1px solid var(--line);color:var(--mut)}.lvl span.on{background:var(--mint);color:#06231a;border-color:var(--mint);font-weight:700}
 .chc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}.chc.done{border-color:var(--mint)}.chc small{color:var(--mut)}.pbar{height:8px;border-radius:6px;background:var(--line);margin-top:8px;overflow:hidden}.pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--mint2),var(--mint))}
-/* OMNIPAY-LIVE-BG */:root[data-theme=dark] body{background:var(--omni-live-bg,linear-gradient(180deg,#071433,#0a1d4a 55%,#06122e));background-attachment:fixed;transition:background 1.4s ease}</style>
+/* OMNIPAY-LIVE-BG */:root[data-theme=dark] body{background:var(--omni-live-bg,linear-gradient(180deg,#071433,#0a1d4a 55%,#06122e));background-attachment:fixed;transition:background 1.4s ease}
+/* v41 accueil inspiré des maquettes */
+#om-quick-actions{display:none!important}
+.dtop{justify-content:flex-end;display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.dtop img{width:40px;height:40px;border-radius:12px}
+.dtop b{display:block;font-size:15px;letter-spacing:.6px}.dtop small{color:var(--mut);font-size:11px}
+.dtop .sp{flex:1}
+.dtop button{width:40px;height:40px;min-width:40px;margin:0;padding:0;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--txt);display:flex;align-items:center;justify-content:center;position:relative}
+.dtop button svg{width:20px;height:20px}
+.dtop .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--mint);border:2px solid var(--card)}
+.bal{background:linear-gradient(135deg,#1747b8,#1b6fd6 60%,#1496a8);border-radius:22px;padding:18px 18px 20px;box-shadow:0 12px 30px rgba(23,71,184,.35);color:#fff}
+.bal .bh{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.bal .bh small{color:#fff;font-size:15px;font-weight:700}
+.bal .bl{color:#cfe0ff;font-size:13px}
+.bal .v{font-size:36px}
+.qa{gap:10px;margin:0 0 18px}
+.qa button{border-radius:18px;padding:14px 4px 12px;font-weight:600}
+.qa button span{background:transparent;color:var(--txt);width:34px;height:34px;border-radius:0}
+.qa button span svg{width:28px;height:28px}
+.qa button.pri{background:linear-gradient(160deg,#17c98f,#0f9d73);border-color:transparent;color:#fff}
+.qa button.pri span{color:#fff}
+.qa h3{display:none}
+.qh{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}.qh b{font-size:16px}
+.qh i{font-style:normal;font-size:11px;font-weight:700;color:var(--mint);background:rgba(52,232,176,.12);border:1px solid var(--mint);border-radius:99px;padding:4px 10px}
+#hx{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#hx .vi{width:44px;height:44px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--mint)}
+#hx .vi svg{width:24px;height:24px}
+#hx>div{flex:1;min-width:150px}
+#hx button{width:100%;background:linear-gradient(160deg,#17c98f,#0f9d73);color:#fff;border:0;border-radius:14px}
+.dfoot{text-align:center;color:var(--mut);font-size:12px;margin:22px 0 8px}
+
+/* v41 connexion : écran partagé bienvenue / carte */
+#wl{display:none}
+.pwb{position:relative}.pwb input{padding-right:46px}
+.pwb button{position:absolute;right:6px;top:50%;transform:translateY(-50%);margin:0;width:36px;height:36px;padding:0;background:none;border:0;color:var(--mut);display:flex;align-items:center;justify-content:center}
+.pwb svg{width:20px;height:20px}
+#login .pri{background:linear-gradient(160deg,#17c98f,#0f9d73);color:#fff;border-radius:12px}
+@media(min-width:900px){
+ .wrap:has(#login:not(.hide)){max-width:1080px;display:grid;grid-template-columns:1.1fr .9fr;gap:0 56px;align-items:center;padding-top:48px}
+ .wrap:has(#login:not(.hide)) .brand{grid-column:1;grid-row:1;margin:0}
+ .wrap:has(#login:not(.hide)) #wl{display:block;grid-column:1;grid-row:2}
+ .wrap:has(#login:not(.hide)) #hero{grid-column:1;grid-row:3;text-align:left;margin:10px 0 0}
+ .wrap:has(#login:not(.hide)) #hero .lg1{display:none}
+ .wrap:has(#login:not(.hide)) #login{grid-column:2;grid-row:1/4;padding:34px 30px;border-radius:22px;box-shadow:0 18px 50px rgba(10,30,80,.18)}
+ #wl h2{font-size:44px;line-height:1.1;margin:18px 0 10px}
+ #wl h2 em{font-style:normal;color:var(--mint)}
+ #wl p{color:var(--mut);font-size:18px;margin:0 0 26px;max-width:460px}
+ #wl .ft{display:flex;gap:14px;align-items:center;margin:0 0 16px}
+ #wl .ft span{width:46px;height:46px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--mint)}
+ #wl .ft svg{width:24px;height:24px}
+ #wl .ft b{display:block}#wl .ft small{color:var(--mut)}
+}
+</style>
 <script>
 /* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
 (function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
@@ -172,8 +224,7 @@ body.lg #demo{display:block}
  apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
 </script>
 
-<script src="/liveServiceBackground.js" defer></script><link rel="stylesheet" href="/omni-ui-dynamic.css">
-</head>
+<script src="/liveServiceBackground.js" defer></script></head>
 <body>
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
@@ -182,15 +233,15 @@ body.lg #demo{display:block}
     <div id="nl" class="hide" style="margin-top:14px"></div></div>
   <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="64" height="64" style="border-radius:16px;display:block;box-shadow:0 0 0 2px var(--mint),0 6px 22px rgba(0,214,143,.45)"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
 
+<div id="wl"><h2>Bienvenue sur <em>OMNIPAY</em></h2><p>Consultez votre solde, envoyez et recevez de l'argent, rechargez et payez en toute simplicité.</p><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span><div><b>Transferts instantanés</b><small>Entre clients OMNIPAY, sans frais cachés</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><b>Mobile Money &amp; crypto</b><small>MTN, Moov, Celtiis, USDT</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Sécurité renforcée</b><small>Code PIN, vérification et suivi de vos opérations</small></div></div></div>
   <!-- CONNEXION -->
   <section id="login" class="card">
     <h1>Connexion</h1><p class="sub">Accédez à votre espace financier.</p>
     <label>Email ou téléphone</label><input id="l_id" autocomplete="username" placeholder="E-mail ou numéro de téléphone">
     <label>Mot de passe</label><input id="l_pw" type="password" autocomplete="current-password">
-    <button class="pri" onclick="doLogin()">Se connecter</button>
+    <button class="lnk" style="float:right;margin:-4px 0 8px" onclick="openFp()">Mot de passe oublié ?</button><button class="pri" onclick="doLogin()">Se connecter</button>
     <div id="l_msg" class="msg"></div>
-    <button class="lnk" onclick="openFp()">Mot de passe oublié ?</button><br>
-    <button class="lnk" onclick="show('reg')">Créer un compte</button>
+    <button class="lnk" onclick="show('reg')">Nouveau sur OMNIPAY ? Créer un compte</button>
   </section>
 
   <!-- INSCRIPTION -->
@@ -224,15 +275,18 @@ body.lg #demo{display:block}
 
   <!-- TABLEAU DE BORD -->
   <section id="dash" class="hide">
-    <div class="bal"><small>Solde OMNIPAY</small><div class="v" id="bal">0 FCFA</div><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button id="av" onclick="openPrefs()" aria-label="Mon avatar et mes options" style="width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-size:18px;font-weight:700;padding:0;margin:0;cursor:pointer;display:flex;align-items:center;justify-content:center"></button><small id="who"></small></div></div>
+    <div class="dtop"><span class="sp"></span><button onclick="var e=$('dn');if(e)e.scrollIntoView({behavior:'smooth'})" aria-label="Nouveautés"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot"></span></button><button onclick="openPrefs()" aria-label="Menu et options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    <div class="bal"><div class="bh"><button id="av" onclick="openPrefs()" aria-label="Mon avatar et mes options" style="width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-size:18px;font-weight:700;padding:0;margin:0;cursor:pointer;display:flex;align-items:center;justify-content:center"></button><small id="who"></small></div><div class="bl">Solde OMNIPAY</div><div class="v" id="bal">0 FCFA</div></div>
     <div id="pf" class="card hide" style="margin-bottom:16px"></div>
+    <div class="qh"><b>Actions rapides</b><i>Services</i></div>
     <div class="qa">
-      <button onclick="show('xfer')"><span>🔁</span>Envoyer</button>
-      <button onclick="openQr()"><span>▦</span>Recevoir</button>
-      <button onclick="openIO('in')"><span>⬇️</span>Dépôt</button>
-      <button onclick="openIO('out')"><span>⬆️</span>Retrait</button>
+      <button class="pri" onclick="show('xfer')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>Envoyer</button>
+      <button onclick="openQr()"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7L7 17M15 17H7V9"/></svg></span>Recevoir</button>
+      <button onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
+      <button onclick="openIO('out')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></svg></span>Retrait</button>
     </div>
-    <div class="card" id="hx" style="margin-bottom:16px;border-color:var(--mint)"><h2>📲 Numéros virtuels</h2><p class="sub" style="margin-bottom:10px">Recevez vos codes SMS (WhatsApp, Telegram…) sans carte SIM. Payé depuis votre solde, remboursé si aucun SMS n'arrive.</p><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
+    <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Recevez vos codes SMS sans carte SIM. Remboursé si aucun SMS n'arrive.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
+
     <div class="card" id="hc" style="margin-bottom:16px"><h2>🪙 Déposer en crypto (USDT)</h2><div id="hc_l"><p class="sub" style="margin:0">Chargement des adresses…</p></div><div id="hc_m" class="msg"></div></div>
     <div class="card" id="dmk" style="margin-bottom:16px"><h2>📈 Cours crypto en direct</h2><div id="dmk_l"><p class="sub" style="margin:0">Chargement des cours…</p></div><p class="sub" id="dmk_t" style="margin:8px 0 0;font-size:12px"></p>
       <div id="dmk_c" class="chc" style="margin-top:10px;cursor:pointer" onclick="openChl()"><b>🏆 Défis</b><br><small id="dmk_cs">Relevez des défis et gagnez des points.</small></div>
@@ -286,6 +340,7 @@ body.lg #demo{display:block}
       <button class="sec" onclick="openCash()">💵 Mes retraits en espèces</button>
       <div id="net_list"><div class="tx"><div>Chargement…</div></div></div></div>
     <button class="sec" onclick="logout()">Se déconnecter</button>
+    <p class="dfoot">Version 2026.11 · Novembre 2026</p>
   </section>
 
 
@@ -3520,6 +3575,5 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 </script>
 <script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
 <div id="svcSheet" class="svs hide" role="dialog" aria-modal="true" aria-labelledby="svc_t" onclick="if(event.target===this)svcClose()"><div class="svb"><div class="svh"><span class="ic" id="svc_i"></span><div><h2 id="svc_t"></h2><span class="svst" id="svc_s"></span></div><button class="svx" onclick="svcClose()" aria-label="Fermer">✕</button></div><div id="svc_b"></div><button class="pri" id="svc_go" style="margin-top:16px" onclick="svcGo()">Ouvrir ce service</button></div></div>
-<script src="/omni-ui-dynamic.js" defer></script>
 </body>
 </html>
