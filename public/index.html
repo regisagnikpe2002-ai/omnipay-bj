@@ -232,6 +232,15 @@ body.lg #demo{display:block}
 .secn{display:flex;gap:12px;align-items:center;background:#e4efff;border:1px solid #bcd3f5;border-radius:16px;padding:12px 14px;margin:0 0 14px;color:#0b2358}
 :root[data-theme=dark] .secn{background:#10244a;border-color:#22407a;color:#dbe8ff}
 .secn svg{flex:none;width:32px;height:32px;color:#1d5fd0}.secn b{display:block;font-size:14px}.secn small{font-size:12px;opacity:.85}
+
+/* OMNITRADE */
+.ottabs{display:flex;gap:6px;margin:12px 0;overflow-x:auto}.ottab{width:auto;margin:0;padding:8px 14px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--txt);font-weight:600;white-space:nowrap}
+.ottab.on{background:linear-gradient(160deg,#17c98f,#0f9d73);color:#fff;border-color:transparent}
+.otr{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.otr b{display:block}.otr small{color:var(--mut)}.otr .pr{text-align:right;font-weight:800}
+.up{color:#d64545}.dn{color:#1a9d63}
+.otb{display:inline-block;font-size:11px;font-weight:700;color:#0f7a54;background:rgba(52,232,176,.16);border:1px solid #1fbf86;border-radius:99px;padding:2px 8px;margin-left:6px}
+.otf label{margin-top:8px}.otf .row{gap:8px}
 </style>
 <script>
 /* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
@@ -307,6 +316,7 @@ body.lg #demo{display:block}
       <button onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
       <button onclick="openIO('out')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></svg></span>Retrait</button>
     </div>
+    <div class="card" id="otc" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="vi" style="width:44px;height:44px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px">🌾</span><div style="flex:1;min-width:150px"><h2 style="margin:0 0 2px">OMNITRADE</h2><p class="sub" style="margin:0">Prix du jour des produits locaux et vendeurs vérifiés, en contact direct.</p></div><button class="pri" style="margin:0;width:100%" onclick="openOt()">Ouvrir la bourse</button></div>
     <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Un numéro temporaire pour recevoir vos codes de vérification, sans carte SIM et sans exposer votre numéro personnel.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
 
     <div class="card" id="hc" style="margin-bottom:16px"><h2>🪙 Déposer en crypto (USDT)</h2><div id="hc_l"><p class="sub" style="margin:0">Chargement des adresses…</p></div><div id="hc_m" class="msg"></div></div>
@@ -321,6 +331,7 @@ body.lg #demo{display:block}
     </div>
     <div class="grp">Marchés &amp; Défis</div>
     <div class="rb">
+      <button class="tile" onclick="openOt()"><span>🌾</span>OMNITRADE</button>
       <button class="tile" onclick="openMk()"><span>📈</span>Marchés</button>
       <button class="tile" onclick="openChl()"><span>🏆</span>Défis</button>
     </div>
@@ -608,6 +619,15 @@ body.lg #demo{display:block}
     <p class="sub" style="font-size:13px">Ce n'est pas encore une carte Visa ou Mastercard utilisable chez les commerçants : elle fonctionne entre clients OMNIPAY. La carte bancaire virtuelle nécessite un partenaire émetteur ; dites-nous si vous la voulez, nous vous préviendrons dès son ouverture.</p>
     <button class="pri" onclick="cardRequest()">Je veux la carte virtuelle</button>
     <div id="card_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="ot" class="card hide">
+    <h1>OMNITRADE</h1><p class="sub">La bourse gratuite des produits locaux : consultez les prix, trouvez un vendeur, contactez-le directement.</p>
+    <div class="ottabs"><button class="ottab on" data-t="c" onclick="otTab('c')">Cours</button><button class="ottab" data-t="o" onclick="otTab('o')">Offres</button><button class="ottab" data-t="m" onclick="otTab('m')">Mon espace</button><button class="ottab" data-t="n" onclick="otTab('n')">Autour</button></div>
+    <div id="ot_c"></div><div id="ot_o" class="hide"></div><div id="ot_m" class="hide"></div><div id="ot_n" class="hide"></div>
+    <div id="ot_msg" class="msg"></div>
+    <p class="sub" style="font-size:12px;margin-top:12px">OMNITRADE met en relation. OMNIPAY n'intervient ni dans la vente ni dans le paiement. Prix indicatifs, déclarés par des membres vérifiés.</p>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -2988,7 +3008,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3595,6 +3615,63 @@ function cxCalc(){var f=$('cx_f').value,t=$('cx_t').value,q=Number($('cx_a').val
  $('cx_n').textContent='1 '+f+' ≈ '+(CXU[f]/CXU[t]).toLocaleString('fr-FR',{maximumSignificantDigits:6})+' '+t}
 function cxSwap(){var f=$('cx_f'),t=$('cx_t'),x=f.value;f.value=t.value;t.value=x;cxCalc()}
 async function openConv(){show('cry');try{if(!MKD)await mkLoad()}catch(e){}cxUnits();cxFill();cxCalc();if(!MKD)$('cx_n').textContent='Cours indisponibles pour le moment. Réessayez dans un instant.'}
+
+/* ===== OMNITRADE ===== */
+var OT={tab:'c',prods:[],prod:'',city:'',me:null};
+try{var _rf=new URLSearchParams(location.search).get('ref');if(_rf)LS.set('om_ref',String(_rf).slice(0,12))}catch(e){}
+async function otProds(){if(OT.prods.length)return;try{const d=await api('/api/omnitrade/products');OT.prods=d.products||[]}catch(e){}}
+function otOpts(sel){return OT.prods.map(function(p){return '<option value="'+escH(p.slug)+'"'+(p.slug===sel?' selected':'')+'>'+escH(p.name)+'</option>'}).join('')}
+async function openOt(){show('ot');await otProds();otTab(OT.tab||'c')}
+function otTab(t){OT.tab=t;document.querySelectorAll('#ot .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
+ ['c','o','m','n'].forEach(function(x){$('ot_'+x).classList.toggle('hide',x!==t)});$('ot_msg').className='msg';({c:otBoard,o:otOffers,m:otMe,n:otNear})[t]()}
+async function otBoard(){const b=$('ot_c');b.innerHTML='<p class="sub">Chargement des cours…</p>';
+ try{const d=await api('/api/omnitrade/board'+(OT.city?'?city='+encodeURIComponent(OT.city):''));
+  const cs='<select onchange="OT.city=this.value;otBoard()" aria-label="Ville"><option value="">Toutes les villes</option>'+(d.cities||[]).map(function(c){return '<option'+(c===OT.city?' selected':'')+'>'+escH(c)+'</option>'}).join('')+'</select>';
+  b.innerHTML=cs+((d.items||[]).length?d.items.map(function(x){const tr=x.trendPct==null?'':'<small class="'+(x.trendPct>0?'up':'dn')+'">'+(x.trendPct>0?'▲ +':x.trendPct<0?'▼ ':'= ')+x.trendPct+' % sur 7 j</small>';
+   return '<div class="otr" onclick="OT.prod=\''+escH(x.slug)+'\';otTab(\'o\')"><div><b>'+escH(x.name)+'</b><small>'+x.reports+' relevé'+(x.reports>1?'s':'')+' · '+fmt(x.min)+' à '+fmt(x.max)+'</small></div><div class="pr">'+fmt(x.median)+'<small style="display:block;font-weight:400">/ '+escH(x.unit)+'</small>'+tr+'</div></div>'}).join('')
+   :'<p class="sub" style="margin-top:14px">Les premiers relevés arrivent bientôt. Vous êtes vendeur ? Inscrivez-vous dans « Mon espace » pour déclarer vos prix.</p>')}catch(e){b.innerHTML='<p class="sub">'+escH(e.message)+'</p>'}}
+async function otOffers(){const b=$('ot_o');b.innerHTML='<p class="sub">Chargement des offres…</p>';
+ try{const d=await api('/api/omnitrade/offers?product='+encodeURIComponent(OT.prod)+'&city='+encodeURIComponent(OT.city));
+  const ps='<select onchange="OT.prod=this.value;otOffers()" aria-label="Produit"><option value="">Tous les produits</option>'+otOpts(OT.prod)+'</select>';
+  b.innerHTML=ps+((d.offers||[]).length?d.offers.map(function(o){return '<div class="otr" style="display:block;cursor:default"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>'+escH(o.product_name||o.product)+'</b><small>'+escH(o.qty)+' '+escH(o.unit)+' · '+escH(o.city)+(o.market?' · '+escH(o.market):'')+'</small></div><div class="pr">'+fmt(o.price)+'<small style="display:block;font-weight:400">/ '+escH(o.unit)+'</small></div></div>'
+   +'<small>'+escH(o.seller)+(o.badge?'<span class="otb">'+escH(o.badge)+'</span>':'')+'</small>'+(o.note?'<small style="display:block">'+escH(o.note)+'</small>':'')
+   +'<div id="otc_'+o.id+'"><button class="sec" style="margin:8px 0 0;padding:8px 14px;width:auto" onclick="otContact('+o.id+')">Contacter le vendeur</button></div></div>'}).join(''):'<p class="sub" style="margin-top:14px">Aucune offre pour le moment.</p>')}catch(e){b.innerHTML='<p class="sub">'+escH(e.message)+'</p>'}}
+async function otContact(id){const c=$('otc_'+id);try{const d=await api('/api/omnitrade/contact/'+id);const w=String(d.whatsapp||d.phone).replace(/\D/g,'');
+ c.innerHTML='<div class="tx" style="display:block;margin-top:8px"><b>'+escH(d.seller)+'</b><div style="font-size:18px;font-weight:800;margin:4px 0">'+escH(d.phone)+'</div><div class="row"><a class="sec" style="margin:0;padding:8px 14px;text-align:center;text-decoration:none" href="tel:'+escH(d.phone)+'">Appeler</a><a class="sec" style="margin:0;padding:8px 14px;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/'+w+'">WhatsApp</a></div><small style="display:block;margin-top:6px">'+escH(d.notice)+'</small></div>'}catch(e){msg('ot_msg',e.message)}}
+async function otMe(){const b=$('ot_m');b.innerHTML='<p class="sub">Chargement…</p>';
+ try{const d=await api('/api/omnitrade/me');OT.me=d.member;if(!d.member){otJoinForm(d.idTypes||[]);return}const m=d.member;
+  const st=m.kind==='buyer'?'Acheteur':m.status==='verified'?escH(m.badge||'Vérifié'):m.status==='pending'?'Vérification en cours':m.status==='rejected'?'Refusé':'Suspendu';
+  let h='<div class="tx" style="display:block"><b>'+escH(m.name)+'</b><small style="display:block">'+escH(m.city)+' · '+st+'</small>'+(m.note?'<small style="display:block">'+escH(m.note)+'</small>':'')+'</div>';
+  if(m.status==='verified'&&m.kind!=='buyer'){
+   h+='<h2 style="margin-top:16px">Signaler un prix</h2><div class="otf"><select id="op_p">'+otOpts('')+'</select><input id="op_c" placeholder="Ville" value="'+escH(m.city)+'"><input id="op_m" placeholder="Marché (facultatif)"><input id="op_v" type="number" inputmode="decimal" placeholder="Prix en FCFA (par unité)"><button class="pri" onclick="otPrice()">Envoyer le relevé</button></div>';
+   h+='<h2 style="margin-top:16px">Publier une offre</h2><div class="otf"><select id="oo_p">'+otOpts('')+'</select><div class="row"><input id="oo_q" type="number" inputmode="decimal" placeholder="Quantité"><select id="oo_u"><option>kg</option><option>sac</option><option>tas</option><option>tubercule</option><option>litre</option><option>régime</option><option>pièce</option><option>tonne</option></select></div><input id="oo_v" type="number" inputmode="decimal" placeholder="Prix par unité (FCFA)"><input id="oo_c" placeholder="Ville" value="'+escH(m.city)+'"><input id="oo_m" placeholder="Marché (facultatif)"><input id="oo_n" maxlength="200" placeholder="Note (sans numéro ni lien)"><button class="pri" onclick="otOffer()">Publier</button></div>';
+   h+='<h2 style="margin-top:16px">Mes offres</h2>'+((d.offers||[]).length?d.offers.map(function(o){return '<div class="otr" style="cursor:default"><div><b>'+escH(o.product)+'</b><small>'+escH(o.qty)+' '+escH(o.unit)+' · '+fmt(o.price)+' · '+(o.status==='active'?'en ligne':'fermée')+'</small></div>'+(o.status==='active'?'<button class="sec" style="margin:0;width:auto;padding:6px 12px" onclick="otClose('+o.id+')">Fermer</button>':'')+'</div>'}).join(''):'<p class="sub">Aucune offre.</p>')}
+  else if(m.status==='pending'){h+='<p class="sub" style="margin-top:12px">Votre identité est en cours de vérification par OMNIPAY. Vous pourrez publier dès la validation.</p>'}
+  const link=location.origin+'/?ref='+m.refCode;
+  h+='<h2 style="margin-top:16px">Parrainage</h2><div class="tx" style="display:block"><small>Votre code</small><div style="font-size:20px;font-weight:800">'+escH(m.refCode)+'</div><small style="display:block">'+m.referrals+' filleul'+(m.referrals>1?'s':'')+' · '+m.referralsVerified+' vérifié'+(m.referralsVerified>1?'s':'')+'</small><button class="sec" style="margin:8px 0 0;width:auto;padding:8px 14px" onclick="copyTxt(\''+escH(link)+'\',\'ot_msg\')">Copier mon lien</button></div>';
+  b.innerHTML=h}catch(e){b.innerHTML='<p class="sub">'+escH(e.message)+'</p>'}}
+function otJoinForm(types){const rf=LS.get('om_ref')||'';
+ $('ot_m').innerHTML='<h2>Rejoindre OMNITRADE</h2><p class="sub">Gratuit. Une pièce d\'identité est obligatoire pour publier des offres ou des prix.</p><div class="otf"><label>Je suis</label><select id="oj_k" onchange="$(\'oj_id\').classList.toggle(\'hide\',this.value===\'buyer\')"><option value="seller">Vendeur ou producteur</option><option value="agent">Agent de marché (relevé de prix)</option><option value="buyer">Acheteur</option></select>'
+  +'<input id="oj_n" placeholder="Nom ou nom de l\'activité"><input id="oj_p" type="tel" placeholder="Téléphone (ex. +22997000000)"><input id="oj_w" type="tel" placeholder="WhatsApp (facultatif)"><input id="oj_c" placeholder="Ville">'
+  +'<div id="oj_id"><label>Pièce d\'identité</label><select id="oj_t">'+types.map(function(t){return '<option>'+escH(t)+'</option>'}).join('')+'</select><input id="oj_i" placeholder="Numéro de la pièce">'
+  +'<details style="margin-top:8px"><summary class="sub">Partenaire certifié (facultatif) : IFU et registre de commerce</summary><input id="oj_f" inputmode="numeric" placeholder="IFU"><input id="oj_r" placeholder="Registre de commerce (RCCM)"></details></div>'
+  +'<input id="oj_ref" placeholder="Code de parrainage (facultatif)" value="'+escH(rf)+'"><button class="pri" onclick="otJoin()">Envoyer ma demande</button></div>'}
+async function otJoin(){try{const k=$('oj_k').value;const body={kind:k,displayName:$('oj_n').value,phone:$('oj_p').value,whatsapp:$('oj_w').value,city:$('oj_c').value,ref:$('oj_ref').value};
+ if(k!=='buyer'){body.idType=$('oj_t').value;body.idNumber=$('oj_i').value;body.ifu=$('oj_f').value;body.rccm=$('oj_r').value}
+ const d=await api('/api/omnitrade/join',{method:'POST',body:body});msg('ot_msg',d.message,true);otMe()}catch(e){msg('ot_msg',e.message)}}
+async function otPrice(){try{await api('/api/omnitrade/price',{method:'POST',body:{product:$('op_p').value,city:$('op_c').value,market:$('op_m').value,price:$('op_v').value}});$('op_v').value='';msg('ot_msg','Relevé enregistré. Merci !',true)}catch(e){msg('ot_msg',e.message)}}
+async function otOffer(){try{await api('/api/omnitrade/offers',{method:'POST',body:{product:$('oo_p').value,qty:$('oo_q').value,unit:$('oo_u').value,price:$('oo_v').value,city:$('oo_c').value,market:$('oo_m').value,note:$('oo_n').value}});msg('ot_msg','Offre publiée.',true);otMe()}catch(e){msg('ot_msg',e.message)}}
+async function otClose(id){try{await api('/api/omnitrade/offers/'+id+'/close',{method:'POST',body:{}});otMe()}catch(e){msg('ot_msg',e.message)}}
+/* Près de moi : OpenStreetMap (données © contributeurs OpenStreetMap), recherche faite depuis le téléphone */
+var OTN={marche:'["amenity"="marketplace"]',pharmacie:'["amenity"="pharmacy"]',restaurant:'["amenity"~"restaurant|fast_food"]',hotel:'["tourism"~"hotel|guest_house"]',transport:'["amenity"="bus_station"]'};
+function otNear(){$('ot_n').innerHTML='<select id="on_t"><option value="marche">Marchés</option><option value="pharmacie">Pharmacies</option><option value="restaurant">Restaurants</option><option value="hotel">Hôtels</option><option value="transport">Gares routières</option></select><button class="pri" onclick="otGeo()">Autour de moi</button><div id="on_r"></div><p class="sub" style="font-size:12px">Données © contributeurs OpenStreetMap. Certains lieux peuvent manquer.</p>'}
+function otGeo(){const r=$('on_r');if(!navigator.geolocation){r.innerHTML='<p class="sub">Localisation non disponible sur cet appareil.</p>';return}
+ r.innerHTML='<p class="sub">Localisation…</p>';navigator.geolocation.getCurrentPosition(async function(p){const la=p.coords.latitude,lo=p.coords.longitude,f=OTN[$('on_t').value];
+  const q='[out:json][timeout:20];(node'+f+'(around:4000,'+la+','+lo+');way'+f+'(around:4000,'+la+','+lo+'););out center 60;';
+  try{const x=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});if(!x.ok)throw 0;const j=await x.json();
+   const L=(j.elements||[]).map(function(e){const y=e.lat||(e.center&&e.center.lat),z=e.lon||(e.center&&e.center.lon);if(!y||!z)return null;const dy=(y-la)*111.2,dx=(z-lo)*111.2*Math.cos(la*Math.PI/180);return{n:(e.tags&&e.tags.name)||'Sans nom',d:Math.sqrt(dx*dx+dy*dy),y:y,z:z}}).filter(Boolean).sort(function(a,b){return a.d-b.d}).slice(0,25);
+   r.innerHTML=L.length?L.map(function(e){return '<div class="otr"><div><b>'+escH(e.n)+'</b><small>'+(e.d<1?Math.round(e.d*1000)+' m':e.d.toFixed(1)+' km')+'</small></div><a class="sec" style="margin:0;width:auto;padding:6px 12px;text-decoration:none" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat='+e.y+'&mlon='+e.z+'#map=18/'+e.y+'/'+e.z+'">Voir</a></div>'}).join(''):'<p class="sub">Rien trouvé dans un rayon de 4 km.</p>'}
+  catch(e){r.innerHTML='<p class="sub">Service de cartes indisponible. Réessayez dans un instant.</p>'}},function(){r.innerHTML='<p class="sub">Autorisez la localisation pour trouver les lieux proches.</p>'},{timeout:12000})}
 let MOOP='';
 async function manDeposit(){const am=Number($('m_am').value);if(!(am>0))return msg('m_msg','Indiquez le montant envoyé.');
   if(!$('m_tx').value.trim())return msg('m_msg','Indiquez la preuve (hash ou n° de transaction).');
