@@ -253,7 +253,8 @@ body.lg #demo{display:block}
  apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
 </script>
 
-<script src="/liveServiceBackground.js" defer></script></head>
+<script src="/liveServiceBackground.js" defer></script><link rel="manifest" href="/manifest.webmanifest">
+</head>
 <body>
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
@@ -3692,5 +3693,6 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 </script>
 <script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
 <div id="svcSheet" class="svs hide" role="dialog" aria-modal="true" aria-labelledby="svc_t" onclick="if(event.target===this)svcClose()"><div class="svb"><div class="svh"><span class="ic" id="svc_i"></span><div><h2 id="svc_t"></h2><span class="svst" id="svc_s"></span></div><button class="svx" onclick="svcClose()" aria-label="Fermer">✕</button></div><div id="svc_b"></div><button class="pri" id="svc_go" style="margin-top:16px" onclick="svcGo()">Ouvrir ce service</button></div></div>
+<script src="/register-pwa.js" defer></script>
 </body>
 </html>

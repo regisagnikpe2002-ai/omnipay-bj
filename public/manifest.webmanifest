@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "OMNIPAY",
+  "short_name": "OMNIPAY",
+  "description": "OMNIPAY - portefeuille et services numériques",
+  "lang": "fr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050d1d",
+  "theme_color": "#07142c",
+  "icons": [
+    {"src":"/icons/omnipay-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/icons/omnipay-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"/icons/omnipay-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}
