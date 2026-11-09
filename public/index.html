@@ -253,9 +253,7 @@ body.lg #demo{display:block}
  apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
 </script>
 
-<script src="/liveServiceBackground.js" defer></script><link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/pwa-install.css">
-</head>
+<script src="/liveServiceBackground.js" defer></script></head>
 <body>
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
@@ -328,7 +326,7 @@ body.lg #demo{display:block}
     <div class="grp ex">OMNIEXCHANGE</div>
     <div class="rb ex">
       <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
-      <button class="tile" onclick="openConv()"><span>💱</span>Convertir</button>
+      <button class="tile" onclick="openEx()"><span>🪙</span>Crypto</button>
       <button class="tile" onclick="openMan()"><span>💸</span>Directs</button>
     </div>
     <div class="grp">Marchés &amp; Défis</div>
@@ -384,7 +382,7 @@ body.lg #demo{display:block}
 
   <section id="hist" class="card hide">
     <h1>Historique</h1><p class="sub">Vos dernières opérations. Touchez une ligne pour voir le reçu.</p>
-    <div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
+    <div id="spc"></div><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -641,10 +639,20 @@ body.lg #demo{display:block}
     <p class="sub" id="cx_n" style="margin:8px 0 0;font-size:12px"></p></div>
     <h2 style="margin-top:18px">Passer à l'action</h2>
     <button class="opt" onclick="openDep()"><i>⬇️</i><span><b>Déposer sur mon solde</b><small>Mobile Money, PI-SPI ou crypto (USDT)</small></span></button>
-    <button class="opt" onclick="window.open('https://p2p.binance.com/fr','_blank','noopener')"><i>🔁</i><span><b>Acheter ou vendre des USDT</b><small>Binance P2P, entre particuliers (hors OMNIPAY)</small></span></button>
+    <button class="opt" onclick="openEx()"><i>🪙</i><span><b>Acheter, vendre, dépenser de la crypto</b><small>Votre portefeuille crypto OMNIPAY</small></span></button>
     <button class="opt" onclick="openIO('out')"><i>⬆️</i><span><b>Retirer</b><small>Vers Mobile Money, PI-SPI ou crypto</small></span></button>
     <p class="sub" style="margin-top:12px;font-size:12px">Les montants affichés sont indicatifs. Votre solde OMNIPAY est en FCFA : le taux exact est confirmé avant toute opération.</p>
     <div id="cry_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="ex" class="card hide">
+    <h1>Crypto</h1><p class="sub">Achetez, vendez et dépensez vos cryptos directement dans OMNIPAY. Vendre une crypto crédite votre solde FCFA, utilisable partout dans l'application.</p>
+    <div id="ex_bal"></div>
+    <div class="ottabs"><button class="ottab on" data-t="b" onclick="exTab('b')">Acheter</button><button class="ottab" data-t="s" onclick="exTab('s')">Vendre</button><button class="ottab" data-t="d" onclick="exTab('d')">Déposer</button><button class="ottab" data-t="w" onclick="exTab('w')">Retirer</button><button class="ottab" data-t="h" onclick="exTab('h')">Historique</button></div>
+    <div id="ex_body"></div>
+    <div id="ex_msg" class="msg"></div>
+    <button class="lnk" onclick="openConv()">Calculateur de conversion</button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3010,7 +3018,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot','ex'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3086,7 +3094,7 @@ function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('om
 const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
 const CREDIT=['deposit','transfer_in','refund'];
 function render(){
-  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();
+  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();try{spChart()}catch(e){}
   const el=$('txs');
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
   el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
@@ -3623,6 +3631,52 @@ var OT={tab:'c',prods:[],prod:'',city:'',me:null};
 try{var _rf=new URLSearchParams(location.search).get('ref');if(_rf)LS.set('om_ref',String(_rf).slice(0,12))}catch(e){}
 async function otProds(){if(OT.prods.length)return;try{const d=await api('/api/omnitrade/products');OT.prods=d.products||[]}catch(e){}}
 function otOpts(sel){return OT.prods.map(function(p){return '<option value="'+escH(p.slug)+'"'+(p.slug===sel?' selected':'')+'>'+escH(p.name)+'</option>'}).join('')}
+
+/* OMNICHANGE : portefeuille crypto interne */
+const EX={info:null,me:null,tab:'b',dep:null};
+const EXST={done:'Terminé',paid:'En traitement',awaiting:'En attente de votre envoi',review:'Vérification en cours',rejected:'Refusé',expired:'Expiré',cancelled:'Annulé'};
+const EXSD={buy:'Achat',sell:'Vente',deposit:'Dépôt',withdraw:'Retrait'};
+function exA(a){return (EX.info&&EX.info.assets||[]).find(function(x){return x.asset===a})}
+function exQ(v,d){return Number(v).toLocaleString('fr-FR',{maximumFractionDigits:d==null?8:d})}
+async function exLoad(){try{EX.info=await api('/api/exchange/info')}catch(e){EX.info=null}try{EX.me=await api('/api/exchange/me')}catch(e){EX.me={balances:[],orders:[]}}exBal()}
+function exBal(){var b=(EX.me&&EX.me.balances)||[];$('ex_bal').innerHTML=b.length?'<div class="mkbox" style="margin:10px 0">'+b.map(function(x){return '<div style="display:flex;justify-content:space-between;padding:6px 0"><b>'+escH(x.asset)+'</b><span>'+exQ(x.qty)+(x.valueXof!=null?' <small style="opacity:.7">≈ '+fmt(x.valueXof)+'</small>':'')+'</span></div>'}).join('')+'</div>':'<p class="sub" style="margin:10px 0">Votre portefeuille crypto est vide. Achetez avec votre solde FCFA ou déposez des cryptos.</p>'}
+async function openEx(){show('ex');await exLoad();exTab(EX.tab||'b')}
+function exTab(t){EX.tab=t;document.querySelectorAll('#ex .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});$('ex_msg').className='msg';
+ if(!EX.info||!EX.info.enabled){$('ex_body').innerHTML='<p class="sub">Le service crypto s\'active : cours indisponibles pour le moment. Réessayez dans un instant.</p>';if(t!=='h')return}
+ var as=(EX.info.assets||[]);var opts=function(f){return as.filter(f||function(){return true}).map(function(a){return '<option value="'+escH(a.asset)+'">'+escH(a.asset)+'</option>'}).join('')};
+ var h='';
+ if(t==='b'){h='<label>Crypto</label><select id="ex_a" onchange="exPrev()">'+opts()+'</select><label>Montant en FCFA</label><input id="ex_m" type="number" inputmode="numeric" min="'+EX.info.min+'" placeholder="Ex. 10000" oninput="exPrev()"><p class="sub" id="ex_p" style="margin:6px 0"></p><button class="pri" onclick="exBuy()">Acheter</button>'}
+ else if(t==='s'){var own=((EX.me&&EX.me.balances)||[]).map(function(x){return x.asset});h=own.length?'<label>Crypto à vendre</label><select id="ex_a" onchange="exPrev()">'+opts(function(a){return own.indexOf(a.asset)>=0})+'</select><label>Quantité</label><input id="ex_m" type="number" inputmode="decimal" step="any" min="0" oninput="exPrev()"><button class="sec" style="width:auto;padding:6px 14px;margin:6px 0" onclick="exAll()">Tout vendre</button><p class="sub" id="ex_p" style="margin:6px 0"></p><button class="pri" onclick="exSell()">Vendre et créditer mon solde FCFA</button>':'<p class="sub">Aucune crypto à vendre pour le moment.</p>'}
+ else if(t==='d'){var ds=as.filter(function(a){return a.depositNets&&a.depositNets.length});h=ds.length?'<p class="sub">Envoyez des cryptos à OMNIPAY : elles sont créditées sur votre portefeuille après vérification.</p><label>Crypto</label><select id="ex_a" onchange="exNets()">'+ds.map(function(a){return '<option value="'+escH(a.asset)+'">'+escH(a.asset)+'</option>'}).join('')+'</select><label>Réseau</label><select id="ex_n"></select><button class="pri" onclick="exDep()">Obtenir l\'adresse de dépôt</button><div id="ex_d"></div>':'<p class="sub">Les dépôts crypto seront ouverts très bientôt.</p>';}
+ else if(t==='w'){h='<div class="ottabs" style="margin-top:0"><button class="ottab on" id="exc_c" onclick="exCh(\'c\')">Adresse crypto</button><button class="ottab" id="exc_m" onclick="exCh(\'m\')">Mobile Money / banque</button></div><div id="ex_wc"></div>';EX.wd=1}
+ else if(t==='w2'){h='<label>Crypto</label><select id="ex_a" onchange="exNets()">'+opts()+'</select><label>Réseau</label><select id="ex_n"></select><label>Quantité</label><input id="ex_m" type="number" inputmode="decimal" step="any" min="0"><label>Adresse de destination</label><input id="ex_ad" autocomplete="off" placeholder="Collez l\'adresse"><p class="sub" style="font-size:12px">Vérifiez l\'adresse et le réseau : un envoi sur un mauvais réseau est définitivement perdu.</p><button class="pri" onclick="exWd()">Demander le retrait</button>'}
+ else{var o=(EX.me&&EX.me.orders)||[];h=o.length?o.map(function(x){return '<div class="mkbox" style="margin:8px 0"><div style="display:flex;justify-content:space-between"><b>'+(EXSD[x.side]||x.side)+' '+escH(x.asset)+'</b><span>'+(x.qty?exQ(x.qty):'')+'</span></div><small style="opacity:.75">'+escH(EXST[x.status]||x.status)+(x.amount?' · '+fmt(x.amount):'')+' · '+new Date(x.createdAt).toLocaleDateString('fr-FR')+' · '+escH(x.reference)+'</small></div>'}).join(''):'<p class="sub">Aucune opération pour le moment.</p>'}
+ $('ex_body').innerHTML=h;if(t==='w')exCh('c');if(t==='d')exNets();if(t==='b'||t==='s')exPrev()}
+function exNets(){var a=exA($('ex_a').value);if(!a)return;var n=$('ex_n');var l=EX.tab==='d'?a.depositNets:a.networks;n.innerHTML=(l||[]).map(function(x){return '<option>'+escH(x)+'</option>'}).join('')}
+function exPrev(){var a=exA($('ex_a')&&$('ex_a').value),v=Number($('ex_m').value),p=$('ex_p');if(!a||!p)return;
+ if(EX.tab==='b'){p.textContent=v>0&&a.buy?'Vous recevez environ '+exQ(Math.floor(v/a.buy*Math.pow(10,a.decimals))/Math.pow(10,a.decimals))+' '+a.asset+' · 1 '+a.asset+' = '+fmt(a.buy):'1 '+a.asset+' = '+(a.buy?fmt(a.buy):'—')}
+ else{p.textContent=v>0&&a.sell?'Vous recevez environ '+fmt(Math.floor(v*a.sell))+' · 1 '+a.asset+' = '+fmt(a.sell):'1 '+a.asset+' = '+(a.sell?fmt(a.sell):'—')}}
+function exAll(){var b=((EX.me&&EX.me.balances)||[]).find(function(x){return x.asset===$('ex_a').value});if(b){$('ex_m').value=b.qty;exPrev()}}
+async function exDo(path,body,okmsg){try{var r=await api('/api/exchange/'+path,{body:body});if(okmsg)msg('ex_msg',okmsg,true);try{await refresh()}catch(e){}await exLoad();return r}catch(e){msg('ex_msg',e.message,false);if(EX.tab==='b'||EX.tab==='s'){try{EX.info=await api('/api/exchange/info');exPrev()}catch(_){}}return null}}
+async function exBuy(){var a=exA($('ex_a').value);var r=await exDo('buy',{asset:a.asset,amountXof:Number($('ex_m').value),expectedRate:a.buy});if(r){$('ex_m').value='';msg('ex_msg','Achat effectué : '+exQ(r.order.qty)+' '+a.asset+' ajoutés à votre portefeuille.',true);exPrev()}}
+async function exSell(){var a=exA($('ex_a').value);var r=await exDo('sell',{asset:a.asset,qty:Number($('ex_m').value),expectedRate:a.sell});if(r){msg('ex_msg','Vente effectuée : '+fmt(r.order.amount)+' ajoutés à votre solde.',true);exTab('s')}}
+async function exDep(){var r=await exDo('deposit',{asset:$('ex_a').value,network:$('ex_n').value});if(!r)return;var o=r.order;EX.dep=o;
+ $('ex_d').innerHTML='<div class="mkbox" style="margin:12px 0"><p class="sub" style="margin:0 0 6px">Adresse '+escH(o.asset)+' ('+escH(o.network)+')</p><p style="word-break:break-all;font-weight:700;margin:0 0 8px">'+escH(o.address)+'</p><button class="sec" style="width:auto;padding:6px 14px;margin:0" onclick="copyTxt(\''+escH(o.address)+'\',\'ex_msg\')">Copier l\'adresse</button><p class="sub" style="font-size:12px;margin:8px 0 0">'+escH(r.notice)+' Référence : '+escH(o.reference)+'</p></div><label>Hash de la transaction</label><input id="ex_h" autocomplete="off" placeholder="Collez le hash après l\'envoi"><label>Quantité envoyée</label><input id="ex_q" type="number" inputmode="decimal" step="any"><button class="pri" onclick="exDecl()">J\'ai envoyé, vérifier mon dépôt</button>'}
+async function exDecl(){var o=EX.dep;if(!o)return;var r=await exDo('order/'+o.id+'/declare',{txid:$('ex_h').value.trim(),qty:Number($('ex_q').value)},'Dépôt déclaré. Il sera crédité après vérification.');if(r){EX.dep=null;exTab('h')}}
+async function exWd(){var r=await exDo('withdraw',{asset:$('ex_a').value,network:$('ex_n').value,qty:Number($('ex_m').value),address:$('ex_ad').value.trim()},'Retrait demandé. Il est traité manuellement et vous verrez le statut dans l\'historique.');if(r)exTab('h')}
+
+function exCh(c){$('exc_c').classList.toggle('on',c==='c');$('exc_m').classList.toggle('on',c==='m');var w=$('ex_wc');
+ if(c==='m'){w.innerHTML='<p class="sub">Recevez votre argent en FCFA sur Mobile Money (MTN, Moov, Celtiis), PI-SPI ou compte bancaire, en 2 étapes simples.</p><button class="opt" onclick="exTab(\'s\')"><i>1</i><span><b>Vendre ma crypto</b><small>Elle est convertie en FCFA sur votre solde</small></span></button><button class="opt" onclick="openIO(\'out\')"><i>2</i><span><b>Retirer mon solde FCFA</b><small>Vers le canal de votre choix</small></span></button>';return}
+ var as=(EX.info&&EX.info.assets)||[];w.innerHTML='<label>Crypto</label><select id="ex_a" onchange="exNets()">'+as.map(function(a){return '<option value="'+escH(a.asset)+'">'+escH(a.asset)+'</option>'}).join('')+'</select><label>Réseau</label><select id="ex_n"></select><label>Quantité</label><input id="ex_m" type="number" inputmode="decimal" step="any" min="0"><label>Adresse de destination</label><input id="ex_ad" autocomplete="off" placeholder="Collez l\'adresse"><p class="sub" style="font-size:12px">Vérifiez l\'adresse et le réseau : un envoi sur un mauvais réseau est définitivement perdu.</p><button class="pri" onclick="exWd()">Demander le retrait</button>';exNets()}
+/* suivi des dépenses : barres par semaine sur les dernières opérations */
+function spChart(){var el=$('spc');if(!el)return;var tx=(S.txs||[]).filter(function(t){return CREDIT.indexOf(t.type)<0&&t.status!=='failed'&&Number(t.amount)>0});
+ if(!tx.length){el.innerHTML='';return}
+ var W=8,now=Date.now(),wk=6048e5,b=[];for(var i=0;i<W;i++)b.push(0);
+ tx.forEach(function(t){var k=Math.floor((now-new Date(t.createdAt).getTime())/wk);if(k>=0&&k<W)b[W-1-k]+=Number(t.amount)});
+ var mx=Math.max.apply(null,b)||1,tot=b.reduce(function(a,c){return a+c},0),bars='';
+ b.forEach(function(v,i){var h=Math.round(v/mx*70),x=8+i*38,lab=i===W-1?'Cette sem.':'-'+(W-1-i)+' s.';
+  bars+='<rect x="'+x+'" y="'+(80-h)+'" width="28" height="'+Math.max(h,v>0?2:0)+'" rx="5" fill="var(--g,#17c98f)"/><text x="'+(x+14)+'" y="94" font-size="8" text-anchor="middle" fill="currentColor" opacity=".7">'+lab+'</text>'+(v>0?'<text x="'+(x+14)+'" y="'+(76-h)+'" font-size="8" text-anchor="middle" fill="currentColor">'+(v>=1000?Math.round(v/1000)+'k':v)+'</text>':'')});
+ el.innerHTML='<div class="mkbox" style="margin:10px 0"><b>Mes dépenses</b><div class="sub" style="margin:2px 0 6px;font-size:12px">'+fmt(tot)+' sur 8 semaines (d\'après vos dernières opérations)</div><svg viewBox="0 0 312 100" width="100%" role="img" aria-label="Dépenses par semaine">'+bars+'</svg></div>'}
 async function openOt(){show('ot');await otProds();otTab(OT.tab||'c')}
 function otTab(t){OT.tab=t;document.querySelectorAll('#ot .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
  ['c','o','m','n'].forEach(function(x){$('ot_'+x).classList.toggle('hide',x!==t)});$('ot_msg').className='msg';({c:otBoard,o:otOffers,m:otMe,n:otNear})[t]()}
@@ -3694,7 +3748,5 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 </script>
 <script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
 <div id="svcSheet" class="svs hide" role="dialog" aria-modal="true" aria-labelledby="svc_t" onclick="if(event.target===this)svcClose()"><div class="svb"><div class="svh"><span class="ic" id="svc_i"></span><div><h2 id="svc_t"></h2><span class="svst" id="svc_s"></span></div><button class="svx" onclick="svcClose()" aria-label="Fermer">✕</button></div><div id="svc_b"></div><button class="pri" id="svc_go" style="margin-top:16px" onclick="svcGo()">Ouvrir ce service</button></div></div>
-<script src="/register-pwa.js" defer></script>
-<script src="/pwa-install.js" defer></script>
 </body>
 </html>

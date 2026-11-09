@@ -148,6 +148,7 @@ mount("/api/pispi", "./routes/pispiBridge", "Brancheur PI-SPI (crédit automatiq
 mount("/api/activity", "./routes/activity", "Clients et activité (admin, lecture seule)");
 mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
 mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
+mount("/api/exchange", "./routes/exchange", "OMNICHANGE (portefeuille crypto)");
 mount("/api/omnitrade", "./routes/omnitrade", "OMNITRADE (bourse des produits locaux)");
 mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
