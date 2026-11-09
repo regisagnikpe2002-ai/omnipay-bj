@@ -152,7 +152,6 @@ mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
 mount("/api/exchange", "./routes/exchange", "OMNICHANGE (portefeuille crypto)");
 mount("/api/recon", "./routes/reconcile", "Réconciliation (fonds suspendus)");
 mount("/api/daily", "./routes/daily", "Du jour (cartes quotidiennes)");
-mount("/api/daily", "./routes/daily", "Du jour (cartes quotidiennes)");
 mount("/api/omnitrade", "./routes/omnitrade", "OMNITRADE (bourse des produits locaux)");
 mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
