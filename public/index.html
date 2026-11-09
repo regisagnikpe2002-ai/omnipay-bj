@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
 <meta property="og:title" content="OMNIPAY"><meta property="og:description" content="Votre quotidien financier tout-en-un"><meta property="og:image" content="https://www.omnipay-bj.com/logo.svg"><meta property="og:url" content="https://www.omnipay-bj.com/">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="OMNIPAY">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="OMNIPAY">
 <style>
 :root{--bg:#070b14;--card:#0e1628;--card2:#131d33;--line:#22304d;--txt:#f2f6fc;--mut:#8fa0bf;--mint:#34e8b0;--mint2:#1fb98a;--warn:#ffcc4d;--err:#ff6b6b}
 *{box-sizing:border-box;margin:0}
@@ -382,7 +382,7 @@ body.lg #demo{display:block}
 
   <section id="hist" class="card hide">
     <h1>Historique</h1><p class="sub">Vos dernières opérations. Touchez une ligne pour voir le reçu.</p>
-    <div id="spc"></div><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
+    <div id="stk"></div><div id="spc"></div><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3088,7 +3088,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.name||u.fullName||u.username||u.email||u.phone||'Mon compte OMNIPAY';pfApply();
-  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad()
+  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();try{pwaGo()}catch(e){}
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -3195,7 +3195,7 @@ async function dashMk(){try{const r=await fetch('/api/markets/tickers');const d=
  $('dmk_t').textContent=(d.stale?'Données en cache. ':'Mis à jour à ')+new Date(d.updatedAt).toLocaleTimeString('fr-FR')+' · cours indicatifs'}catch(e){if($('dmk_t'))$('dmk_t').textContent=e.message}
  try{if(S&&S.token){const c=await api('/api/challenges');$('dmk_cs').textContent='Niveau '+c.level+' · '+c.points+' / '+c.totalPoints+' points. Touchez pour voir vos défis.'}}catch(e){}}
 setInterval(function(){var d=$('dash');if(d&&!d.classList.contains('hide'))dashMk()},30000);
-function openHist(){show('hist')}
+function openHist(){show('hist');try{stkLoad()}catch(e){}}
 async function openFcf(){show('fcf');$('fc_msg').className='msg';fcfLoad()}
 async function fcfLoad(){try{const d=await api('/api/bundles/mine');const st={pending:'en attente',done:'fait',rejected:'refusé, remboursé'};
  $('fc_list').innerHTML=d.orders.length?d.orders.map(o=>'<div class="tx"><div>'+escH(o.kindLabel)+' · '+escH(String(o.operator).toUpperCase())+'<small>'+escH(o.phone)+' · '+new Date(o.created_at).toLocaleString('fr-FR')+' · '+(st[o.status]||o.status)+'</small></div><b class="neg">-'+fmt(o.amount)+'</b></div>').join(''):'<p class="sub" style="margin:0">Aucune commande pour le moment.</p>'}catch(e){$('fc_list').textContent=e.message}}
@@ -3677,6 +3677,14 @@ function spChart(){var el=$('spc');if(!el)return;var tx=(S.txs||[]).filter(funct
  b.forEach(function(v,i){var h=Math.round(v/mx*70),x=8+i*38,lab=i===W-1?'Cette sem.':'-'+(W-1-i)+' s.';
   bars+='<rect x="'+x+'" y="'+(80-h)+'" width="28" height="'+Math.max(h,v>0?2:0)+'" rx="5" fill="var(--g,#17c98f)"/><text x="'+(x+14)+'" y="94" font-size="8" text-anchor="middle" fill="currentColor" opacity=".7">'+lab+'</text>'+(v>0?'<text x="'+(x+14)+'" y="'+(76-h)+'" font-size="8" text-anchor="middle" fill="currentColor">'+(v>=1000?Math.round(v/1000)+'k':v)+'</text>':'')});
  el.innerHTML='<div class="mkbox" style="margin:10px 0"><b>Mes dépenses</b><div class="sub" style="margin:2px 0 6px;font-size:12px">'+fmt(tot)+' sur 8 semaines (d\'après vos dernières opérations)</div><svg viewBox="0 0 312 100" width="100%" role="img" aria-label="Dépenses par semaine">'+bars+'</svg></div>'}
+
+/* Opérations non abouties : récupérer ses fonds */
+async function stkLoad(){var el=$('stk');if(!el)return;try{var d=await api('/api/recon/mine');var it=d.items||[];
+ if(!it.length){el.innerHTML='';return}
+ el.innerHTML='<div class="mkbox" style="margin:10px 0;border-color:#5a4a14"><b>Opérations en cours ou non abouties</b>'+it.map(function(x){var fail=x.status==='failed';
+  return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);margin-top:8px"><div><b>'+fmt(x.amount)+'</b><br><small style="opacity:.75">'+(fail?'Échec':'En cours')+' · il y a '+(x.age_hours<1?'moins d’1 h':x.age_hours+' h')+'</small></div>'+
+  (x.refundable?'<button class="pri" style="width:auto;margin:0;padding:9px 12px;font-size:13px" onclick="stkRefund(\''+escH(x.id)+'\')">Récupérer mes fonds</button>':'<small style="opacity:.75;text-align:right">'+(x.provider==='bundle'||x.provider==='virtualnum'?'Remboursement automatique si échec':'Récupérable après '+Math.max(1,d.afterHours-x.age_hours)+' h')+'</small>')+'</div>'}).join('')+'<div id="stk_msg" class="msg"></div></div>'}catch(e){el.innerHTML=''}}
+async function stkRefund(id){try{var r=await api('/api/recon/mine/'+id+'/refund',{body:{}});try{await refresh()}catch(e){}await stkLoad();msg('stk_msg',r.message,true)}catch(e){msg('stk_msg',e.message,false)}}
 async function openOt(){show('ot');await otProds();otTab(OT.tab||'c')}
 function otTab(t){OT.tab=t;document.querySelectorAll('#ot .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
  ['c','o','m','n'].forEach(function(x){$('ot_'+x).classList.toggle('hide',x!==t)});$('ot_msg').className='msg';({c:otBoard,o:otOffers,m:otMe,n:otNear})[t]()}
@@ -3748,5 +3756,29 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 </script>
 <script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
 <div id="svcSheet" class="svs hide" role="dialog" aria-modal="true" aria-labelledby="svc_t" onclick="if(event.target===this)svcClose()"><div class="svb"><div class="svh"><span class="ic" id="svc_i"></span><div><h2 id="svc_t"></h2><span class="svst" id="svc_s"></span></div><button class="svx" onclick="svcClose()" aria-label="Fermer">✕</button></div><div id="svc_b"></div><button class="pri" id="svc_go" style="margin-top:16px" onclick="svcGo()">Ouvrir ce service</button></div></div>
+
+<style>
+#pwa{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;display:none;align-items:center;gap:12px;background:#0e1b36;color:#f2f6fc;border:1px solid #22304d;border-radius:18px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
+#pwa.on{display:flex}#pwa img{width:42px;height:42px;border-radius:11px}#pwa .t{flex:1;font-size:13px;line-height:1.35}#pwa .t b{display:block;font-size:14px}
+#pwa button{width:auto;margin:0;padding:9px 14px;font-size:13px;border-radius:12px}#pwa .x{background:transparent;border:0;color:#8fa0bf;font-size:20px;padding:4px 8px}
+</style>
+<div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
+<script>
+/* PWA : installation + service worker */
+var PWA={ev:null};
+function pwaStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true}
+function pwaIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream}
+function pwaHide(save){var b=document.getElementById('pwa');if(b)b.classList.remove('on');if(save)LS.set('pwaDismissed',String(Date.now()))}
+function pwaShow(){if(pwaStandalone())return;var d=Number(LS.get('pwaDismissed')||0);if(d&&Date.now()-d<7*864e5)return;
+ if(pwaIos()){document.getElementById('pwa_t').textContent='Touchez le bouton Partager, puis « Sur l’écran d’accueil ».';document.getElementById('pwa_b').style.display='none'}
+ document.getElementById('pwa').classList.add('on')}
+async function pwaInstall(){if(!PWA.ev)return pwaHide(true);PWA.ev.prompt();try{await PWA.ev.userChoice}catch(e){}PWA.ev=null;pwaHide(false)}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();PWA.ev=e;setTimeout(pwaShow,4000)});
+window.addEventListener('appinstalled',function(){PWA.ev=null;pwaHide(false)});
+if(pwaIos()&&!pwaStandalone())setTimeout(pwaShow,6000);
+if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})});
+/* raccourcis de l'icône (appui long) */
+function pwaGo(){var g=new URLSearchParams(location.search).get('go');if(!g||!S.token)return;history.replaceState(null,'',location.pathname);if(g==='crypto')openEx();else if(g==='recharge')openFcf()}
+</script>
 </body>
 </html>

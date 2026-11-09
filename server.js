@@ -77,6 +77,7 @@ app.use("/api/email-otp/request", limiter(30, "Trop de demandes de code. Réessa
 // Fichiers statiques (dossier public/)
 // =========================
 
+app.get("/sw.js", (req, res) => { res.set("Cache-Control", "no-cache"); res.set("Service-Worker-Allowed", "/"); res.type("application/javascript"); res.sendFile(path.join(__dirname, "public", "sw.js")); });
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
@@ -149,6 +150,7 @@ mount("/api/activity", "./routes/activity", "Clients et activité (admin, lectur
 mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
 mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
 mount("/api/exchange", "./routes/exchange", "OMNICHANGE (portefeuille crypto)");
+mount("/api/recon", "./routes/reconcile", "Réconciliation (fonds suspendus)");
 mount("/api/omnitrade", "./routes/omnitrade", "OMNITRADE (bourse des produits locaux)");
 mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
