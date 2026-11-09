@@ -316,6 +316,7 @@ body.lg #demo{display:block}
       <button onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
       <button onclick="openIO('out')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></svg></span>Retrait</button>
     </div>
+    <div class="card" id="dj" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>✨ Du jour</b><small id="dj_n" style="opacity:.7"></small></div><div id="dj_c" style="margin-top:8px"></div><div id="dj_s" class="hide" style="margin-top:8px"><input id="dj_t" maxlength="200" placeholder="Votre idée de marché ou de service"><button class="pri" onclick="djSend()">Envoyer</button></div><div id="dj_m" class="msg"></div></div>
     <div class="card" id="otc" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="vi" style="width:44px;height:44px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px">🌾</span><div style="flex:1;min-width:150px"><h2 style="margin:0 0 2px">OMNITRADE</h2><p class="sub" style="margin:0">Prix du jour des produits locaux et vendeurs vérifiés, en contact direct.</p></div><button class="pri" style="margin:0;width:100%" onclick="openOt()">Ouvrir la bourse</button></div>
     <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Un numéro temporaire pour recevoir vos codes de vérification, sans carte SIM et sans exposer votre numéro personnel.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
 
@@ -495,7 +496,7 @@ body.lg #demo{display:block}
     <div id="vn_form">
       <label class="sub">Pays</label><select id="vn_c" onchange="vnPrice()"></select>
       <label class="sub">Service</label><input id="vn_q" placeholder="Rechercher (WhatsApp, Telegram…)" oninput="clearTimeout(window._vq);window._vq=setTimeout(vnSearch,350)"><select id="vn_s"></select>
-      <p class="sub" style="margin:8px 0">Prix : <b id="vn_p"></b> · débit annulé automatiquement si aucun code n'arrive dans le délai</p>
+      <label class="sub">Payer avec</label><select id="vn_pay"><option value="">Mon solde FCFA</option></select><p class="sub" style="margin:8px 0">Prix : <b id="vn_p"></b> · débit annulé automatiquement si aucun code n'arrive dans le délai</p>
       <button id="vn_b" onclick="vnRent()">Obtenir un numéro</button>
     </div>
     <div id="vn_m" class="msg"></div>
@@ -3088,7 +3089,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.name||u.fullName||u.username||u.email||u.phone||'Mon compte OMNIPAY';pfApply();
-  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();try{pwaGo()}catch(e){}
+  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();try{djLoad()}catch(e){}try{pwaGo()}catch(e){}
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -3530,7 +3531,7 @@ const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 var VNT=null,VNO=null,VNP={};
 function vnPrice(){var i=$('vn_c').value;$('vn_p').textContent=i&&VNP[i]?fmt(VNP[i]):'selon le pays'}
 const VNST={active:'En attente du SMS',done:'Code reçu',expired:'Expiré · remboursé',failed:'Annulé',renting:'En cours'};
-async function openVn(){$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');
+async function openVn(){$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');vnPayLoad();
  try{const d=await api('/api/vn/info');VNP=Object.fromEntries((d.countries||[]).map(c=>[c.iso,c.price]));vnPrice();
   if(!d.enabled){$('vn_form').classList.add('hide');$('vn_off').style.display='block'}else{$('vn_form').classList.remove('hide');$('vn_off').style.display='none';
    $('vn_c').innerHTML='<option value="">Choisir un pays…</option>'+(d.countries||[]).map(c=>`<option value="${escH(c.iso)}">${escH(c.name)} · ${fmt(c.price)}</option>`).join('');vnSearch()}}catch(e){msg('vn_m',e.message)}
@@ -3540,7 +3541,8 @@ async function vnSearch(){try{const d=await api('/api/vn/services?q='+encodeURIC
 async function vnRent(){const iso=$('vn_c').value,sel=$('vn_s'),sid=sel.value;
  if(!iso)return msg('vn_m','Choisissez un pays.');if(!sid)return msg('vn_m','Choisissez un service.');
  const name=sel.options[sel.selectedIndex].getAttribute('data-n')||sid;$('vn_b').disabled=true;msg('vn_m','Recherche d\'un numéro…',true);
- try{const r=await api('/api/vn/rent',{method:'POST',body:{iso,serviceId:sid,serviceName:name}});
+ try{const pa=$('vn_pay').value;if(pa){msg('vn_m','Conversion de votre '+pa+'…',true);await payCrypto(VNP[iso]||0,pa)}
+ const r=await api('/api/vn/rent',{method:'POST',body:{iso,serviceId:sid,serviceName:name}});
   if(S.wallet&&r.newBalance!=null){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}
   $('vn_m').className='msg';vnShow(r.order);vnWatch(r.order.id);vnHist()}catch(e){msg('vn_m',e.message)}
  $('vn_b').disabled=false}
@@ -3685,6 +3687,40 @@ async function stkLoad(){var el=$('stk');if(!el)return;try{var d=await api('/api
   return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);margin-top:8px"><div><b>'+fmt(x.amount)+'</b><br><small style="opacity:.75">'+(fail?'Échec':'En cours')+' · il y a '+(x.age_hours<1?'moins d’1 h':x.age_hours+' h')+'</small></div>'+
   (x.refundable?'<button class="pri" style="width:auto;margin:0;padding:9px 12px;font-size:13px" onclick="stkRefund(\''+escH(x.id)+'\')">Récupérer mes fonds</button>':'<small style="opacity:.75;text-align:right">'+(x.provider==='bundle'||x.provider==='virtualnum'?'Remboursement automatique si échec':'Récupérable après '+Math.max(1,d.afterHours-x.age_hours)+' h')+'</small>')+'</div>'}).join('')+'<div id="stk_msg" class="msg"></div></div>'}catch(e){el.innerHTML=''}}
 async function stkRefund(id){try{var r=await api('/api/recon/mine/'+id+'/refund',{body:{}});try{await refresh()}catch(e){}await stkLoad();msg('stk_msg',r.message,true)}catch(e){msg('stk_msg',e.message,false)}}
+
+/* PAIEMENT EN CRYPTO : convertit juste ce qu'il faut du portefeuille crypto en FCFA, puis l'achat continue normalement */
+async function payCrypto(amount,asset){var info=await api('/api/exchange/info');var a=(info.assets||[]).find(function(x){return x.asset===asset});if(!info.enabled||!a||!a.sell)throw new Error('Conversion indisponible pour le moment.');
+ var need=Math.max(amount,info.min),f=Math.pow(10,a.decimals),qty=Math.ceil(need*1.002/a.sell*f)/f;
+ var me=await api('/api/exchange/me');var b=(me.balances||[]).find(function(x){return x.asset===asset});if(!b||b.qty<qty)throw new Error('Solde '+asset+' insuffisant : il faut environ '+qty+' '+asset+'.');
+ var r=await api('/api/exchange/sell',{body:{asset:asset,qty:qty,expectedRate:a.sell}});if(S.wallet&&r.newBalance!=null){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}}
+async function vnPayLoad(){var s=$('vn_pay');if(!s)return;try{var me=await api('/api/exchange/me');var o='<option value="">Mon solde FCFA</option>'+(me.balances||[]).map(function(b){return '<option value="'+escH(b.asset)+'">Payer en '+escH(b.asset)+' (solde '+b.qty+')</option>'}).join('');s.innerHTML=o}catch(e){}}
+/* DU JOUR : cartes générées chaque jour, partageables en image ou en courte vidéo */
+var DJ={cards:[],i:0,logo:null};
+async function djLoad(){try{var r=await fetch('/api/daily');var d=await r.json();DJ.cards=d.cards||[];DJ.i=0;djPaint();var im=new Image();im.onload=function(){DJ.logo=im};im.src='/omnipay-shield.svg'}catch(e){}}
+function djPaint(){var c=DJ.cards[DJ.i],el=$('dj_c');if(!c||!el)return;$('dj_n').textContent=(DJ.i+1)+' / '+DJ.cards.length;
+ el.innerHTML='<div style="font-size:34px;line-height:1">'+escH(c.emoji)+'</div><b style="display:block;margin:6px 0 2px">'+escH(c.title)+'</b><small style="opacity:.8">'+escH(c.text)+'</small><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="pri" style="width:auto;margin:0;padding:9px 14px;font-size:13px" onclick="djGo()">'+escH(c.cta||'Ouvrir')+'</button><button class="sec" style="width:auto;margin:0;padding:9px 12px;font-size:13px" onclick="djShare(\'img\')">Image</button><button class="sec" style="width:auto;margin:0;padding:9px 12px;font-size:13px" onclick="djShare(\'vid\')">Vidéo</button><button class="sec" style="width:auto;margin:0;padding:9px 12px;font-size:13px" onclick="DJ.i=(DJ.i+1)%DJ.cards.length;djPaint()" aria-label="Suivant">→</button></div>'}
+function djGo(){var c=DJ.cards[DJ.i];if(!c)return;var g=c.go;$('dj_s').classList.add('hide');
+ if(g==='crypto')openEx();else if(g==='ot')openOt();else if(g==='vn')openVn();else if(g==='recharge')openFcf();else if(g==='aff')openAff();else if(g==='hist')openHist();else if(g==='prefs')openPrefs();
+ else if(g==='suggest'){$('dj_s').classList.remove('hide');$('dj_t').value=c.idea||'';$('dj_t').focus()}}
+async function djSend(){try{var r=await api('/api/daily/suggest',{body:{text:$('dj_t').value}});msg('dj_m',r.message,true);$('dj_s').classList.add('hide')}catch(e){msg('dj_m',e.message,false)}}
+function djWrap(x,t,mx,fs){var w=t.split(' '),ln='',out=[];w.forEach(function(k){var tt=ln?ln+' '+k:k;if(x.measureText(tt).width>mx&&ln){out.push(ln);ln=k}else ln=tt});if(ln)out.push(ln);return out}
+function djDraw(cv,c,p){var x=cv.getContext('2d'),W=cv.width,H=cv.height,e=function(a,b){return Math.max(0,Math.min(1,(p-a)/(b-a)))};
+ var g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#0a1730');g.addColorStop(1,'#0f3a5a');x.fillStyle=g;x.fillRect(0,0,W,H);
+ x.fillStyle='rgba(23,201,143,.16)';x.beginPath();x.arc(W*.85,H*.12,W*.32*(0.9+0.1*e(0,1)),0,7);x.fill();
+ x.globalAlpha=e(0,.15);if(DJ.logo)x.drawImage(DJ.logo,W*.07,H*.06,W*.1,W*.1125);x.fillStyle='#fff';x.font='700 '+Math.round(W*.04)+'px system-ui,sans-serif';x.fillText('OMNIPAY',W*.19,H*.105);
+ var a=e(.1,.35);x.globalAlpha=a;x.font=Math.round(W*.2)+'px system-ui,sans-serif';x.fillText(c.emoji||'',W*.07,H*.36+(1-a)*30);
+ x.font='800 '+Math.round(W*.065)+'px system-ui,sans-serif';var L=djWrap(x,c.title,W*.86,0),a2=e(.3,.55);x.globalAlpha=a2;L.slice(0,3).forEach(function(l,i){x.fillText(l,W*.07,H*.5+i*W*.08+(1-a2)*30)});
+ x.font=Math.round(W*.04)+'px system-ui,sans-serif';x.fillStyle='#c4d2ea';var T=djWrap(x,c.text,W*.86,0),a3=e(.5,.75);x.globalAlpha=a3;T.slice(0,5).forEach(function(l,i){x.fillText(l,W*.07,H*.5+L.slice(0,3).length*W*.08+W*.05+i*W*.055+(1-a3)*20)});
+ var a4=e(.75,.95);x.globalAlpha=a4;x.fillStyle='#17c98f';var bw=W*.5,bh=W*.09,by=H*.9;x.beginPath();x.roundRect?x.roundRect(W*.07,by,bw,bh,bh/2):x.rect(W*.07,by,bw,bh);x.fill();x.fillStyle='#04281e';x.font='800 '+Math.round(W*.04)+'px system-ui,sans-serif';x.fillText('omnipay-bj.com',W*.07+W*.05,by+bh*.64);x.globalAlpha=1}
+function djOut(blob,name,c){var f;try{f=new File([blob],name,{type:blob.type})}catch(e){f=null}
+ if(f&&navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:'OMNIPAY',text:(c.title||'')+' — omnipay-bj.com'}).catch(function(){});
+ var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000);msg('dj_m','Fichier enregistré sur votre appareil.',true)}
+async function djShare(kind){var c=DJ.cards[DJ.i];if(!c)return;var cv=document.createElement('canvas');cv.width=720;cv.height=720;
+ if(kind==='img'){djDraw(cv,c,1);return cv.toBlob(function(b){if(b)djOut(b,'omnipay-du-jour.png',c)},'image/png')}
+ if(!window.MediaRecorder||!cv.captureStream)return msg('dj_m','La vidéo n’est pas disponible sur cet appareil : utilisez « Image ».',false);
+ msg('dj_m','Création de la vidéo…',true);var mt=['video/mp4','video/webm;codecs=vp9','video/webm'].find(function(m){return MediaRecorder.isTypeSupported(m)})||'';var rec=new MediaRecorder(cv.captureStream(30),mt?{mimeType:mt}:{}),ch=[];
+ rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};rec.onstop=function(){var b=new Blob(ch,{type:rec.mimeType||'video/webm'});$('dj_m').className='msg';djOut(b,'omnipay-du-jour.'+(/mp4/.test(b.type)?'mp4':'webm'),c)};
+ rec.start();var t0=performance.now(),iv=setInterval(function(){var p=Math.min(1,(performance.now()-t0)/3500);djDraw(cv,c,p);if(performance.now()-t0>5500){clearInterval(iv);rec.stop()}},33)}
 async function openOt(){show('ot');await otProds();otTab(OT.tab||'c')}
 function otTab(t){OT.tab=t;document.querySelectorAll('#ot .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
  ['c','o','m','n'].forEach(function(x){$('ot_'+x).classList.toggle('hide',x!==t)});$('ot_msg').className='msg';({c:otBoard,o:otOffers,m:otMe,n:otNear})[t]()}
