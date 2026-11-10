@@ -15,3 +15,6 @@ node_modules/
 *.bak
 
 _sauvegarde_avant_v19/
+
+*.zip
+*.before-*
