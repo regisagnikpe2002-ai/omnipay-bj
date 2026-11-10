@@ -91,7 +91,7 @@ router.post("/admin/draft", adminOnly, async (req, res) => {
       const o = await q`INSERT INTO payment_orders (tx_id, requester_id, operator, phone, amount, route, checks, needs_admin)
         VALUES (${t.id}::uuid, ${t.requester}::uuid, ${String(t.operator).replace(/-.*/, "")}, ${t.phone}, ${t.amount}, ${JSON.stringify(route)}::jsonb, ${JSON.stringify(checks)}::jsonb, ${needsAdmin})
         ON CONFLICT DO NOTHING RETURNING id`;
-      if (o.length) { created++; await event(o[0].id, "IA (fonds & risque)", "drafted", route ? `voie recommandée : ${route.label}` : "aucune voie automatique : paiement manuel"); }
+      if (o.length) { created++; await event(o[0].id, "OMNIBETA (fonds & risque)", "drafted", route ? `voie recommandée : ${route.label}` : "aucune voie automatique : paiement manuel"); }
     }
     res.json({ created, skipped, message: `${created} ordre(s) rédigé(s). Rien n'a été payé : un marchand doit les exécuter.` });
   } catch (e) { fail(res, "ORDERS_DRAFT", e); }

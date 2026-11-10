@@ -304,7 +304,7 @@ body.lg #demo{display:block}
 
   <!-- TABLEAU DE BORD -->
   <section id="dash" class="hide">
-    <div class="dtop"><div class="lgo"><img src="/omnipay-shield.svg" alt="OMNIPAY" width="38" height="42"><div><b>OMNIPAY</b><small>HOLDING</small></div></div><div class="ic"><button onclick="var e=$('dn');if(e)e.scrollIntoView({behavior:'smooth'})" aria-label="Nouveautés"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
+    <div class="dtop"><div class="lgo"><img src="/omnipay-shield.svg" alt="OMNIPAY" width="38" height="42"><div><b>OMNIPAY</b><small>HOLDING</small></div></div><div class="ic"><button onclick="openNt()" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot" id="bdot" style="display:none"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
     <div class="dsheet"></div>
 
     <div class="bal"><div class="bl">Solde OMNIPAY</div><div class="v" id="bal">0 FCFA</div><div class="bh"><button id="av" onclick="openPrefs()" aria-label="Mon avatar et mes options" style="width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-size:18px;font-weight:700;padding:0;margin:0;cursor:pointer;display:flex;align-items:center;justify-content:center"></button><small id="who"></small></div></div>
@@ -317,6 +317,7 @@ body.lg #demo{display:block}
       <button onclick="openIO('out')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></svg></span>Retrait</button>
     </div>
     <div class="card" id="dj" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>✨ Du jour</b><small id="dj_n" style="opacity:.7"></small></div><div id="dj_c" style="margin-top:8px"></div><div id="dj_s" class="hide" style="margin-top:8px"><input id="dj_t" maxlength="200" placeholder="Votre idée de marché ou de service"><button class="pri" onclick="djSend()">Envoyer</button></div><div id="dj_m" class="msg"></div></div>
+    <div class="card" id="flc" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>📊 Entrées / sorties</b><small style="opacity:.7">automatique</small></div><div id="flc_b"><p class="sub" style="margin:8px 0 0">Chargement…</p></div></div>
     <div class="card" id="otc" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="vi" style="width:44px;height:44px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px">🌾</span><div style="flex:1;min-width:150px"><h2 style="margin:0 0 2px">OMNITRADE</h2><p class="sub" style="margin:0">Prix du jour des produits locaux et vendeurs vérifiés, en contact direct.</p></div><button class="pri" style="margin:0;width:100%" onclick="openOt()">Ouvrir la bourse</button></div>
     <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Un numéro temporaire pour recevoir vos codes de vérification, sans carte SIM et sans exposer votre numéro personnel.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
 
@@ -324,6 +325,12 @@ body.lg #demo{display:block}
     <div class="card" id="dmk" style="margin-bottom:16px"><h2>📈 Cours crypto en direct</h2><div id="dmk_l"><p class="sub" style="margin:0">Chargement des cours…</p></div><p class="sub" id="dmk_t" style="margin:8px 0 0;font-size:12px"></p>
       <div id="dmk_c" class="chc" style="margin-top:10px;cursor:pointer" onclick="openChl()"><b>🏆 Défis</b><br><small id="dmk_cs">Relevez des défis et gagnez des points.</small></div>
       <div class="row" style="margin-top:10px"><button class="sec" style="margin:0" onclick="openMk()">Tous les marchés</button><button class="sec" style="margin:0" onclick="openHist()">🕘 Historique</button></div></div>
+    <div class="grp ex">OMNIWALLET</div>
+    <div class="rb ex">
+      <button class="tile" onclick="openOw()"><span>👛</span>OMNIWALLET</button>
+      <button class="tile" onclick="openOw('cash')"><span>🏧</span>Retrait TPE</button>
+      <button class="tile" onclick="openOw('flow')"><span>📊</span>Entrées/sorties</button>
+    </div>
     <div class="grp ex">OMNIEXCHANGE</div>
     <div class="rb ex">
       <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
@@ -333,6 +340,7 @@ body.lg #demo{display:block}
     <div class="grp">Marchés &amp; Défis</div>
     <div class="rb">
       <button class="tile" onclick="openOt()"><span>🌾</span>OMNITRADE</button>
+      <button class="tile" onclick="openBz()"><span>🏪</span>Business</button>
       <button class="tile" onclick="openMk()"><span>📈</span>Marchés</button>
       <button class="tile" onclick="openChl()"><span>🏆</span>Défis</button>
     </div>
@@ -383,7 +391,7 @@ body.lg #demo{display:block}
 
   <section id="hist" class="card hide">
     <h1>Historique</h1><p class="sub">Vos dernières opérations. Touchez une ligne pour voir le reçu.</p>
-    <div id="stk"></div><div id="spc"></div><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
+    <div id="stk"></div><div id="flh_b"></div><div id="spc"></div><div id="txs"></div><button class="lnk" onclick="openRc()">Voir tous mes reçus →</button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -433,7 +441,7 @@ body.lg #demo{display:block}
     <h1>Déposer sur mon solde</h1><p class="sub">Choisissez comment payer. Vous envoyez l'argent sur le compte OMNIPAY indiqué, puis vous nous le déclarez : votre solde est crédité dès que la réception est vérifiée.</p>
     <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Mobile Money</b><small>MTN, Moov, Celtiis : envoi depuis votre téléphone</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
-    <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur l'adresse Binance OMNIPAY</small></span></button>
+    <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -455,7 +463,7 @@ body.lg #demo{display:block}
       <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
       <div id="m_accs"><p class="sub">Chargement…</p></div>
       <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
-      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="pispi">PI-SPI (alias Ecobank)</option><option value="p2p">Binance P2P (n° d'ordre)</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
+      <label>Moyen utilisé</label><select id="m_meth"><option value="usdt">Crypto (USDT)</option><option value="virement">Virement bancaire</option><option value="pispi">PI-SPI</option><option value="p2p">Échange P2P (n° d'ordre)</option><option value="momo">Mobile Money</option><option value="autre">Autre</option></select>
       <div class="row"><div><label>Montant envoyé</label><input id="m_am" type="number" min="1" step="any"></div><div><label>Devise</label><select id="m_cur"><option>XOF</option><option>USDT</option><option>EUR</option><option>USD</option></select></div></div>
       <label>Preuve (hash de transaction, n° de référence)</label><input id="m_tx" placeholder="Ex : 0x… ou n° de transaction">
       <button class="pri" onclick="manDeposit()">Déclarer mon paiement</button>
@@ -494,6 +502,8 @@ body.lg #demo{display:block}
     <h1>Numéros virtuels</h1><p class="sub">Choisissez un pays et un service, recevez un numéro, puis votre code SMS s'affiche ici.</p>
     <div id="vn_off" class="msg er hide" style="display:none">Service en cours d'activation. Revenez bientôt.</div>
     <div id="vn_form">
+      <h2 style="margin:8px 0 6px;font-size:16px">Pour quelle application ?</h2>
+      <div id="vn_pop" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
       <label class="sub">Pays</label><select id="vn_c" onchange="vnPrice()"></select>
       <label class="sub">Service</label><input id="vn_q" placeholder="Rechercher (WhatsApp, Telegram…)" oninput="clearTimeout(window._vq);window._vq=setTimeout(vnSearch,350)"><select id="vn_s"></select>
       <label class="sub">Payer avec</label><select id="vn_pay"><option value="">Mon solde FCFA</option></select><p class="sub" style="margin:8px 0">Prix : <b id="vn_p"></b> · débit annulé automatiquement si aucun code n'arrive dans le délai</p>
@@ -577,6 +587,12 @@ body.lg #demo{display:block}
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="ow" class="card hide">
+    <h1>OMNIWALLET</h1><p class="sub">Tout votre argent au même endroit : FCFA, cryptos, vos portefeuilles enregistrés et vos retraits.</p>
+    <div id="ow_body"><p class="sub">Chargement…</p></div>
+    <div id="ow_msg" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
   <section id="oc" class="card hide">
     <h1>OMNICASH</h1><p class="sub">Déposez ou retirez des espèces auprès d'un agent OMNICASH, ou devenez agent.</p>
     <div id="oc_body"></div>
@@ -654,6 +670,25 @@ body.lg #demo{display:block}
     <div id="ex_body"></div>
     <div id="ex_msg" class="msg"></div>
     <button class="lnk" onclick="openConv()">Calculateur de conversion</button>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="nt" class="card hide">
+    <h1>Notifications</h1><p class="sub">Vos opérations, vos annonces et vos rappels, au même endroit.</p>
+    <div id="nt_l"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="bp" class="card hide">
+    <h1>Paiement sécurisé</h1>
+    <div id="bp_c"></div><div id="bp_m" class="msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour à mon compte</button>
+  </section>
+
+  <section id="bz" class="card hide">
+    <h1>OMNIPAY Business</h1><p class="sub">Encaissez vos clients par lien, QR ou API, avec un suivi clair de chaque paiement.</p>
+    <div class="ottabs"><button class="ottab on" data-t="p" onclick="bzTab('p')">Encaisser</button><button class="ottab" data-t="k" onclick="bzTab('k')">Clés API</button><button class="ottab" data-t="r" onclick="bzTab('r')">Réglages</button><button class="ottab" data-t="a" onclick="bzTab('a')">Abonnement</button></div>
+    <div id="bz_b"></div><div id="bz_m" class="msg"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3019,16 +3054,27 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot','ex'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot','ex','nt','bz','bp','ow'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
 async function api(path,opt={}){
-  const h={'Content-Type':'application/json'};if(S.token)h.Authorization='Bearer '+S.token;
-  const r=await fetch(path,{method:opt.method||(opt.body?'POST':'GET'),headers:h,body:opt.body?JSON.stringify(opt.body):undefined});
-  const d=await r.json().catch(()=>({}));
+  const go=async tok=>{const h={'Content-Type':'application/json'};if(S.token)h.Authorization='Bearer '+S.token;if(tok)h['x-otp-token']=tok;
+   const r=await fetch(path,{method:opt.method||(opt.body?'POST':'GET'),headers:h,body:opt.body?JSON.stringify(opt.body):undefined});const d=await r.json().catch(()=>({}));return[r,d]};
+  let[r,d]=await go();
+  if(r.status===428&&d.otpRequired&&S.token){const tok=await otpAsk();[r,d]=await go(tok)}
   if(r.status===401&&S.token){logout(true);throw new Error('Session expirée. Reconnectez-vous.')}
   if(!r.ok)throw new Error(d.error||d.message||'Une erreur est survenue.');return d}
+/* Code OTP (e-mail + SMS) demandé à chaque transaction */
+function otpAsk(){return new Promise(function(res,rej){
+ var ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+ ov.innerHTML='<div class="card" style="max-width:360px;width:100%;margin:0"><h2 style="margin:0 0 6px">Confirmez avec votre code</h2><p class="sub" id="otp_s">Envoi du code…</p><input id="otp_c" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" style="text-align:center;font-size:24px;letter-spacing:8px"><div id="otp_m" class="msg"></div><button class="pri" id="otp_ok">Confirmer</button><div class="row"><button class="sec" id="otp_re" style="margin:0">Renvoyer le code</button><button class="sec" id="otp_no" style="margin:0">Annuler</button></div></div>';
+ document.body.appendChild(ov);var ch=null,E=function(i){return ov.querySelector('#'+i)};
+ var raw=async function(p,b){var r=await fetch(p,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S.token},body:JSON.stringify(b||{})});var d=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(d.error||'Une erreur est survenue.');return d};
+ var note=function(t,ok){var m=E('otp_m');m.textContent=t;m.className='msg '+(ok?'ok':'er')+(t?' show':'')};
+ var send=async function(){try{note('');var d=await raw('/api/otp/request',{});ch=d.challengeId;var to=[];if(d.to&&d.to.email)to.push(d.to.email);if(d.to&&d.to.phone)to.push('le numéro '+d.to.phone);E('otp_s').textContent='Code envoyé à '+to.join(' et ')+'.';E('otp_c').focus()}catch(e){E('otp_s').textContent='';note(e.message)}};
+ var ok=async function(){var c=E('otp_c').value.replace(/\D/g,'');if(c.length!==6||!ch)return note('Saisissez les 6 chiffres.');try{var d=await raw('/api/otp/verify',{challengeId:ch,code:c});ov.remove();res(d.token)}catch(e){note(e.message)}};
+ E('otp_ok').onclick=ok;E('otp_re').onclick=send;E('otp_no').onclick=function(){ov.remove();rej(new Error('Opération annulée.'))};E('otp_c').oninput=function(){if(this.value.replace(/\D/g,'').length===6)ok()};send()})}
 
 /* champs mot de passe : afficher / masquer */
 document.querySelectorAll('input[type=password]').forEach(i=>{const w=document.createElement('div');w.className='pwb';i.parentNode.insertBefore(w,i);w.appendChild(i);
@@ -3089,13 +3135,13 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.name||u.fullName||u.username||u.email||u.phone||'Mon compte OMNIPAY';pfApply();
-  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();try{djLoad()}catch(e){}try{pwaGo()}catch(e){}
+  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();try{djLoad()}catch(e){}try{ntPoll();clearInterval(NT.timer);NT.timer=setInterval(ntPoll,60000)}catch(e){}try{pwaGo()}catch(e){}try{bpReturn()}catch(e){}
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
 const CREDIT=['deposit','transfer_in','refund'];
 function render(){
-  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();try{spChart()}catch(e){}
+  $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();try{spChart()}catch(e){}try{flSoon()}catch(e){}
   const el=$('txs');
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
   el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
@@ -3154,8 +3200,8 @@ async function openChl(){show('chl');try{const d=await api('/api/challenges');$(
 /* ===== Fiches services : ce que fait chaque bouton, comment l'utiliser, frais, sécurité. Le statut dit la vérité : « Disponible », « Sur validation OMNIPAY » ou « Bientôt ». ===== */
 var SVC={
 'recharges':{i:'📶',t:'Recharges & forfaits',s:'rv',what:'Achetez du crédit d\u2019appel, un forfait internet, un forfait appel ou autre, pour votre numéro ou celui d\u2019un proche, directement depuis votre solde.',steps:['Choisissez l\u2019opérateur, le type, le numéro et le montant.','Votre solde est débité tout de suite.','OMNIPAY exécute la recharge auprès de l\u2019opérateur, puis la commande passe à « fait ».'],fees:['Aucune commission OMNIPAY n\u2019est ajoutée au montant.','Montant minimum 200 FCFA ; un maximum par commande s\u2019applique.','Jusqu\u2019à 5 commandes en attente à la fois.'],safe:['Vérifiez bien le numéro : une recharge exécutée ne peut pas être annulée.','Si OMNIPAY ne peut pas exécuter la commande, elle est refusée et vous êtes remboursé.']},
-'omnip2p':{i:'💱',t:'OMNIP2P',s:'on',what:'Achat et vente d\u2019USDT entre particuliers, sur Binance P2P. L\u2019échange lui-même se fait sur Binance, hors OMNIPAY.',steps:['Ouvrez Binance P2P depuis ce service et réalisez votre échange sur Binance.','Si vous avez payé OMNIPAY par P2P, déclarez le numéro d\u2019ordre Binance dans « Dépôt & retrait directs » (moyen Binance P2P).','Après vérification, votre solde est crédité.'],fees:['Les frais de l\u2019échange sont ceux de Binance.'],safe:['OMNIPAY ne libère rien avant d\u2019avoir vérifié la réception réelle.','Ne payez jamais en dehors des consignes de l\u2019ordre Binance.']},
-'crypto':{i:'🪙',t:'Crypto',s:'rv',what:'Alimentez votre solde avec des cryptos (BTC, ETH, USDT…) : votre solde est crédité en FCFA après confirmation du réseau. D\u2019autres moyens existent : Binance Pay, PayPal ou carte.',steps:['Choisissez le moyen de dépôt et le montant à créditer.','Payez avec le moyen choisi, en suivant les instructions affichées.','Votre solde FCFA est crédité après confirmation.'],fees:['Frais du réseau crypto ou de PayPal indiqués avant paiement.'],safe:['Certains moyens peuvent être indisponibles selon leur activation.','Vérifiez deux fois le réseau : une erreur peut faire perdre les fonds.','OMNIPAY ne vous demande jamais votre phrase secrète ni vos clés privées.']},
+'omnip2p':{i:'💱',t:'OMNIP2P',s:'on',what:'Achat et vente d\u2019USDT entre particuliers, entre particuliers. L\u2019échange lui-même se fait sur la plateforme P2P partenaire, hors OMNIPAY.',steps:['Ouvrez Binance P2P depuis ce service et réalisez votre échange sur Binance.','Si vous avez payé OMNIPAY par P2P, déclarez le numéro d\u2019ordre Binance dans « Dépôt & retrait directs » (moyen Binance P2P).','Après vérification, votre solde est crédité.'],fees:['Les frais de l\u2019échange sont ceux de Binance.'],safe:['OMNIPAY ne libère rien avant d\u2019avoir vérifié la réception réelle.','Ne payez jamais en dehors des consignes de l\u2019ordre Binance.']},
+'crypto':{i:'🪙',t:'Crypto',s:'rv',what:'Achetez, vendez et dépensez vos cryptos (BTC, ETH, USDT…) directement dans votre portefeuille OMNIPAY, ou déposez-en depuis une autre adresse.',steps:['Choisissez le moyen de dépôt et le montant à créditer.','Payez avec le moyen choisi, en suivant les instructions affichées.','Votre solde FCFA est crédité après confirmation.'],fees:['Frais du réseau crypto ou de PayPal indiqués avant paiement.'],safe:['Certains moyens peuvent être indisponibles selon leur activation.','Vérifiez deux fois le réseau : une erreur peut faire perdre les fonds.','OMNIPAY ne vous demande jamais votre phrase secrète ni vos clés privées.']},
 'directs':{i:'💸',t:'Dépôt & retrait directs',s:'rv',what:'Rechargez votre solde en payant OMNIPAY avec votre référence personnelle (PI-SPI, Mobile Money, crypto, virement), ou retirez vers votre numéro ou votre compte. Le dépôt automatique MTN MoMo est aussi proposé ici.',steps:['Dépôt : copiez votre référence, payez, puis touchez « J\u2019ai envoyé mon paiement » avec la preuve (hash ou référence).','OMNIPAY vérifie la réception réelle, puis crédite votre solde.','Retrait : indiquez le moyen, le numéro ou le compte et le montant ; le montant et la commission sont réservés tout de suite.'],fees:['Commission de retrait : 50 FCFA.','Montant minimum 500 FCFA ; un maximum par demande s\u2019applique (affiché avant validation).','Jusqu\u2019à 3 demandes en attente à la fois.'],safe:['Indiquez toujours votre référence : sans elle, le paiement doit être rapproché à la main.','Aucun crédit sans vérification de la réception réelle : un retard n\u2019est pas une perte.']},
 'pispi':{i:'🔗',t:'PI-SPI',s:'rv',what:'PI-SPI est le système de paiement instantané de la BCEAO. Payez OMNIPAY depuis n’importe quelle banque, microfinance ou portefeuille Mobile Money connecté, par QR ou par alias.',steps:['Dans votre application bancaire ou Mobile Money, ouvrez PI-SPI.','Scannez le QR d’OMNIPAY ou saisissez l’alias, et écrivez votre identifiant OM dans le motif.','Vérifiez que le nom du bénéficiaire affiché est bien ETS OMNIPAY, puis validez.'],fees:['Voir les conditions de votre banque ou de votre opérateur.'],safe:['Le crédit automatique de votre solde est en cours de mise en service : il peut être validé à la main en attendant.','Ne payez jamais un QR reçu par message si le nom affiché n’est pas ETS OMNIPAY.']},
 'marches':{i:'📈',t:'Marchés',s:'on',what:'Prix des principales cryptos en direct, en dollars et en FCFA, avec un graphique et un convertisseur indicatif.',steps:['Touchez une crypto pour voir son graphique (15 min, 1 h, 4 h, 1 jour).','Utilisez le convertisseur pour estimer une valeur en FCFA.'],fees:['Gratuit. Écran en lecture seule.'],safe:['Ce sont des cours de marché, pas un prix garanti ni un conseil d’investissement.','Aucune opération n’est lancée depuis cet écran.']},
@@ -3196,7 +3242,7 @@ async function dashMk(){try{const r=await fetch('/api/markets/tickers');const d=
  $('dmk_t').textContent=(d.stale?'Données en cache. ':'Mis à jour à ')+new Date(d.updatedAt).toLocaleTimeString('fr-FR')+' · cours indicatifs'}catch(e){if($('dmk_t'))$('dmk_t').textContent=e.message}
  try{if(S&&S.token){const c=await api('/api/challenges');$('dmk_cs').textContent='Niveau '+c.level+' · '+c.points+' / '+c.totalPoints+' points. Touchez pour voir vos défis.'}}catch(e){}}
 setInterval(function(){var d=$('dash');if(d&&!d.classList.contains('hide'))dashMk()},30000);
-function openHist(){show('hist');try{stkLoad()}catch(e){}}
+function openHist(){show('hist');try{stkLoad()}catch(e){}try{flLoad()}catch(e){}}
 async function openFcf(){show('fcf');$('fc_msg').className='msg';fcfLoad()}
 async function fcfLoad(){try{const d=await api('/api/bundles/mine');const st={pending:'en attente',done:'fait',rejected:'refusé, remboursé'};
  $('fc_list').innerHTML=d.orders.length?d.orders.map(o=>'<div class="tx"><div>'+escH(o.kindLabel)+' · '+escH(String(o.operator).toUpperCase())+'<small>'+escH(o.phone)+' · '+new Date(o.created_at).toLocaleString('fr-FR')+' · '+(st[o.status]||o.status)+'</small></div><b class="neg">-'+fmt(o.amount)+'</b></div>').join(''):'<p class="sub" style="margin:0">Aucune commande pour le moment.</p>'}catch(e){$('fc_list').textContent=e.message}}
@@ -3274,7 +3320,7 @@ async function openOc(){$('oc_msg').className='msg';show('oc');
    if(!a){h+=`<h2 style="margin-top:18px">Devenir agent OMNICASH</h2><p class="sub" style="margin-bottom:8px">Recevez des espèces, créditez vos clients, gagnez une commission. Votre demande est validée par OMNIPAY, qui charge votre trésorerie.</p>
     <label>Nom de votre point</label><input id="oc_nm" maxlength="80"><label>Ville / quartier</label><input id="oc_ct" maxlength="80"><button class="sec" onclick="ocApply()">Envoyer ma demande</button>`}
    else if(a.status!=='active'){h+=`<div class="tx"><div>Compte agent<small>${escH(a.name)} · ${escH(a.city)}</small></div><b style="color:var(--warn)">${a.status==='pending'?'En attente de validation':'Suspendu'}</b></div>`}
-   else{h+=`<h2 style="margin-top:18px">Ordres de paiement</h2><p class="sub" style="margin-bottom:8px">L'IA prépare les paiements locaux ; vous les exécutez depuis votre compte puis confirmez avec la référence réelle.</p><div id="ord_box" class="sub">Chargement…</div>`;
+   else{h+=`<h2 style="margin-top:18px">Ordres de paiement</h2><p class="sub" style="margin-bottom:8px">Les paiements locaux sont préparés pour vous ; vous les exécutez depuis votre compte puis confirmez avec la référence réelle.</p><div id="ord_box" class="sub">Chargement…</div>`;
    h+=`<h2 style="margin-top:18px">Mon espace agent</h2><div class="tx"><div>Trésorerie disponible<small>${escH(a.name)} · ${escH(a.city)}</small></div><b>${fmt(a.float)}</b></div>
     <h2 style="margin-top:14px">Dépôt en espèces (client → compte)</h2><label>Identifiant OM du client</label><input id="oc_ci_c" placeholder="OM1234567890"><label>Montant remis par le client (FCFA)</label><input id="oc_ci_a" type="number" min="100"><button class="pri" onclick="ocCashin()">Créditer le client</button>
     <h2 style="margin-top:14px">Retrait en espèces (compte → client)</h2><label>Identifiant OM du client</label><input id="oc_cx_c" placeholder="OM1234567890"><label>Code à 6 chiffres du client</label><input id="oc_cx_k" inputmode="numeric" maxlength="6"><button class="pri" onclick="ocCashout()">Valider le retrait</button>
@@ -3431,7 +3477,7 @@ async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,1
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
 
-const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash']],bank:[['ecobank','Ecobank'],['uba','UBA'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['binance','Binance (adresse de dépôt)']]};
+const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash']],bank:[['ecobank','Ecobank'],['uba','UBA'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['binance','Crypto (adresse de dépôt)']]};
 const LK_ST={pending:'En vérification',verified:'Validé ✔',rejected:'Refusé'};
 function lkKind(){const k=$('lk_kind').value;$('lk_prov').innerHTML=LK_PROV[k].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');$('lk_det').placeholder=k==='mobile'?'Numéro (ex. 01XXXXXXXX)':k==='bank'?'IBAN (ex. BJ66…)':'Adresse du portefeuille (0x…, T…)'}
 async function openLnk(){show('lnk');lkKind();$('lk_msg').className='msg';await lkList()}
@@ -3465,7 +3511,7 @@ async function ppReturn(){try{const P=new URLSearchParams(location.search),st=P.
 async function doBn(){const am=parseFloat($('bn_am').value);if(!(am>0))return msg('cry_msg','Montant invalide.');
   try{const d=await api('/api/binance-pay/order',{body:{amount:am,currency:'USDT'}});
     if(!confirm(`Payer ${d.amount} USDT pour être crédité de ${fmt(d.creditXof)} (taux ${d.rate}) ?`))return;
-    const u=d.checkoutUrl||d.universalUrl||d.deeplink;if(u){msg('cry_msg','Ouverture de Binance Pay…',true);location.href=u}else msg('cry_msg','Commande créée.',true)}catch(e){msg('cry_msg',e.message)}}
+    const u=d.checkoutUrl||d.universalUrl||d.deeplink;if(u){msg('cry_msg','Ouverture du paiement…',true);location.href=u}else msg('cry_msg','Commande créée.',true)}catch(e){msg('cry_msg',e.message)}}
 
 /* ===== Mot de passe oublié ===== */
 const fBoxes=[];
@@ -3531,11 +3577,15 @@ const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 var VNT=null,VNO=null,VNP={};
 function vnPrice(){var i=$('vn_c').value;$('vn_p').textContent=i&&VNP[i]?fmt(VNP[i]):'selon le pays'}
 const VNST={active:'En attente du SMS',done:'Code reçu',expired:'Expiré · remboursé',failed:'Annulé',renting:'En cours'};
-async function openVn(){$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');vnPayLoad();
+async function openVn(){vnPopPaint();$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');vnPayLoad();
  try{const d=await api('/api/vn/info');VNP=Object.fromEntries((d.countries||[]).map(c=>[c.iso,c.price]));vnPrice();
   if(!d.enabled){$('vn_form').classList.add('hide');$('vn_off').style.display='block'}else{$('vn_form').classList.remove('hide');$('vn_off').style.display='none';
    $('vn_c').innerHTML='<option value="">Choisir un pays…</option>'+(d.countries||[]).map(c=>`<option value="${escH(c.iso)}">${escH(c.name)} · ${fmt(c.price)}</option>`).join('');vnSearch()}}catch(e){msg('vn_m',e.message)}
  vnHist()}
+
+var VNPOP=[['WhatsApp','#25d366','W'],['Telegram','#2a9df4','T'],['TikTok','#111','♪'],['Instagram','#e1306c','◎'],['Facebook','#1877f2','f'],['Google','#4285f4','G']];
+function vnPopPaint(sel){var e=$('vn_pop');if(!e)return;e.innerHTML=VNPOP.map(function(a){return '<button type="button" class="mkrow'+(sel===a[0]?' sel':'')+'" style="margin:0;display:flex;align-items:center;gap:10px" onclick="vnPick(\''+a[0]+'\')"><span class="cn" style="background:'+a[1]+';color:#fff;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800">'+a[2]+'</span><b>'+a[0]+'</b></button>'}).join('')}
+async function vnPick(n){$('vn_q').value=n;vnPopPaint(n);await vnSearch();var o=$('vn_s'),i=-1,L=n.toLowerCase();for(var k=0;k<o.options.length;k++){var t=(o.options[k].getAttribute('data-n')||'').toLowerCase();if(t===L){i=k;break}if(i<0&&t.indexOf(L)===0)i=k}if(i>=0)o.selectedIndex=i;var c=$('vn_c');if(c&&!c.value)c.focus()}
 async function vnSearch(){try{const d=await api('/api/vn/services?q='+encodeURIComponent($('vn_q').value.trim()));const L=d.services||[];
  $('vn_s').innerHTML=L.length?L.map(s=>`<option value="${escH(s.id)}" data-n="${escH(s.name)}">${escH(s.name)}</option>`).join(''):'<option value="">Aucun service trouvé</option>'}catch(e){msg('vn_m',e.message)}}
 async function vnRent(){const iso=$('vn_c').value,sel=$('vn_s'),sid=sel.value;
@@ -3563,7 +3613,7 @@ async function vnHist(){try{const d=await api('/api/vn/mine');const L=d.orders||
  $('vn_h').innerHTML=L.length?L.map(o=>`<div class="tx" style="cursor:pointer" onclick="vnOpen('${escH(o.id)}')"><div>${escH(o.serviceName||'Service')} · ${escH(o.iso)}<small>${new Date(o.createdAt).toLocaleString('fr-FR')} · ${escH(VNST[o.status]||o.status)}${o.code?' · '+escH(o.code):''}</small></div><b class="neg">-${fmt(o.price)}</b></div>`).join(''):'<p class="sub" style="margin:0">Aucun numéro pour le moment.</p>'}catch(e){}}
 async function hcLoad(){const el=$('hc_l');if(!el)return;
  try{const d=await api('/api/manual/instructions');const A=(d.accounts||[]).filter(a=>a.type==='binance');
-  el.innerHTML=A.length?A.map((a,i)=>`<div style="margin-bottom:12px"><b>${escH(a.label||'Binance')}</b> <small class="sub">${escH(a.network||'')}</small><div class="row" style="align-items:center"><div id="hc_a${i}" style="flex:1;word-break:break-all;font-size:12px;font-family:monospace;user-select:all;padding:8px 0">${escH(a.detail||'')}</div><button class="sec" style="width:auto;margin:0;padding:10px 14px" onclick="copyTxt($('hc_a${i}').textContent,'hc_m')">Copier</button></div></div>`).join('')
+  el.innerHTML=A.length?A.map((a,i)=>`<div style="margin-bottom:12px"><b>${escH(a.label||'Crypto')}</b> <small class="sub">${escH(a.network||'')}</small><div class="row" style="align-items:center"><div id="hc_a${i}" style="flex:1;word-break:break-all;font-size:12px;font-family:monospace;user-select:all;padding:8px 0">${escH(a.detail||'')}</div><button class="sec" style="width:auto;margin:0;padding:10px 14px" onclick="copyTxt($('hc_a${i}').textContent,'hc_m')">Copier</button></div></div>`).join('')
    +`<p class="sub" style="font-size:12px;margin:4px 0 8px">Envoyez uniquement des USDT sur le réseau indiqué. Ensuite, collez le hash de la transaction.</p><button class="sec" style="margin:0" onclick="openMan('crypto')">J'ai envoyé : coller le hash</button>`
    :`<p class="sub" style="margin:0">Adresses en cours d'activation.</p>`}
  catch(e){el.innerHTML='<p class="sub" style="margin:0">Adresses indisponibles pour le moment.</p>'}}
@@ -3680,6 +3730,51 @@ function spChart(){var el=$('spc');if(!el)return;var tx=(S.txs||[]).filter(funct
   bars+='<rect x="'+x+'" y="'+(80-h)+'" width="28" height="'+Math.max(h,v>0?2:0)+'" rx="5" fill="var(--g,#17c98f)"/><text x="'+(x+14)+'" y="94" font-size="8" text-anchor="middle" fill="currentColor" opacity=".7">'+lab+'</text>'+(v>0?'<text x="'+(x+14)+'" y="'+(76-h)+'" font-size="8" text-anchor="middle" fill="currentColor">'+(v>=1000?Math.round(v/1000)+'k':v)+'</text>':'')});
  el.innerHTML='<div class="mkbox" style="margin:10px 0"><b>Mes dépenses</b><div class="sub" style="margin:2px 0 6px;font-size:12px">'+fmt(tot)+' sur 8 semaines (d\'après vos dernières opérations)</div><svg viewBox="0 0 312 100" width="100%" role="img" aria-label="Dépenses par semaine">'+bars+'</svg></div>'}
 
+
+/* Entrées / sorties automatiques + OMNIWALLET */
+var FL={days:30,data:null,at:0,t:null};
+async function flLoad(d){if(d)FL.days=d;try{FL.data=await api('/api/flows?days='+FL.days);FL.at=Date.now()}catch(e){return}flPaintAll()}
+function flSoon(){clearTimeout(FL.t);if(Date.now()-FL.at<4000)return;FL.t=setTimeout(function(){flLoad()},500)}
+function flPaintAll(){var h=flHtml();['flc_b','ow_fl','flh_b'].forEach(function(id){var e=$(id);if(e)e.innerHTML=id==='flh_b'?'<div class="mkbox" style="margin:10px 0"><b>Entrées / sorties</b>'+h+'</div>':h})}
+function flHtml(){var d=FL.data;if(!d)return '';var tb=[7,30,90].map(function(n){return '<button class="ottab'+(FL.days===n?' on':'')+'" onclick="flLoad('+n+')">'+n+' j</button>'}).join('');
+ var any=d.series.some(function(x){return x.in>0||x.out>0});
+ var mx=Math.max.apply(null,d.series.map(function(x){return Math.max(x.in,x.out)}))||1,n=d.series.length,W=312,bw=Math.max(2,Math.min(14,Math.floor((W-8)/n/2.4))),gap=(W-8)/n,bars='';
+ d.series.forEach(function(x,i){var cx=4+i*gap+gap/2,hi=Math.round(x.in/mx*70),ho=Math.round(x.out/mx*70);
+  bars+='<rect x="'+(cx-bw-0.5)+'" y="'+(80-hi)+'" width="'+bw+'" height="'+Math.max(hi,x.in>0?2:0)+'" rx="2" fill="#17c98f"/><rect x="'+(cx+0.5)+'" y="'+(80-ho)+'" width="'+bw+'" height="'+Math.max(ho,x.out>0?2:0)+'" rx="2" fill="#f0a04b"/>';
+  if(n<=14||i%Math.ceil(n/6)===0)bars+='<text x="'+cx+'" y="94" font-size="8" text-anchor="middle" fill="currentColor" opacity=".7">'+escH(x.date.slice(8,10)+'/'+x.date.slice(5,7))+'</text>'});
+ var pc=function(v){return v==null?'':' <small style="opacity:.7">('+(v>0?'+':'')+v+' %)</small>'};
+ var cat=function(l,c){return l.length?'<div style="flex:1;min-width:130px"><small style="opacity:.7">'+c+'</small>'+l.slice(0,4).map(function(x){return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-top:3px"><span>'+escH(x.label)+'</span><b>'+fmt(x.amount)+'</b></div>'}).join('')+'</div>':''};
+ return '<div class="ottabs" style="margin:8px 0">'+tb+'</div>'+(any?'<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin:4px 0"><span><span style="color:#17c98f">■</span> Entrées <b>'+fmt(d.totals.in)+'</b>'+pc(d.previous.inPct)+'</span><span><span style="color:#f0a04b">■</span> Sorties <b>'+fmt(d.totals.out)+'</b>'+pc(d.previous.outPct)+'</span></div>'
+ +'<svg viewBox="0 0 312 100" width="100%" role="img" aria-label="Entrées et sorties sur '+d.days+' jours">'+bars+'</svg><div style="font-size:13px;margin:2px 0 8px">Solde net : <b style="color:'+(d.totals.net>=0?'#17c98f':'#f0a04b')+'">'+(d.totals.net>=0?'+':'−')+fmt(Math.abs(d.totals.net))+'</b></div><div style="display:flex;gap:16px;flex-wrap:wrap">'+cat(d.categories.in,'D\'où vient l\'argent')+cat(d.categories.out,'Où il part')+'</div>'
+ :'<p class="sub" style="margin:8px 0 0">Aucune opération sur cette période. Le suivi se remplit tout seul dès votre première opération.</p>')}
+var OW={d:null,info:null};
+async function openOw(f){show('ow');$('ow_msg').className='msg';await owLoad();flLoad();if(f){var e=$(f==='cash'?'ow_cash':'ow_fl');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}}
+async function owLoad(){try{OW.d=await api('/api/omniwallet');try{OW.info=await api('/api/exchange/info')}catch(e){}owPaint()}catch(e){msg('ow_msg',e.message)}}
+function owPaint(){var d=OW.d;if(!d)return;var cr=d.crypto||[];
+ var h='<div class="mkbox" style="margin:10px 0"><small style="opacity:.7">Solde FCFA</small><div style="font-size:26px;font-weight:800">'+fmt(d.balance)+'</div>'+(cr.length?'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+cr.map(function(x){return '<span class="mkbox" style="margin:0;padding:6px 10px"><b>'+escH(String(x.qty))+'</b> '+escH(x.asset)+'</span>'}).join('')+'</div>':'<small style="opacity:.7">Aucune crypto pour le moment.</small>')+'</div>'
+ +'<div class="row" style="margin:6px 0"><button class="sec" style="margin:0" onclick="openIO(\'in\')">⬇ Déposer</button><button class="sec" style="margin:0" onclick="openIO(\'out\')">⬆ Mobile Money</button><button class="sec" style="margin:0" onclick="openEx()">🪙 Crypto</button></div>'
+ +'<div id="ow_cash" class="mkbox" style="margin:12px 0"><b>🏧 Retrait TPE direct (espèces)</b><p class="sub" style="margin:4px 0 8px">Générez un code, donnez-le avec votre identifiant OM à un agent OMNICASH : il vous remet les espèces tout de suite. Frais d\'environ 1 % (min. 100 FCFA).</p>'
+ +(d.cashPending?'<p class="sub" style="color:var(--warn)">Un retrait de '+fmt(d.cashPending.amount)+' est déjà en attente. Un nouveau code remplacera l\'ancien.</p>':'')
+ +'<label>Montant (FCFA)</label><input id="ow_am" type="number" min="100" value="5000"><button class="pri" onclick="owCash()">Générer mon code de retrait</button><div id="ow_cres"></div><button class="lnk" onclick="openCash()">Mes retraits en espèces →</button></div>'
+ +'<div class="mkbox" style="margin:12px 0"><b>👛 Mes portefeuilles</b>'+((d.book||[]).length?d.book.map(function(x,i){var sh=x.address.length>22?x.address.slice(0,10)+'…'+x.address.slice(-6):x.address;return '<div class="tx" style="display:block;margin-top:8px"><div><b>'+escH(x.label)+'</b><small>'+(x.kind==='crypto'?escH(x.asset)+' · '+escH(x.network):'Mobile Money · '+escH(String(x.network).toUpperCase()))+' · '+escH(sh)+'</small></div><div class="row" style="margin-top:6px"><button class="sec" style="margin:0" onclick="owSend('+i+')">Envoyer ici</button><button class="sec" style="margin:0" onclick="owDel('+i+')">Retirer</button></div></div>'}).join(''):'<p class="sub" style="margin:6px 0">Enregistrez vos adresses crypto et numéros Mobile Money pour retirer en deux touches.</p>')
+ +'<h2 style="margin-top:14px;font-size:15px">Ajouter un portefeuille</h2><label>Type</label><select id="ow_k" onchange="owKind()"><option value="crypto">Adresse crypto</option><option value="mobile">Mobile Money</option></select><label>Nom (ex : Mon Ledger, Maman)</label><input id="ow_l" maxlength="40"><div id="ow_f"></div><button class="pri" onclick="owAdd()">Enregistrer</button></div>'
+ +'<div id="ow_fl" class="mkbox" style="margin:12px 0"><b>📊 Entrées / sorties</b></div>';
+ $('ow_body').innerHTML=h;owKind();flPaintAllOw()}
+function flPaintAllOw(){var e=$('ow_fl');if(e&&FL.data)e.innerHTML='<b>📊 Entrées / sorties</b>'+flHtml()}
+function owKind(){var k=$('ow_k').value,f=$('ow_f');
+ if(k==='mobile'){f.innerHTML='<label>Opérateur</label><select id="ow_op"><option value="mtn">MTN</option><option value="moov">Moov</option><option value="celtiis">Celtiis</option></select><label>Numéro</label><input id="ow_ph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX">';return}
+ var as=(OW.info&&OW.info.assets)||[];if(!as.length)as=[{asset:'USDT',networks:['TRC20','BEP20']}];OW.as=as;
+ f.innerHTML='<label>Monnaie</label><select id="ow_a" onchange="owNets()">'+as.map(function(a){return '<option>'+escH(a.asset)+'</option>'}).join('')+'</select><label>Réseau</label><select id="ow_n"></select><label>Adresse</label><input id="ow_ad" maxlength="120" autocomplete="off">';owNets()}
+function owNets(){var a=(OW.as||[]).find(function(x){return x.asset===$('ow_a').value});$('ow_n').innerHTML=((a&&a.networks)||[]).map(function(n){return '<option>'+escH(n)+'</option>'}).join('')}
+async function owAdd(){try{var k=$('ow_k').value,b={kind:k,label:$('ow_l').value};if(k==='mobile'){b.operator=$('ow_op').value;b.phone=$('ow_ph').value}else{b.asset=$('ow_a').value;b.network=$('ow_n').value;b.address=$('ow_ad').value.trim()}
+ await api('/api/omniwallet/book',{body:b});await owLoad();msg('ow_msg','Portefeuille enregistré.',true)}catch(e){msg('ow_msg',e.message)}}
+async function owDel(i){var x=OW.d.book[i];if(!x||!confirm('Retirer « '+x.label+' » de vos portefeuilles ?'))return;try{await api('/api/omniwallet/book/'+x.id,{method:'DELETE'});await owLoad()}catch(e){msg('ow_msg',e.message)}}
+async function owSend(i){var x=OW.d.book[i];if(!x)return;
+ if(x.kind==='mobile'){openIO('out');$('io_ch').value=x.network;if($('io_acc'))$('io_acc').value=x.address;return}
+ EX.tab='w';await openEx();try{$('ex_a').value=x.asset;exNets();$('ex_n').value=x.network;$('ex_ad').value=x.address}catch(e){}}
+async function owCash(){try{var d=await api('/api/omnicash/cashout/request',{body:{amount:parseInt($('ow_am').value,10)}});
+ $('ow_cres').innerHTML='<div class="mkbox" style="margin:10px 0;text-align:center"><small>Votre code (valable '+d.expiresInMinutes+' min)</small><div style="font-size:34px;font-weight:800;letter-spacing:8px">'+escH(d.code)+'</div><small>Espèces à recevoir : '+fmt(d.amount)+' · frais '+fmt(d.fee)+' · total débité '+fmt(d.total)+'</small></div>'}catch(e){msg('ow_msg',e.message)}}
+
 /* Opérations non abouties : récupérer ses fonds */
 async function stkLoad(){var el=$('stk');if(!el)return;try{var d=await api('/api/recon/mine');var it=d.items||[];
  if(!it.length){el.innerHTML='';return}
@@ -3721,6 +3816,55 @@ async function djShare(kind){var c=DJ.cards[DJ.i];if(!c)return;var cv=document.c
  msg('dj_m','Création de la vidéo…',true);var mt=['video/mp4','video/webm;codecs=vp9','video/webm'].find(function(m){return MediaRecorder.isTypeSupported(m)})||'';var rec=new MediaRecorder(cv.captureStream(30),mt?{mimeType:mt}:{}),ch=[];
  rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};rec.onstop=function(){var b=new Blob(ch,{type:rec.mimeType||'video/webm'});$('dj_m').className='msg';djOut(b,'omnipay-du-jour.'+(/mp4/.test(b.type)?'mp4':'webm'),c)};
  rec.start();var t0=performance.now(),iv=setInterval(function(){var p=Math.min(1,(performance.now()-t0)/3500);djDraw(cv,c,p);if(performance.now()-t0>5500){clearInterval(iv);rec.stop()}},33)}
+
+/* ===== CLOCHE : centre de notifications ===== */
+var NT={items:[],unread:0,timer:null};
+async function ntPoll(){if(!S.token)return;try{var d=await api('/api/notify');NT.items=d.items||[];NT.unread=d.unread||0;ntDot()}catch(e){}}
+function ntDot(){var e=$('bdot');if(e)e.style.display=NT.unread?'block':'none'}
+function ntAgo(t){var m=Math.round((Date.now()-new Date(t).getTime())/6e4);if(m<1)return 'à l’instant';if(m<60)return 'il y a '+m+' min';var h=Math.round(m/60);if(h<24)return 'il y a '+h+' h';return 'il y a '+Math.round(h/24)+' j'}
+async function openNt(){show('nt');await ntPoll();var it=NT.items;
+ $('nt_l').innerHTML=it.length?it.map(function(x){return '<div class="mkbox" onclick="ntGo(\''+escH(x.go||'')+'\')" style="margin:8px 0;cursor:pointer;'+(x.unread?'border-color:var(--mint)':'')+'"><div style="display:flex;gap:10px"><span style="font-size:22px">'+escH(x.icon||'🔔')+'</span><div style="flex:1"><b>'+escH(x.title)+'</b>'+(x.unread?' <small style="color:var(--mint)">• nouveau</small>':'')+'<br><small style="opacity:.85">'+escH(x.body)+'</small><br><small style="opacity:.6">'+ntAgo(x.at)+'</small></div></div></div>'}).join(''):'<p class="sub">Aucune notification pour le moment.</p>';
+ try{await api('/api/notify/read',{body:{}});NT.unread=0;ntDot()}catch(e){}}
+function ntGo(g){if(g==='hist')openHist();else if(g==='crypto')openEx();else if(g==='plan')openBz('a');else if(g==='ot')openOt();else if(g==='vn')openVn();else if(g==='aff')openAff()}
+/* ===== BUSINESS ===== */
+var BZ={tab:'p',ov:null,pl:null};
+async function bzLoad(){BZ.ov=await api('/api/business/overview');try{BZ.pl=await api('/api/notify/plans')}catch(e){BZ.pl=null}}
+async function openBz(t){show('bz');$('bz_m').className='msg';try{await bzLoad()}catch(e){return msg('bz_m',e.message)}bzTab(t||BZ.tab||'p')}
+function bzSt(s){return {pending:['En attente','#ffcc4d'],paid:['Réglé','#17c98f'],refunded:['Remboursé','#8fa0bf'],cancelled:['Annulé','#8fa0bf'],expired:['Expiré','#8fa0bf']}[s]||[s,'#8fa0bf']}
+function bzTab(t){BZ.tab=t;document.querySelectorAll('#bz .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});$('bz_m').className='msg';var o=BZ.ov,h='';if(!o)return;
+ if(t==='p'){h='<div class="mkbox" style="margin:10px 0"><b>Nouvel encaissement</b><label>Montant (FCFA)</label><input id="bz_a" type="number" inputmode="numeric" min="100" placeholder="Ex. 5000"><label>Description</label><input id="bz_d" maxlength="120" placeholder="Ex. Commande n° 12"><label>Mode</label><select id="bz_mo"><option value="test">Test (aucune somme ne bouge)</option><option value="live"'+(o.pro?'':' disabled')+'>Réel'+(o.pro?'':' (abonnement Pro)')+'</option></select><button class="pri" onclick="bzNew()">Créer le lien de paiement</button><div id="bz_n"></div></div>'+
+  '<div class="sub" style="margin:6px 0">Encaissé en mode réel : <b>'+fmt(o.stats.netXof)+'</b> · '+o.stats.paidCount+' paiement(s)</div>'+
+  (o.payments.length?o.payments.map(function(p){var st=bzSt(p.status);return '<div class="mkbox" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+fmt(p.amount)+'</b><span style="color:'+st[1]+';font-size:12px;font-weight:700">'+st[0]+(p.mode==='test'?' · test':'')+'</span></div><small style="opacity:.75">'+escH(p.description||'Sans description')+' · '+new Date(p.createdAt).toLocaleDateString('fr-FR')+'</small><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+   (p.status==='pending'?'<button class="sec" style="width:auto;margin:0;padding:7px 12px;font-size:12px" onclick="copyTxt(\''+escH(p.checkoutUrl)+'\',\'bz_m\')">Copier le lien</button><button class="sec" style="width:auto;margin:0;padding:7px 12px;font-size:12px" onclick="bzAct(\''+escH(p.id)+'\',\'cancel\')">Annuler</button>':'')+
+   (p.status==='paid'?'<button class="sec" style="width:auto;margin:0;padding:7px 12px;font-size:12px" onclick="if(confirm(\'Rembourser ce paiement ?\'))bzAct(\''+escH(p.id)+'\',\'refund\')">Rembourser</button>':'')+'</div></div>'}).join(''):'<p class="sub">Aucun encaissement pour le moment.</p>')+
+  '<button class="sec" onclick="bzCsv()">Exporter en CSV</button>'}
+ else if(t==='k'){var ex='curl -X POST '+o.api+'/v1/payments \\\n  -H "Authorization: Bearer omp_test_…" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"amount":5000,"description":"Commande 12","reference":"CMD-12"}\'';
+  h='<p class="sub">Intégrez OMNIPAY à votre site ou application. Les clés de test sont gratuites ; les clés réelles demandent l’abonnement Pro.</p><div class="mkbox" style="margin:10px 0"><b>Créer une clé</b><label>Nom</label><input id="bk_n" maxlength="40" placeholder="Ex. Ma boutique"><label>Mode</label><select id="bk_m"><option value="test">Test</option><option value="live"'+(o.pro?'':' disabled')+'>Réel'+(o.pro?'':' (Pro)')+'</option></select><button class="pri" onclick="bzKey()">Générer</button><div id="bk_r"></div></div>'+
+  (o.keys.length?o.keys.map(function(k){return '<div class="mkbox" style="margin:8px 0;display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b>'+escH(k.name)+'</b> <small style="opacity:.7">'+(k.mode==='live'?'réel':'test')+'</small><br><small style="opacity:.7">'+escH(k.prefix)+' · '+(k.last_used?'utilisée '+new Date(k.last_used).toLocaleDateString('fr-FR'):'jamais utilisée')+'</small></div><button class="sec" style="width:auto;margin:0;padding:7px 12px;font-size:12px" onclick="if(confirm(\'Révoquer cette clé ?\'))bzRev(\''+escH(k.id)+'\')">Révoquer</button></div>'}).join(''):'')+
+  '<div class="mkbox" style="margin:12px 0"><b>Exemple</b><pre style="white-space:pre-wrap;word-break:break-all;font-size:11px;margin:8px 0 0">'+escH(ex)+'</pre><p class="sub" style="font-size:12px;margin:8px 0 0">La réponse contient <b>checkoutUrl</b> : envoyez-la à votre client. Chaque règlement déclenche un webhook <b>payment.paid</b> signé (en-tête OMNIPAY-Signature, HMAC-SHA256 de « horodatage.corps » avec votre secret).</p></div>'}
+ else if(t==='r'){var pr=o.profile;h='<div class="mkbox" style="margin:10px 0"><label>Nom commercial (affiché à vos clients)</label><input id="bs_n" maxlength="40" value="'+escH(pr.businessName||'')+'" placeholder="Ex. Boutique Awa"><label>URL de webhook (https)</label><input id="bs_u" maxlength="300" value="'+escH(pr.webhookUrl||'')+'" placeholder="https://votre-site.com/omnipay-webhook"><button class="pri" onclick="bzSave()">Enregistrer</button></div>'+
+  (pr.webhookSecret?'<div class="mkbox" style="margin:10px 0"><b>Secret de signature</b><p style="word-break:break-all;font-size:12px;margin:6px 0">'+escH(pr.webhookSecret)+'</p><button class="sec" style="width:auto;margin:0;padding:7px 12px;font-size:12px" onclick="copyTxt(\''+escH(pr.webhookSecret)+'\',\'bz_m\')">Copier</button></div>':'')+
+  '<p class="sub" style="font-size:12px">Frais d’encaissement : '+o.fees.standard+' % (minimum '+o.fees.min+' FCFA), '+o.fees.pro+' % avec Pro. Un remboursement rend 100 % au client.</p>'}
+ else{var pl=BZ.pl;if(!pl)return;var mine=pl.mine,act=mine&&mine.active;h=pl.plans.map(function(x){var cur=(x.id==='pro'&&act)||(x.id==='essentiel'&&!act);return '<div class="mkbox" style="margin:10px 0;'+(x.id==='pro'?'border-color:var(--mint)':'')+'"><div style="display:flex;justify-content:space-between"><b>'+escH(x.name)+'</b><b>'+(x.price?fmt(x.price)+' / '+pl.days+' j':'Gratuit')+'</b></div><ul style="margin:8px 0 0 18px;padding:0;font-size:13px">'+x.perks.map(function(k){return '<li>'+escH(k)+'</li>'}).join('')+'</ul>'+
+   (x.id==='pro'?(act?'<p class="sub" style="margin:8px 0 0">Actif jusqu’au '+new Date(mine.expiresAt).toLocaleDateString('fr-FR')+'</p><label style="display:flex;gap:10px;align-items:center;margin-top:8px"><input type="checkbox" style="width:auto;margin:0" '+(mine.autoRenew?'checked':'')+' onchange="bzAuto(this.checked)"> Renouvellement automatique</label><button class="sec" onclick="bzSub()">Prolonger de '+pl.days+' jours</button>':'<button class="pri" onclick="bzSub()">Passer à Pro</button>'):(cur?'<p class="sub" style="margin:8px 0 0">Votre offre actuelle</p>':''))+'</div>'}).join('')}
+ $('bz_b').innerHTML=h}
+async function bzNew(){try{var r=await api('/api/business/payments',{body:{amount:Number($('bz_a').value),description:$('bz_d').value,mode:$('bz_mo').value}});var u=r.payment.checkoutUrl;
+ $('bz_n').innerHTML='<div style="text-align:center;margin-top:12px"><div style="width:170px;margin:0 auto;background:#fff;padding:6px;border-radius:10px">'+qrSvg(u)+'</div><p style="word-break:break-all;font-size:12px;margin:8px 0">'+escH(u)+'</p><button class="sec" style="width:auto;padding:7px 14px" onclick="copyTxt(\''+escH(u)+'\',\'bz_m\')">Copier le lien</button></div>';await bzLoad()}catch(e){msg('bz_m',e.message,false)}}
+async function bzAct(id,a){try{await api('/api/business/payments/'+id+'/'+a,{body:{}});await bzLoad();bzTab('p');msg('bz_m',a==='refund'?'Paiement remboursé.':'Lien annulé.',true)}catch(e){msg('bz_m',e.message,false)}}
+async function bzKey(){try{var r=await api('/api/business/keys',{body:{name:$('bk_n').value,mode:$('bk_m').value}});$('bk_r').innerHTML='<div class="msg ok" style="display:block;word-break:break-all"><b>'+escH(r.key)+'</b><br><small>'+escH(r.notice)+'</small></div><button class="sec" style="width:auto;padding:7px 14px" onclick="copyTxt(\''+escH(r.key)+'\',\'bz_m\')">Copier la clé</button>';await bzLoad()}catch(e){msg('bz_m',e.message,false)}}
+async function bzRev(id){try{await api('/api/business/keys/'+id+'/revoke',{body:{}});await bzLoad();bzTab('k')}catch(e){msg('bz_m',e.message,false)}}
+async function bzSave(){try{await api('/api/business/settings',{body:{businessName:$('bs_n').value,webhookUrl:$('bs_u').value}});await bzLoad();bzTab('r');msg('bz_m','Réglages enregistrés.',true)}catch(e){msg('bz_m',e.message,false)}}
+async function bzSub(){try{var r=await api('/api/notify/subscribe',{body:{plan:'pro',autoRenew:true}});if(S.wallet){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}await bzLoad();bzTab('a');msg('bz_m','Abonnement Pro activé.',true)}catch(e){msg('bz_m',e.message,false)}}
+async function bzAuto(on){try{await api('/api/notify/autorenew',{body:{on:on}});await bzLoad()}catch(e){msg('bz_m',e.message,false)}}
+async function bzCsv(){try{var r=await fetch('/api/business/export.csv',{headers:{Authorization:'Bearer '+S.token}});if(!r.ok)throw new Error('Export impossible.');var b=await r.blob(),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='omnipay-encaissements.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},3000)}catch(e){msg('bz_m',e.message,false)}}
+/* ===== PAGE DE PAIEMENT (lien marchand ?bp=…) ===== */
+(function(){try{var q=new URLSearchParams(location.search).get('bp');if(q&&/^[A-HJ-NP-Z2-9]{10}$/i.test(q)){sessionStorage.setItem('om_bp',q.toUpperCase());history.replaceState(null,'',location.pathname)}}catch(e){}})();
+async function bpReturn(){var t='';try{t=sessionStorage.getItem('om_bp')||''}catch(e){}if(!t)return;show('bp');$('bp_m').className='msg';
+ try{var d=await fetch('/api/business/checkout/'+t).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Lien invalide.');return j})});
+  var ok=d.status==='pending';$('bp_c').innerHTML='<div class="mkbox" style="text-align:center;margin:12px 0"><div style="opacity:.8">Vous payez</div><b style="font-size:20px;display:block;margin:4px 0">'+escH(d.merchant)+'</b><div style="font-size:30px;font-weight:800;margin:6px 0">'+fmt(d.amount)+'</div>'+(d.description?'<small style="opacity:.8">'+escH(d.description)+'</small>':'')+(d.mode==='test'?'<div class="msg ok" style="display:block;margin-top:10px">Mode test : aucune somme ne sera débitée.</div>':'')+'</div>'+
+   (ok?'<button class="pri" id="bp_b" onclick="bpPay(\''+t+'\')">Payer avec OMNIPAY</button>':'<div class="msg er" style="display:block">'+(d.status==='paid'?'Ce paiement est déjà réglé.':'Ce lien n’est plus valable.')+'</div>')}catch(e){$('bp_c').innerHTML='';msg('bp_m',e.message,false)}}
+async function bpPay(t){$('bp_b').disabled=true;try{var r=await api('/api/business/checkout/'+t+'/pay',{body:{}});try{sessionStorage.removeItem('om_bp')}catch(e){}if(S.wallet&&r.newBalance!=null){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}
+  $('bp_c').innerHTML='<div class="mkbox" style="text-align:center;margin:12px 0"><div style="font-size:40px">✅</div><b>'+escH(r.message)+'</b></div>'+(r.returnUrl&&/^https:\/\//i.test(r.returnUrl)?'<a class="pri" style="display:block;text-align:center;text-decoration:none;padding:13px;border-radius:14px" href="'+escH(r.returnUrl)+'" rel="noopener">Retourner chez le marchand</a>':'');$('bp_m').className='msg'}catch(e){$('bp_b').disabled=false;msg('bp_m',e.message,false)}}
 async function openOt(){show('ot');await otProds();otTab(OT.tab||'c')}
 function otTab(t){OT.tab=t;document.querySelectorAll('#ot .ottab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
  ['c','o','m','n'].forEach(function(x){$('ot_'+x).classList.toggle('hide',x!==t)});$('ot_msg').className='msg';({c:otBoard,o:otOffers,m:otMe,n:otNear})[t]()}

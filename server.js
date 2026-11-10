@@ -118,6 +118,8 @@ function mount(urlPath, modulePath, label) {
 }
 
 // Routes à chemin précis AVANT les routes montées sur /api
+try { app.use(require("./routes/otp").guard); } catch (e) { console.error("[otp] garde NON chargée :", e.message); }
+mount("/api/otp", "./routes/otp", "OTP e-mail + SMS");
 mount("/auth", "./routes/auth", "Auth");
 mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
 // walletOps remplace /wallet/withdraw et /wallet/deposit/callback (versions atomiques) ; le reste de /wallet est inchangé.

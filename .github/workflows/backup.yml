@@ -1,0 +1,32 @@
+# Sauvegarde quotidienne automatique de la base OMNIPAY, chiffrée (AES-256), conservée 30 jours.
+# À régler une fois dans GitHub : Settings > Secrets and variables > Actions > New repository secret
+#   DATABASE_URL       l'adresse de la base (la même que sur Render)
+#   BACKUP_PASSPHRASE  une longue phrase de passe que vous gardez sur papier (sans elle, la sauvegarde est illisible)
+name: Sauvegarde quotidienne
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --no-save @neondatabase/serverless
+      - name: Exporter la base
+        env: { DATABASE_URL: "${{ secrets.DATABASE_URL }}", BACKUP_DIR: backup-out }
+        run: node scripts/backup-ci.js
+      - name: Compresser et chiffrer
+        env: { BACKUP_PASSPHRASE: "${{ secrets.BACKUP_PASSPHRASE }}" }
+        run: |
+          test -n "$BACKUP_PASSPHRASE" || { echo "BACKUP_PASSPHRASE manquant"; exit 1; }
+          for f in backup-out/*.json; do gzip -9 "$f"; openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:BACKUP_PASSPHRASE -in "$f.gz" -out "$f.gz.enc"; rm "$f.gz"; done
+          ls -la backup-out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omnipay-sauvegarde
+          path: backup-out/*.enc
+          retention-days: 30
+          if-no-files-found: error
