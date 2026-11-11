@@ -10,7 +10,7 @@ const { neon } = require("@neondatabase/serverless");
 const sql = () => neon(process.env.DATABASE_URL);
 
 const key = () => String(process.env.FEDAPAY_SECRET_KEY || "").trim();
-const env = () => (String(process.env.FEDAPAY_ENV || "live").toLowerCase() === "sandbox" ? "sandbox" : "live");
+const env = () => (String(process.env.FEDAPAY_ENV || process.env.FEDAPAY_ENVIRONMENT || "live").toLowerCase() === "sandbox" ? "sandbox" : "live");
 const base = () => (env() === "sandbox" ? "https://sandbox-api.fedapay.com/v1" : "https://api.fedapay.com/v1");
 const ready = () => key().length > 15;
 const cap = () => (Number(process.env.FEDAPAY_PAYOUT_MAX_XOF) > 0 ? Number(process.env.FEDAPAY_PAYOUT_MAX_XOF) : 50000);
