@@ -503,7 +503,7 @@ body.lg #demo{display:block}
     <div id="vn_form">
       <h2 style="margin:8px 0 6px;font-size:16px">Pour quelle application ?</h2>
       <div id="vn_pop" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
-      <label class="sub">Pays</label><select id="vn_c" onchange="vnPrice()"></select>
+      <label class="sub">Pays <span id="vn_cn" style="opacity:.6"></span></label><input id="vn_cq" placeholder="Rechercher un pays…" oninput="vnCPaint()" autocomplete="off" style="margin-bottom:6px"><select id="vn_c" onchange="vnPrice()"></select>
       <label class="sub">Service</label><input id="vn_q" placeholder="Rechercher (WhatsApp, Telegram…)" oninput="clearTimeout(window._vq);window._vq=setTimeout(vnSearch,350)"><select id="vn_s"></select>
       <label class="sub">Payer avec</label><select id="vn_pay"><option value="">Mon solde FCFA</option></select><p class="sub" style="margin:8px 0">Prix : <b id="vn_p"></b> · débit annulé automatiquement si aucun code n'arrive dans le délai</p>
       <button id="vn_b" onclick="vnRent()">Obtenir un numéro</button>
@@ -3580,9 +3580,15 @@ const VNST={active:'En attente du SMS',done:'Code reçu',expired:'Expiré · rem
 async function openVn(){vnPopPaint();$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');vnPayLoad();
  try{const d=await api('/api/vn/info');VNP=Object.fromEntries((d.countries||[]).map(c=>[c.iso,c.price]));vnPrice();
   if(!d.enabled){$('vn_form').classList.add('hide');$('vn_off').style.display='block'}else{$('vn_form').classList.remove('hide');$('vn_off').style.display='none';
-   $('vn_c').innerHTML='<option value="">Choisir un pays…</option>'+(d.countries||[]).map(c=>`<option value="${escH(c.iso)}">${escH(c.name)} · ${fmt(c.price)}</option>`).join('');vnSearch()}}catch(e){msg('vn_m',e.message)}
+   VNC=d.countries||[];vnCPaint();vnSearch()}}catch(e){msg('vn_m',e.message)}
  vnHist()}
 
+var VNC=[],VNTOP=['BJ','TG','CI','SN','NG','GH','BF','ML','NE','CM','FR','US','GB','CA','DE','ES','IT','BE','CH','NL','TR','IN','BR','MA','DZ','TN'];
+function vnFlag(i){i=String(i||'').toUpperCase();return /^[A-Z]{2}$/.test(i)?String.fromCodePoint(127397+i.charCodeAt(0),127397+i.charCodeAt(1))+' ':''}
+function vnCPaint(){var q=($('vn_cq').value||'').trim().toLowerCase(),cur=$('vn_c').value,L=VNC.filter(function(c){return !q||String(c.name).toLowerCase().indexOf(q)>=0||String(c.iso).toLowerCase()===q});
+ var rk=function(c){var i=VNTOP.indexOf(String(c.iso).toUpperCase());return i<0?999:i};L.sort(function(a,b){return rk(a)-rk(b)||String(a.name).localeCompare(String(b.name),'fr')});
+ $('vn_c').innerHTML='<option value="">'+(L.length?'Choisir un pays…':'Aucun pays trouvé')+'</option>'+L.map(function(c){return '<option value="'+escH(c.iso)+'">'+vnFlag(c.iso)+escH(c.name)+' · '+fmt(c.price)+'</option>'}).join('');
+ if(cur&&L.some(function(c){return c.iso===cur}))$('vn_c').value=cur;$('vn_cn').textContent='('+VNC.length+' disponibles)';vnPrice()}
 var VNPOP=[['WhatsApp','#25d366','W'],['Telegram','#2a9df4','T'],['TikTok','#111','♪'],['Instagram','#e1306c','◎'],['Facebook','#1877f2','f'],['Google','#4285f4','G']];
 function vnPopPaint(sel){var e=$('vn_pop');if(!e)return;e.innerHTML=VNPOP.map(function(a){return '<button type="button" class="mkrow'+(sel===a[0]?' sel':'')+'" style="margin:0;display:flex;align-items:center;gap:10px" onclick="vnPick(\''+a[0]+'\')"><span class="cn" style="background:'+a[1]+';color:#fff;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800">'+a[2]+'</span><b>'+a[0]+'</b></button>'}).join('')}
 async function vnPick(n){$('vn_q').value=n;vnPopPaint(n);await vnSearch();var o=$('vn_s'),i=-1,L=n.toLowerCase();for(var k=0;k<o.options.length;k++){var t=(o.options[k].getAttribute('data-n')||'').toLowerCase();if(t===L){i=k;break}if(i<0&&t.indexOf(L)===0)i=k}if(i>=0)o.selectedIndex=i;var c=$('vn_c');if(c&&!c.value)c.focus()}

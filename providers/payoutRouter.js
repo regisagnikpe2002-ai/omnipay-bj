@@ -100,7 +100,9 @@ async function viaPawapay({ txId, operator, phone, amount }) {
   if (r.status === "REJECTED") return { status: "refused", detail: "PawaPay refuse : " + (r.failureCode || "REJECTED") };
   return { status: "uncertain", detail: "PawaPay : réponse incertaine" };
 }
-const CHANNELS = { pawapay: viaPawapay, manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
+// ---- Canal FedaPay : transferts sortants uniquement (PAYOUT_ROUTE_<OPÉRATEUR>=fedapay) ----
+async function viaFedapay(args) { return require("./fedapay.js").payout(args); }
+const CHANNELS = { fedapay: viaFedapay, pawapay: viaPawapay, manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
 const routeFor = (operator) => {
   const key =
     "PAYOUT_ROUTE_" +
