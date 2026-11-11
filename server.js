@@ -119,7 +119,12 @@ function mount(urlPath, modulePath, label) {
 
 // Routes à chemin précis AVANT les routes montées sur /api
 try { app.use(require("./routes/otp").guard); } catch (e) { console.error("[otp] garde NON chargée :", e.message); }
+mount("/api/notify", "./routes/notify", "Notifications");
+mount("/api/business", "./routes/business", "Business");
+mount("/api/flows", "./routes/flows", "Entrées/sorties");
+mount("/api/omniwallet", "./routes/omniwallet", "OMNIWALLET");
 mount("/api/otp", "./routes/otp", "OTP e-mail + SMS");
+mount("/api/reserve", "./routes/reserve", "Fonds de réserve");
 mount("/auth", "./routes/auth", "Auth");
 mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
 // walletOps remplace /wallet/withdraw et /wallet/deposit/callback (versions atomiques) ; le reste de /wallet est inchangé.
@@ -162,10 +167,6 @@ mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");
 mount("/api/p2pdesk", "./routes/p2pdesk", "Bureau P2P (garde-fou libération)");
-mount("/api/notify", "./routes/notify", "Notifications");
-mount("/api/business", "./routes/business", "Business");
-mount("/api/flows", "./routes/flows", "Entrées/sorties");
-mount("/api/omniwallet", "./routes/omniwallet", "OMNIWALLET");
 mount("/api/linked", "./routes/linkedAccounts", "Comptes reliés (retraits vers vos comptes)");
 mount("/api/cashdesk", "./routes/cashdesk", "Bureau Cash OMNIXPAY (retraits espèces sous séquestre)");
 mount("/api/pay", "./routes/payRequests", "Demandes de paiement par QR/lien (usage unique, expiration)");

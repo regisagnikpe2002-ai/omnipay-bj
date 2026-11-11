@@ -343,4 +343,5 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
   await loadManual()}catch(x){$('err').textContent=x.message}});
 async function run(){$('err').textContent='';try{const d=await call('/api/omnicheck/run','POST');show(d.report)}catch(e){$('err').textContent=e.message}}
 </script></div><script>(function(){fetch('/api/mode').then(function(r){return r.json()}).then(function(d){if(d&&d.mode==='demo'){var b=document.createElement('div');b.id='demoBand';b.textContent='MODE DÉMO — données fictives · aucun paiement réel';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;font:700 13px system-ui,sans-serif;text-align:center;padding:6px 8px';document.body.appendChild(b);document.body.style.paddingTop='30px';document.title='[DÉMO] '+document.title}}).catch(function(){})})();</script>
+<script src="/omnicheck-reserve.js"></script>
 </body></html>

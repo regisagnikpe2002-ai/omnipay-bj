@@ -362,8 +362,7 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
       <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
     </div>
-    <div class="card" id="dn" style="margin-bottom:16px"><h2>📣 Nouveautés</h2><div id="dn_t"></div><p class="sub" id="dn_v" style="margin:8px 0 0;font-size:12px"></p></div>
-    <div id="ops_g" class="hide"><div class="grp">Opérateurs</div><div class="rb" id="ops_b"></div></div>
+        <div id="ops_g" class="hide"><div class="grp">Opérateurs</div><div class="rb" id="ops_b"></div></div>
     <div id="gd_g" class="hide"><div class="grp">Services recommandés</div><div class="card" style="margin-bottom:16px"><div id="gd_l"></div><p class="sub" id="gd_w" style="margin:8px 0 0;font-size:12px"></p></div></div>
     <div class="secn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 014 0V11"/></svg><div><b>Sécurité · Ne partagez jamais vos codes</b><small>OMNIPAY ne vous demande jamais votre code OTP, votre PIN ou votre mot de passe.</small></div></div>
     <div class="grp">Assistance</div>
@@ -676,6 +675,7 @@ body.lg #demo{display:block}
   <section id="nt" class="card hide">
     <h1>Notifications</h1><p class="sub">Vos opérations, vos annonces et vos rappels, au même endroit.</p>
     <div id="nt_l"></div>
+    <h2 style="margin:18px 0 8px;font-size:16px">📣 Nouveautés</h2><div id="dn_t"></div><p class="sub" id="dn_v" style="margin:8px 0 0;font-size:12px"></p>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3822,7 +3822,7 @@ var NT={items:[],unread:0,timer:null};
 async function ntPoll(){if(!S.token)return;try{var d=await api('/api/notify');NT.items=d.items||[];NT.unread=d.unread||0;ntDot()}catch(e){}}
 function ntDot(){var e=$('bdot');if(e)e.style.display=NT.unread?'block':'none'}
 function ntAgo(t){var m=Math.round((Date.now()-new Date(t).getTime())/6e4);if(m<1)return 'à l’instant';if(m<60)return 'il y a '+m+' min';var h=Math.round(m/60);if(h<24)return 'il y a '+h+' h';return 'il y a '+Math.round(h/24)+' j'}
-async function openNt(){show('nt');await ntPoll();var it=NT.items;
+async function openNt(){show('nt');if(NEWS)newsPaint();else newsLoad();await ntPoll();var it=NT.items;
  $('nt_l').innerHTML=it.length?it.map(function(x){return '<div class="mkbox" onclick="ntGo(\''+escH(x.go||'')+'\')" style="margin:8px 0;cursor:pointer;'+(x.unread?'border-color:var(--mint)':'')+'"><div style="display:flex;gap:10px"><span style="font-size:22px">'+escH(x.icon||'🔔')+'</span><div style="flex:1"><b>'+escH(x.title)+'</b>'+(x.unread?' <small style="color:var(--mint)">• nouveau</small>':'')+'<br><small style="opacity:.85">'+escH(x.body)+'</small><br><small style="opacity:.6">'+ntAgo(x.at)+'</small></div></div></div>'}).join(''):'<p class="sub">Aucune notification pour le moment.</p>';
  try{await api('/api/notify/read',{body:{}});NT.unread=0;ntDot()}catch(e){}}
 function ntGo(g){if(g==='hist')openHist();else if(g==='crypto')openEx();else if(g==='plan')openBz('a');else if(g==='ot')openOt();else if(g==='vn')openVn();else if(g==='aff')openAff()}
