@@ -126,6 +126,7 @@ mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
 mount("/", "./routes/walletOps", "Opérations portefeuille V2");
 mount("/wallet", "./routes/wallet", "Wallet");
 mount("/api/omnicheck", "./routes/omnicheck", "OMNICHECK");
+mount("/api/omnicheck/reserve-fund", "./routes/reserveFund", "Fonds de réserve OMNIPAY");
 mount("/api/manual", "./routes/manualPayments", "Paiements manuels");
 mount("/api/email-otp", "./routes/emailOtp", "OTP e-mail");
 mount("/api/email-diag", "./routes/emailDiag", "Diagnostic e-mail (admin)");

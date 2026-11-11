@@ -21,6 +21,15 @@ async function ensureTables() {
   await q`CREATE TABLE IF NOT EXISTS omnicheck_reports (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     report jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`;
+  await q`CREATE TABLE IF NOT EXISTS omnicheck_reserves (
+    id bigserial PRIMARY KEY,
+    code varchar(40) NOT NULL,
+    category varchar(40) NOT NULL,
+    amount_xof numeric(18,2) NOT NULL DEFAULT 0,
+    committed_xof numeric(18,2) NOT NULL DEFAULT 0,
+    note varchar(200),
+    declared_at timestamptz NOT NULL DEFAULT now()
+  )`;
   ready = true;
 }
 
