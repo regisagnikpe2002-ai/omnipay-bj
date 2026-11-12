@@ -22,10 +22,16 @@ const ASSETS = {
   BNB: { pair: "BNBUSDT", dec: 5, nets: ["BEP20"] },
   TRX: { pair: "TRXUSDT", dec: 2, nets: ["TRC20"] },
   LTC: { pair: "LTCUSDT", dec: 5, nets: ["LTC"] },
+  USDC: { pair: null, dec: 2, nets: ["BEP20", "ERC20", "TRC20"] },
+  SOL: { pair: "SOLUSDT", dec: 5, nets: ["SOL"] },
+  XRP: { pair: "XRPUSDT", dec: 2, nets: ["XRP"] },
+  DOGE: { pair: "DOGEUSDT", dec: 2, nets: ["DOGE"] },
+  ADA: { pair: "ADAUSDT", dec: 2, nets: ["ADA"] },
 };
 const ADDR = {
   TRC20: /^T[1-9A-HJ-NP-Za-km-z]{33}$/, BEP20: /^0x[0-9a-fA-F]{40}$/, ERC20: /^0x[0-9a-fA-F]{40}$/,
   BTC: /^(bc1[a-z0-9]{25,60}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/, LTC: /^(ltc1[a-z0-9]{25,60}|[LM3][a-km-zA-HJ-NP-Z1-9]{26,33})$/,
+  SOL: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, XRP: /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/, DOGE: /^D[5-9A-HJ-NP-U][1-9A-HJ-NP-Za-km-z]{32}$/, ADA: /^addr1[a-z0-9]{50,110}$/,
 };
 const num = (k, d) => { const v = Number(process.env[k]); return Number.isFinite(v) && v >= 0 ? v : d; };
 const enabled = () => String(process.env.EX_ENABLED || "on").toLowerCase() !== "off";
@@ -50,6 +56,7 @@ async function ensureTables() {
     reference varchar(12) NOT NULL, status varchar(10) NOT NULL, note varchar(200), created_at timestamptz NOT NULL DEFAULT now(), expires_at timestamptz, done_at timestamptz)`;
   await sql()`CREATE INDEX IF NOT EXISTS ex_orders_u ON ex_orders (user_id, created_at DESC)`;
   await sql()`CREATE UNIQUE INDEX IF NOT EXISTS ex_orders_txid ON ex_orders (txid) WHERE txid IS NOT NULL`;
+  await sql()`CREATE TABLE IF NOT EXISTS ex_addr (user_id uuid PRIMARY KEY, idx serial UNIQUE)`;
   await sql()`CREATE TABLE IF NOT EXISTS ex_state (k varchar(40) PRIMARY KEY, v text NOT NULL)`;
   await sql()`CREATE TABLE IF NOT EXISTS ex_flags (id serial PRIMARY KEY, user_id uuid NOT NULL, rule varchar(20) NOT NULL, level varchar(8) NOT NULL, detail varchar(200), created_at timestamptz NOT NULL DEFAULT now())`;
   await sql()`CREATE TABLE IF NOT EXISTS ex_reports (month varchar(7) PRIMARY KEY, data text NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`;
@@ -113,7 +120,7 @@ async function hdIndex(uid) {
   return Number(r.idx);
 }
 async function depositAddress(asset, network, uid) {
-  if (hdOn() && HD_NETS.includes(network) && ASSETS[asset] && ASSETS[asset].nets.includes(network) && uid) {
+  if (hdOn() && asset === "USDT" && HD_NETS.includes(network) && ASSETS[asset] && ASSETS[asset].nets.includes(network) && uid) {
     const evm = hdNode().deriveChild(await hdIndex(uid)).address;
     return network === "TRC20" ? tronAddr(evm) : evm;
   }
@@ -121,7 +128,7 @@ async function depositAddress(asset, network, uid) {
   const a = list.find((x) => x && x.type === "binance" && String(x.network || "").toUpperCase() === network && String(x.asset || "USDT").toUpperCase() === asset && ADDR[network] && ADDR[network].test(String(x.detail || "")));
   return a ? String(a.detail) : null;
 }
-const depositable = (asset, network) => (hdOn() && HD_NETS.includes(network)) || Boolean((() => { let l = []; try { l = JSON.parse(process.env.OMNIPAY_PAYIN_ACCOUNTS || "[]"); } catch (_) {} return l.find((x) => x && x.type === "binance" && String(x.network || "").toUpperCase() === network && String(x.asset || "USDT").toUpperCase() === asset && ADDR[network] && ADDR[network].test(String(x.detail || ""))); })());
+const depositable = (asset, network) => (hdOn() && asset === "USDT" && HD_NETS.includes(network)) || Boolean((() => { let l = []; try { l = JSON.parse(process.env.OMNIPAY_PAYIN_ACCOUNTS || "[]"); } catch (_) {} return l.find((x) => x && x.type === "binance" && String(x.network || "").toUpperCase() === network && String(x.asset || "USDT").toUpperCase() === asset && ADDR[network] && ADDR[network].test(String(x.detail || ""))); })());
 const pub = (o) => ({ id: o.id, side: o.side, asset: o.asset, network: o.network, qty: Number(o.qty), rate: o.rate_xof == null ? null : Number(o.rate_xof),
   amount: o.amount_xof == null ? null : Number(o.amount_xof), address: o.address, txid: o.txid, adminTxid: o.admin_txid, reference: o.reference, status: o.status, note: o.note,
   createdAt: o.created_at, expiresAt: o.expires_at });
@@ -472,3 +479,5 @@ module.exports._watchOnce = watchOnce;
 module.exports._buildReport = buildReport;
 module.exports._detect = detect;
 startWatcher();
+module.exports._ADDR = ADDR;
+module.exports._ASSETS = ASSETS;

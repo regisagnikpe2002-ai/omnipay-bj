@@ -26,7 +26,8 @@ const UUID = /^[0-9a-f-]{36}$/i;
 const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(k && process.env.ADMIN_KEY && k === process.env.ADMIN_KEY); };
 
 // ---------- canaux ----------
-const emailOn = () => Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY || (process.env.SMTP_HOST && process.env.SMTP_USER) || process.env.EMAIL_USER);
+const emailOn = () => Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY || (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD));
+let lastErr = null; const note = (k, e) => { lastErr = { canal: k, at: new Date().toISOString(), message: String((e && e.message) || e).slice(0, 200) }; console.error("OTP_" + k.toUpperCase(), lastErr.message); };
 const smsProvider = () => String(process.env.SMS_PROVIDER || "").toLowerCase();
 const smsOn = () => { const p = smsProvider();
   if (p === "twilio") return Boolean(process.env.TWILIO_SID && process.env.TWILIO_TOKEN && process.env.TWILIO_FROM);
@@ -87,8 +88,8 @@ router.post("/request", requireAuth, async (req, res) => {
     const mins = num("OTP_TTL_MIN", 5), code = String(crypto.randomInt(0, 1000000)).padStart(6, "0"), id = crypto.randomUUID();
     await q`UPDATE otp_tx SET used_at = now() WHERE user_id = ${uid}::uuid AND used_at IS NULL`;
     const via = []; const jobs = [];
-    if (canMail) jobs.push(sendMail(u.email, code, mins).then(() => via.push("email")).catch((e) => console.error("OTP_MAIL", e.message)));
-    if (canSms) jobs.push(sendSms(tel, `OMNIPAY : votre code est ${code}. Valable ${mins} min. Ne le partagez jamais.`).then(() => via.push("sms")).catch((e) => console.error("OTP_SMS", e.message)));
+    if (canMail) jobs.push(sendMail(u.email, code, mins).then(() => via.push("email")).catch((e) => note("mail", e)));
+    if (canSms) jobs.push(sendSms(tel, `OMNIPAY : votre code est ${code}. Valable ${mins} min. Ne le partagez jamais.`).then(() => via.push("sms")).catch((e) => note("sms", e)));
     await Promise.all(jobs);
     if (!via.length) return res.status(502).json({ error: "Le code n'a pas pu être envoyé. Réessayez dans un instant." });
     await q`INSERT INTO otp_tx (id, user_id, action, code_hash, expires_at, via) VALUES (${id}::uuid, ${uid}::uuid, ${String((req.body || {}).action || "").slice(0, 40)}, ${h(id + ":" + code)}, now() + make_interval(mins => ${mins}::int), ${via.join("+")})`;
@@ -113,8 +114,14 @@ router.post("/verify", requireAuth, async (req, res) => {
 router.get("/admin/status", (req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." })), async (req, res) => {
   try {
     await ensure(); const [s] = await sql()`SELECT count(*)::int AS sent, count(*) FILTER (WHERE token_hash IS NOT NULL)::int AS verified, count(*) FILTER (WHERE used_at IS NOT NULL AND token_hash IS NOT NULL)::int AS consumed FROM otp_tx WHERE created_at > now() - interval '24 hours'`;
-    res.json({ enforced: enforced(), email: emailOn(), sms: smsOn(), smsProvider: smsProvider() || null, last24h: s });
+    res.json({ enforced: enforced(), email: emailOn(), sms: smsOn(), smsProvider: smsProvider() || null, lastError: lastErr, last24h: s });
   } catch (e) { console.error("OTP_ADM", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+router.post("/admin/test", (req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." })), async (req, res) => {
+  try { const to = String((req.body || {}).email || "").trim(); if (!to) return res.status(400).json({ error: "email requis" });
+    await sendMail(to, "123456", 5); res.json({ ok: true }); }
+  catch (e) { note("mail", e); res.status(502).json({ ok: false, error: lastErr.message }); }
 });
 
 // ---------- garde : exige le jeton OTP sur les routes d'argent ----------

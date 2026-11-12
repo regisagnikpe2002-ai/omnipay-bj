@@ -20,7 +20,7 @@ async function activeConf() {
 // Initiation : { status: ACCEPTED | REJECTED | DUPLICATE_IGNORED | UNKNOWN, failureCode }
 async function initiateDeposit({ depositId, amount, phone, provider }) {
   try {
-    const r = await axios.post(base() + "/v2/deposits", { depositId, amount: String(Math.floor(amount)), currency: "XOF",
+    const r = await axios.post(base() + "/v2/deposits", { depositId, amount: String(Math.floor(amount)), currency: "XOF", customerMessage: "OMNIPAY",
       payer: { type: "MMO", accountDetails: { phoneNumber: msisdn(phone), provider } } }, { headers: H(), ...A });
     const d = r.data || {};
     if (r.status >= 500) return { status: "UNKNOWN" };
