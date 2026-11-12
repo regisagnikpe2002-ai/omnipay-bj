@@ -72,4 +72,39 @@ async function status(payoutId) {
   if (r.status >= 400) throw new Error("FedaPay " + r.status);
   const p = first(r.data); return { found: true, status: mapStatus(p && p.status), raw: String((p && p.status) || ""), reason: String((p && p.last_error_code) || "") };
 }
-module.exports = { payout, status, ready, env, ensure, cap, _mapStatus: mapStatus, _first: first };
+
+// ---- ENCAISSEMENT (dépôts clients) : transaction -> jeton -> demande de paiement sur le téléphone du client (code secret) ----
+// Modes d'encaissement chez FedaPay : FEDAPAY_COLLECT_MODE_MTN (défaut « mtn »), FEDAPAY_COLLECT_MODE_MOOV (défaut « moov »). À valider d'abord en sandbox (500 F).
+const collectMode = (op) => process.env["FEDAPAY_COLLECT_MODE_" + String(op || "").toUpperCase()] || (String(op).toLowerCase() === "moov" ? "moov" : "mtn");
+const one = (d, k) => { if (!d) return null; const w = d["v1/" + k] || d[k] || (Array.isArray(d["v1/" + k + "s"]) ? d["v1/" + k + "s"][0] : null) || (Array.isArray(d) ? d[0] : null); return w || d; };
+// -> { status:'sent'|'refused'|'uncertain'|'unavailable', detail, id }
+async function collect({ ref, operator, phone, amount, name }) {
+  if (!ready()) return { status: "unavailable", detail: "FedaPay non configuré." };
+  if (env() !== "live" && !["on", "true", "1", "yes"].includes(String(process.env.FEDAPAY_SANDBOX_DEPOSITS || "off").toLowerCase())) return { status: "unavailable", detail: "FedaPay est en mode test (aucun argent réel)." };
+  const num = local(phone); if (num.length < 8) return { status: "refused", detail: "Numéro invalide." };
+  let id = null;
+  try {
+    const c = await call("POST", "/transactions", { description: "Dépôt OMNIPAY", amount: Math.round(Number(amount)), currency: { iso: "XOF" }, merchant_reference: String(ref),
+      customer: { firstname: (name && name.f) || "Client", lastname: (name && name.l) || "OMNIPAY", phone_number: { number: num, country: "bj" } } });
+    if (c.status >= 400 && c.status < 500) return { status: "refused", detail: "FedaPay refuse : " + errText(c.data) };
+    const t = one(c.data, "transaction"); id = t && t.id != null ? String(t.id) : null;
+    if (c.status >= 500 || !id) return { status: "uncertain", detail: "FedaPay : réponse incertaine à la création." };
+    const k = await call("POST", "/transactions/" + encodeURIComponent(id) + "/token");
+    const token = k.data && (k.data.token || (one(k.data, "token") || {}).token);
+    if (k.status >= 400 || !token) return { status: "uncertain", id, detail: "FedaPay : jeton non obtenu (" + k.status + ")." };
+    const s = await call("POST", "/transactions/" + encodeURIComponent(collectMode(operator)), { token, phone_number: { number: num, country: "bj" } });
+    if (s.status >= 400 && s.status < 500) return { status: "refused", id, detail: "FedaPay : demande refusée : " + errText(s.data) };
+    if (s.status >= 500) return { status: "uncertain", id, detail: "FedaPay : envoi incertain." };
+    return { status: "sent", id, detail: "FedaPay accepté" };
+  } catch (e) { return { status: "uncertain", id, detail: "FedaPay : " + String(e.message).slice(0, 100) }; }
+}
+// Statut d'un encaissement : { found, status:'completed'|'failed'|'pending', amount, currency, raw }
+async function collectStatus(id) {
+  const r = await call("GET", "/transactions/" + encodeURIComponent(id));
+  if (r.status === 404) return { found: false, status: "pending" };
+  if (r.status >= 400) throw new Error("FedaPay " + r.status);
+  const t = one(r.data, "transaction") || {}; const s = String(t.status || "").toLowerCase();
+  const st = s === "approved" || s === "transferred" ? "completed" : s === "declined" || s === "canceled" || s === "cancelled" || s === "refunded" ? "failed" : "pending";
+  return { found: true, status: st, amount: Number(t.amount), currency: t.currency && (t.currency.iso || t.currency), raw: s };
+}
+module.exports = { collect, collectStatus, collectMode,  payout, status, ready, env, ensure, cap, _mapStatus: mapStatus, _first: first };

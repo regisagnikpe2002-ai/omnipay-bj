@@ -125,6 +125,7 @@ mount("/api/flows", "./routes/flows", "Entrées/sorties");
 mount("/api/omniwallet", "./routes/omniwallet", "OMNIWALLET");
 mount("/api/otp", "./routes/otp", "OTP e-mail + SMS");
 mount("/api/reserve", "./routes/reserve", "Fonds de réserve");
+mount("/api/fedapay/deposit", "./routes/fedapayDeposit", "FedaPay (dépôts)");
 mount("/api/fedapay", "./routes/fedapay", "FedaPay (transferts sortants)");
 mount("/auth", "./routes/auth", "Auth");
 mount("/auth", "./routes/passwordReset", "Mot de passe oublié");

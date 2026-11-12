@@ -3464,12 +3464,12 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
 
 /* ===== PawaPay : dépôt automatique MTN / Moov ===== */
 let ppMin=100;
-async function ppInit(){try{const d=await api('/api/pawapay/status');ppMin=d.min||100;const f=$('mm_box').dataset.f||'';$('pp_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'));$('pp_am').min=ppMin}catch(e){$('pp_box').classList.add('hide')}}
+let PPB='/api/pawapay';async function ppInit(){try{let d=await api('/api/pawapay/status');PPB='/api/pawapay';if(!d.enabled){try{const f=await api('/api/fedapay/deposit/status');if(f.enabled){d=f;PPB='/api/fedapay/deposit'}}catch(_){}}ppMin=d.min||100;const f=$('mm_box').dataset.f||'';$('pp_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'));$('pp_am').min=ppMin}catch(e){$('pp_box').classList.add('hide')}}
 let ppBusy=false;
 async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,10),ph=($('pp_ph').value||'').trim(),op=$('pp_op').value;
   if(!(am>=ppMin))return msg('pp_msg','Montant minimum : '+ppMin+' FCFA.');if(ph.replace(/\D/g,'').length<8)return msg('pp_msg','Numéro invalide.');
-  ppBusy=true;try{const d=await api('/api/pawapay/deposit',{body:{amount:am,phone:ph,provider:op}});msg('pp_msg',d.message,true);
-    for(let i=0;i<45;i++){await new Promise(r=>setTimeout(r,4000));const s=await api('/api/pawapay/deposit/'+d.reference);
+  ppBusy=true;try{const d=await api((PPB==='/api/fedapay/deposit'?PPB:'/api/pawapay/deposit'),{body:{amount:am,phone:ph,provider:op}});msg('pp_msg',d.message,true);
+    for(let i=0;i<45;i++){await new Promise(r=>setTimeout(r,4000));const s=await api((PPB==='/api/fedapay/deposit'?PPB:'/api/pawapay/deposit')+'/'+d.reference);
       if(s.status==='completed'){msg('pp_msg','Dépôt crédité : '+fmt(am)+'.',true);await refresh();ppBusy=false;return}
       if(s.status==='failed'){msg('pp_msg','Paiement refusé ou expiré. Rien n\'a été débité.');ppBusy=false;return}}
     msg('pp_msg','Toujours en attente : votre solde sera crédité automatiquement dès la confirmation.',true)}catch(e){msg('pp_msg',e.message)}ppBusy=false}
