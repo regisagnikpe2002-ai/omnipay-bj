@@ -100,4 +100,4 @@ async function tick() {
 }
 let timer = null;
 if (!timer && fp.ready() && process.env.DATABASE_URL && String(process.env.FEDAPAY_WATCH || "on").toLowerCase() !== "off") { timer = setInterval(() => { tick().catch((e) => console.error("FEDAPAY_DEP_WATCH", e.message)); }, 60000); if (timer.unref) timer.unref(); }
-module.exports = router; module.exports._tick = tick; module.exports._settle = settleDeposit;
+module.exports = router; module.exports.enabled = enabled; module.exports._tick = tick; module.exports._settle = settleDeposit;

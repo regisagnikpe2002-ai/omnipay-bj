@@ -119,6 +119,7 @@ function mount(urlPath, modulePath, label) {
 
 // Routes à chemin précis AVANT les routes montées sur /api
 try { app.use(require("./routes/otp").guard); } catch (e) { console.error("[otp] garde NON chargée :", e.message); }
+try { app.use(require("./lib/firstDepositGate")); } catch (e) { console.error("[gate] verrou premier dépôt NON chargé :", e.message); }
 mount("/api/notify", "./routes/notify", "Notifications");
 mount("/api/business", "./routes/business", "Business");
 mount("/api/flows", "./routes/flows", "Entrées/sorties");
@@ -126,6 +127,8 @@ mount("/api/omniwallet", "./routes/omniwallet", "OMNIWALLET");
 mount("/api/otp", "./routes/otp", "OTP e-mail + SMS");
 mount("/api/reserve", "./routes/reserve", "Fonds de réserve");
 mount("/api/fedapay/deposit", "./routes/fedapayDeposit", "FedaPay (dépôts)");
+mount("/api/payments", "./routes/payments", "Payment Router OMNIPAY (point d'entrée unique)");
+mount("/api/profile", "./routes/profilePhoto", "Photo de profil");
 mount("/api/fedapay", "./routes/fedapay", "FedaPay (transferts sortants)");
 mount("/auth", "./routes/auth", "Auth");
 mount("/auth", "./routes/passwordReset", "Mot de passe oublié");
