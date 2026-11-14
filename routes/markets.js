@@ -55,6 +55,37 @@ router.get("/tickers", async (req, res) => {
   } catch (e) { console.error("MARKETS_TICK", e.message); res.status(503).json({ error: "Cours indisponibles pour le moment." }); }
 });
 
+
+// MARCHÉS ÉTENDUS : les ~150 paires USDT les plus échangées (une seule requête Binance, mise en cache 15 s pour tous les clients).
+const STABLE = new Set(["USDC","FDUSD","TUSD","USDP","DAI","BUSD","USDD","EUR","EURI","AEUR","GBP","TRY","BRL","ARS","UST","USDE","XUSD","USD1","BFUSD","PAXG"]);
+const OK_SYM = /^[A-Z0-9]{2,12}USDT$/;
+async function universe() {
+  return cached("universe", TTL_TICK, async () => {
+    const arr = await getJson(`${base()}/api/v3/ticker/24hr`);
+    if (!Array.isArray(arr)) throw new Error("réponse invalide");
+    const items = arr.filter((x) => OK_SYM.test(x.symbol)).map((x) => ({ symbol: x.symbol, asset: x.symbol.slice(0, -4), price: Number(x.lastPrice), changePct: Number(x.priceChangePercent), high: Number(x.highPrice), low: Number(x.lowPrice), volume: Number(x.quoteVolume) }))
+      .filter((x) => !STABLE.has(x.asset) && !/(UP|DOWN|BULL|BEAR)$/.test(x.asset) && Number.isFinite(x.price) && x.price > 0 && x.volume > 100000)
+      .sort((a, b) => b.volume - a.volume).slice(0, 150).map((x) => ({ ...x, name: NAMES[x.asset] || x.asset }));
+    const eur = arr.find((x) => x.symbol === "EURUSDT"), eurusd = eur ? Number(eur.lastPrice) : NaN;
+    return { items, eurusd: Number.isFinite(eurusd) && eurusd > 0 ? eurusd : null };
+  });
+}
+// GET /api/markets/all?sort=volume|up|down&q=sol&limit=100
+router.get("/all", async (req, res) => {
+  try {
+    const r = await universe();
+    const env = envRate(), fx = env || (r.data.eurusd ? Math.round((XOF_PER_EUR / r.data.eurusd) * 100) / 100 : null);
+    const q = String(req.query.q || "").trim().toUpperCase().slice(0, 12), sort = String(req.query.sort || "volume");
+    let items = r.data.items.slice();
+    if (q) items = items.filter((x) => x.asset.includes(q) || x.name.toUpperCase().includes(q));
+    if (sort === "up") items.sort((a, b) => b.changePct - a.changePct); else if (sort === "down") items.sort((a, b) => a.changePct - b.changePct);
+    const limit = Math.min(150, Math.max(1, Number(req.query.limit) || 100));
+    res.set("Cache-Control", "public, max-age=10");
+    res.json({ updatedAt: new Date(r.at).toISOString(), stale: r.stale, rateXof: fx, total: r.data.items.length,
+      items: items.slice(0, limit).map((x) => ({ ...x, priceXof: fx ? Math.round(x.price * fx) : null })) });
+  } catch (e) { console.error("MARKETS_ALL", e.message); res.status(503).json({ error: "Cours indisponibles pour le moment." }); }
+});
+
 // Mini-graphiques : 24 clôtures horaires par crypto (une seule réponse mise en cache 2 minutes, au lieu de 10 requêtes par client).
 router.get("/sparklines", async (req, res) => {
   try {
@@ -72,8 +103,9 @@ router.get("/sparklines", async (req, res) => {
 
 router.get("/klines", async (req, res) => {
   const symbol = String(req.query.symbol || "BTCUSDT").toUpperCase(), interval = String(req.query.interval || "1h");
-  if (!SYMBOLS.includes(symbol) || !INTERVALS[interval]) return res.status(400).json({ error: "Paire ou intervalle non pris en charge." });
+  if (!OK_SYM.test(symbol) || !INTERVALS[interval]) return res.status(400).json({ error: "Paire ou intervalle non pris en charge." });
   try {
+    if (!SYMBOLS.includes(symbol)) { const u = await universe(); if (!u.data.items.some((x) => x.symbol === symbol)) return res.status(400).json({ error: "Paire ou intervalle non pris en charge." }); }
     const r = await cached(`kl:${symbol}:${interval}`, TTL_KL, async () => {
       const arr = await getJson(`${base()}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=48`);
       if (!Array.isArray(arr)) throw new Error("réponse invalide");
