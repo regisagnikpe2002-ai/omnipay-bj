@@ -476,6 +476,8 @@ router.post("/admin/:id/reject", adminOnly, async (req, res) => {
 module.exports = router;
 module.exports._reset = () => { CACHE = null; };
 module.exports._watchOnce = watchOnce;
+module.exports._creditDeposit = creditDeposit;
+module.exports._ensureTables = ensureTables;
 module.exports._buildReport = buildReport;
 module.exports._detect = detect;
 startWatcher();

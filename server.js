@@ -163,6 +163,8 @@ mount("/api/activity", "./routes/activity", "Clients et activité (admin, lectur
 mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
 mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
 mount("/api/exchange", "./routes/exchange", "OMNICHANGE (portefeuille crypto)");
+mount("/api/cryptowallets", "./routes/cryptoWallets", "OMNIWALLET : 10 adresses crypto par client");
+mount("/api/cards", "./routes/cards", "Cartes virtuelles OMNIPAY");
 mount("/api/recon", "./routes/reconcile", "Réconciliation (fonds suspendus)");
 mount("/api/daily", "./routes/daily", "Du jour (cartes quotidiennes)");
 mount("/api/omnitrade", "./routes/omnitrade", "OMNITRADE (bourse des produits locaux)");

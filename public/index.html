@@ -431,6 +431,18 @@ body.lg #demo{display:block}
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="vcs" class="card hide">
+    <h1>Mes cartes virtuelles</h1><p class="sub" id="vcs_s">Chargement…</p>
+    <div id="vcs_l"></div><div class="row"><button class="pri" id="vcs_new" style="margin:0" onclick="vcNew()">➕ Créer une carte</button></div><div class="msg" id="vcs_msg"></div>
+    <button class="lnk" onclick="openCard()">← Retour</button>
+  </section>
+
+  <section id="cw" class="card hide">
+    <h1>Mes adresses crypto</h1><p class="sub" id="cw_s">Vos adresses de dépôt OMNIWALLET, générées et surveillées par OMNIPAY.</p>
+    <div id="cw_l"></div><div class="msg" id="cw_msg"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
   <section id="chl" class="card hide">
     <h1>Mes défis</h1><p class="sub">Calculés automatiquement à partir de vos opérations réelles terminées.</p>
     <div class="mkbox"><div style="display:flex;justify-content:space-between;align-items:baseline"><b id="ch_lv">—</b><span id="ch_pt"></span></div><small class="sub" id="ch_nx"></small><div class="lvl" id="ch_lvs"></div></div>
@@ -635,6 +647,7 @@ body.lg #demo{display:block}
       <div id="vc_nm" style="font-size:14px;opacity:.95">—</div>
       <div id="vc_al" style="font-size:11px;opacity:.8;margin-top:6px;word-break:break-all"></div>
     </div>
+    <div class="row" style="margin:0 0 10px"><button class="pri" style="margin:0" onclick="openVcs()">💳 Mes cartes virtuelles</button></div>
     <p class="sub" style="font-size:13px">Ce n'est pas encore une carte Visa ou Mastercard utilisable chez les commerçants : elle fonctionne entre clients OMNIPAY. La carte bancaire virtuelle nécessite un partenaire émetteur ; dites-nous si vous la voulez, nous vous préviendrons dès son ouverture.</p>
     <button class="pri" onclick="cardRequest()">Je veux la carte virtuelle</button>
     <div id="card_msg" class="msg"></div>
@@ -3057,7 +3070,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot','ex','nt','bz','bp','ow'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3398,7 +3411,7 @@ function applyPendingTo(){const t=LS.get('omnipayTo');if(!t)return;LS.del('omnip
 const NET_ST={supervised:['Actif · supervisé','var(--mint)'],configuration_required:['Sur configuration','var(--warn)'],partnership_required:['Partenariat requis','var(--warn)'],active:['Actif','var(--mint)']};
 async function loadNet(){const box=$('net_list');if(!box)return;
   box.innerHTML='<div class="tx" style="display:block"><b>Mobile Money &amp; banques</b><small style="display:block;margin:4px 0 8px">MTN MoMo, Moov Money, Celtiis Cash et banques : payez via PI-SPI vers l\'alias OMNIPAY. Le paiement arrive sur le compte OMNIPAY, puis votre solde est crédité.</small><button class="pri" style="margin:0" onclick="openMan(\'pispi\')">Payer par PI-SPI</button></div><div id="net_w"><div class="tx"><div>Chargement des wallets…</div></div></div>';
-  $('net_w').innerHTML='<div class="grp" style="margin-top:14px">Crypto OMNIPAY</div><div class="tx" style="display:block"><b>OMNIWALLET · Crypto</b><small style="display:block;margin:4px 0 8px">Une seule adresse, générée pour vous. Entrées et sorties crypto au même endroit.</small><div class="row"><button class="pri" style="margin:0" onclick="openCrypto(\'in\')">Générer mon adresse</button><button class="sec" style="margin:0" onclick="openCrypto(\'out\')">Envoyer</button></div></div>'}
+  $('net_w').innerHTML='<div class="grp" style="margin-top:14px">Crypto OMNIPAY</div><div class="tx" style="display:block"><b>OMNIWALLET · Crypto</b><small style="display:block;margin:4px 0 8px">Une seule adresse, générée pour vous. Entrées et sorties crypto au même endroit.</small><div class="row"><button class="pri" style="margin:0" onclick="openCrypto(\'in\')">Générer mon adresse</button><button class="sec" style="margin:0" onclick="openCrypto(\'out\')">Envoyer</button><button class="sec" style="margin:0" onclick="openCw()">🔑 Mes 10 adresses</button></div></div>'}
 /* ===== Identifiant OMNIPAY + reçus ===== */
 const refOf=id=>'OMP-R'+String(id||'').replace(/-/g,'').slice(0,10).toUpperCase();
 async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}}
@@ -3633,7 +3646,30 @@ async function vnOpen(id){try{const r=await api('/api/vn/order/'+id);vnShow(r.or
 async function vnHist(){try{const d=await api('/api/vn/mine');const L=d.orders||[];
  $('vn_h').innerHTML=L.length?L.map(o=>`<div class="tx" style="cursor:pointer" onclick="vnOpen('${escH(o.id)}')"><div>${escH(o.serviceName||'Service')} · ${escH(o.iso)}<small>${new Date(o.createdAt).toLocaleString('fr-FR')} · ${escH(VNST[o.status]||o.status)}${o.code?' · '+escH(o.code):''}</small></div><b class="neg">-${fmt(o.price)}</b></div>`).join(''):'<p class="sub" style="margin:0">Aucun numéro pour le moment.</p>'}catch(e){}}
 async function hcLoad(){const el=$('hc_l');if(!el)return;
- el.innerHTML='<p class="sub" style="margin:0 0 10px">Une adresse crypto à votre nom, générée pour vous dans OMNIWALLET. Entrées et sorties au même endroit.</p><div class="row"><button class="pri" style="margin:0" onclick="openCrypto(\'in\')">⬇ Générer mon adresse</button><button class="sec" style="margin:0" onclick="openCrypto(\'out\')">⬆ Envoyer de la crypto</button></div>'}
+ el.innerHTML='<p class="sub" style="margin:0 0 10px">Une adresse crypto à votre nom, générée pour vous dans OMNIWALLET. Entrées et sorties au même endroit.</p><div class="row"><button class="pri" style="margin:0" onclick="openCrypto(\'in\')">⬇ Générer mon adresse</button><button class="sec" style="margin:0" onclick="openCrypto(\'out\')">⬆ Envoyer de la crypto</button><button class="sec" style="margin:0" onclick="openCw()">🔑 Mes 10 adresses</button></div>'}
+/* ===== Cartes virtuelles (v65) ===== */
+var VCD=null;
+async function openVcs(){show('vcs');msg('vcs_msg','',true);await vcLoad()}
+async function vcLoad(){try{var d=await api('/api/cards');VCD=d;
+  $('vcs_s').textContent=d.available?('Créez une carte, alimentez-la depuis votre solde OMNIPAY. Création : '+fmt(d.fee)+(d.test?' · MODE DÉMONSTRATION : cartes de test, inutilisables chez un commerçant.':'')):'Les cartes virtuelles ouvrent bientôt. Nous vous préviendrons dès leur ouverture.';
+  $('vcs_new').style.display=d.available&&d.cards.length<d.max?'':'none';
+  $('vcs_l').innerHTML=d.cards.map(function(c){return '<div class="tx" style="display:block;margin-bottom:10px"><div style="display:flex;justify-content:space-between"><b>'+escH(c.label)+(c.test?' <small>(TEST)</small>':'')+'</b><small>'+(c.status==='frozen'?'❄ gelée':'● active')+'</small></div>'
+   +'<div style="font-size:12px;opacity:.8">'+escH(c.publicNumber||'')+(c.holder?' · '+escH(c.holder):'')+'</div><div style="font-size:18px;letter-spacing:2px;margin:6px 0" id="vc_pan_'+c.id+'">•••• •••• •••• '+escH(c.last4||'')+'</div><small>Solde carte : <b>'+fmt(c.balance)+'</b> · exp. '+escH(c.expiry||'')+'</small>'
+   +'<div class="row" style="margin-top:8px"><button class="sec" style="margin:0;padding:6px 10px;width:auto" onclick="vcFund(\''+c.id+'\')">Alimenter</button><button class="sec" style="margin:0;padding:6px 10px;width:auto" onclick="vcReveal(\''+c.id+'\')">Afficher</button><button class="sec" style="margin:0;padding:6px 10px;width:auto" onclick="vcAct(\''+c.id+'\',\''+(c.status==='frozen'?'unfreeze':'freeze')+'\')">'+(c.status==='frozen'?'Dégeler':'Geler')+'</button><button class="sec" style="margin:0;padding:6px 10px;width:auto" onclick="vcClose(\''+c.id+'\')">Clôturer</button></div></div>'}).join('')||(d.available?'<p class="sub">Aucune carte pour le moment.</p>':'')}catch(e){msg('vcs_msg',e.message)}}
+async function vcNew(){var l=prompt('Nom de la carte (ex. Netflix, Achats en ligne)','Ma carte');if(l===null)return;try{var r=await api('/api/cards',{body:{label:l}});if(S.wallet&&r.newBalance!=null)S.wallet.balance=r.newBalance;msg('vcs_msg','Carte créée.',true);await vcLoad();try{await refresh()}catch(e){}}catch(e){msg('vcs_msg',e.message)}}
+async function vcFund(id){var a=prompt('Montant à mettre sur la carte (FCFA) ?');if(!a)return;try{await api('/api/cards/'+id+'/fund',{body:{amount:parseInt(a,10)}});msg('vcs_msg','Carte alimentée.',true);await vcLoad();try{await refresh()}catch(e){}}catch(e){msg('vcs_msg',e.message)}}
+async function vcReveal(id){try{var d=await api('/api/cards/'+id+'/reveal',{method:'POST',body:{}});var el=$('vc_pan_'+id);el.textContent=d.pan.replace(/(\d{4})(?=\d)/g,'$1 ')+'  CVV '+d.cvv+'  '+d.expiry;setTimeout(function(){vcLoad()},30000);msg('vcs_msg',(d.test?'Carte de TEST. ':'')+'Ces informations se masquent dans 30 secondes. Ne les partagez jamais.',true)}catch(e){msg('vcs_msg',e.message)}}
+async function vcAct(id,act){try{var r=await api('/api/cards/'+id+'/'+act,{method:'POST',body:{}});msg('vcs_msg',r.message,true);await vcLoad()}catch(e){msg('vcs_msg',e.message)}}
+async function vcClose(id){if(!confirm('Clôturer cette carte ? Le solde restant revient sur votre OMNIPAY.'))return;try{var r=await api('/api/cards/'+id+'/close',{method:'POST',body:{}});msg('vcs_msg',r.message,true);await vcLoad();try{await refresh()}catch(e){}}catch(e){msg('vcs_msg',e.message)}}
+/* ===== Mes 10 adresses crypto (v65) ===== */
+var CWD=null;
+async function openCw(){show('cw');$('cw_l').innerHTML='<p class="sub">Chargement…</p>';msg('cw_msg','',true);await cwLoad()}
+async function cwLoad(){try{var d=await api('/api/cryptowallets');
+  if(d.unlocked&&d.enabled&&d.wallets.some(function(w){return w.status==='ready'})){try{await api('/api/cryptowallets/generate',{method:'POST',body:{}});d=await api('/api/cryptowallets')}catch(e){}}
+  CWD=d;$('cw_s').textContent=d.unlocked?'Une adresse unique par réseau, rien qu\'à vous. Le dépôt est crédité automatiquement dans votre OMNIWALLET.':'Déposez '+fmt(d.remaining)+' de plus (total '+fmt(d.unlockAt)+') pour débloquer vos adresses crypto.';
+  $('cw_l').innerHTML=d.wallets.map(function(w){var a=w.address;return '<div class="tx" style="display:block;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+escH(w.label)+'</b><small>'+(w.status==='active'?'● actif':w.status==='locked'?'🔒 verrouillé':w.status==='ready'?'à générer':'bientôt')+'</small></div>'
+   +(a?'<code style="display:block;word-break:break-all;font-size:12px;margin:6px 0">'+escH(a)+'</code><button class="sec" style="margin:0;padding:6px 12px;width:auto" onclick="cwCopy('+w.slot+')">Copier</button>':'')+'</div>'}).join('')+'<p class="sub" style="font-size:12px">'+escH(d.notice||'')+'</p>'}catch(e){$('cw_l').innerHTML='';msg('cw_msg',e.message)}}
+function cwCopy(slot){var w=CWD&&CWD.wallets.find(function(x){return x.slot===slot});if(!w||!w.address)return;(navigator.clipboard?navigator.clipboard.writeText(w.address):Promise.reject()).then(function(){msg('cw_msg','Adresse '+w.label+' copiée. Envoyez uniquement ce réseau.',true)},function(){msg('cw_msg',w.address,true)})}
 function openCrypto(dir){EX.tab=dir==='out'?'w':'d';openEx()}
 function copyTxt(t,out){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>msg(out,'Copié.',true)).catch(()=>msg(out,'Copiez manuellement : '+t,true))}
 function manTab(t){$('m_in').classList.toggle('hide',t!=='in');$('m_out').classList.toggle('hide',t!=='out');
