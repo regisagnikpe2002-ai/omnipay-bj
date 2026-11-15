@@ -14,7 +14,7 @@ router.post("/binance/create-order", requireAuth, async (req, res) => {
     const amount = Number(req.body?.amount);
     if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: "Montant invalide." });
     const merchantTradeNo = tradeNo(req.user?.id);
-    const result = await binancePay.createOrder({ merchantTradeNo, amount, currency: "USDT", returnUrl: "https://www.omnipay-bj.com/dashboard-v2.html?binance=success", cancelUrl: "https://www.omnipay-bj.com/dashboard-v2.html?binance=cancel", passThroughInfo: { userId: req.user?.id, purpose: "wallet_funding" } });
+    const result = await binancePay.createOrder({ merchantTradeNo, amount, currency: "USDT", returnUrl: "https://www.omnipay-bj.com/?binance=success", cancelUrl: "https://www.omnipay-bj.com/dashboard-v2.html?binance=cancel", passThroughInfo: { userId: req.user?.id, purpose: "wallet_funding" } });
     if (result?.status !== "SUCCESS" || result?.code !== "000000" || !result?.data) return res.status(502).json({ success: false, code: result?.code || null, error: result?.errorMessage || "Ordre Binance refuse." });
     res.status(201).json({ success: true, provider: "binance", merchantTradeNo, prepayId: result.data.prepayId, expireTime: result.data.expireTime, amount: result.data.totalFee, currency: result.data.currency, checkoutUrl: result.data.checkoutUrl, qrcodeLink: result.data.qrcodeLink, qrContent: result.data.qrContent, deeplink: result.data.deeplink, universalUrl: result.data.universalUrl, status: "INITIAL" });
   } catch (error) {

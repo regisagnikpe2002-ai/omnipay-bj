@@ -78,15 +78,15 @@ app.use("/api/email-otp/request", limiter(30, "Trop de demandes de code. Réessa
 // =========================
 
 app.get("/sw.js", (req, res) => { res.set("Cache-Control", "no-cache"); res.set("Service-Worker-Allowed", "/"); res.type("application/javascript"); res.sendFile(path.join(__dirname, "public", "sw.js")); });
+// Anciens tableaux de bord : un seul affichage, l'application principale.
+app.get(["/dashboard", "/dashboard.html", "/dashboard-v2.html", "/dashboard-v3.html"], (req, res) => res.redirect(302, "/"));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
-});
+
 
 // =========================
 // Santé et statut
