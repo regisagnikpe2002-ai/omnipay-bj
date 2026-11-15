@@ -3995,6 +3995,22 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 #pwa{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;display:none;align-items:center;gap:12px;background:#0e1b36;color:#f2f6fc;border:1px solid #22304d;border-radius:18px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
 #pwa.on{display:flex}#pwa img{width:42px;height:42px;border-radius:11px}#pwa .t{flex:1;font-size:13px;line-height:1.35}#pwa .t b{display:block;font-size:14px}
 #pwa button{width:auto;margin:0;padding:9px 14px;font-size:13px;border-radius:12px}#pwa .x{background:transparent;border:0;color:#8fa0bf;font-size:20px;padding:4px 8px}
+/* v66 — boutons carrés, nets, uniformes */
+:root{--rb:10px}
+button{border-radius:var(--rb);letter-spacing:.2px;transition:transform .1s,box-shadow .15s,filter .15s;-webkit-tap-highlight-color:transparent}
+button:not(:disabled):active{transform:translateY(1px) scale(.985)}
+button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.pri{box-shadow:0 6px 16px rgba(31,185,138,.28),inset 0 1px 0 rgba(255,255,255,.25);border:0;text-transform:none}
+.pri:not(:disabled):hover{filter:brightness(1.06)}
+.sec{border-radius:var(--rb);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.tile,.qa button{border-radius:12px}
+.rb .tile span,.qa button span{border-radius:12px}
+.rb .tile:active span{transform:scale(.94)}
+.mkiv button,.pwb button.eye{border-radius:8px}
+.dtop button{border-radius:10px}
+#hx button{border-radius:var(--rb)}
+.lnk{border-radius:6px}
+input,select,textarea{border-radius:var(--rb)}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>
