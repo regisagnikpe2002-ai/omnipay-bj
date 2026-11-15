@@ -350,6 +350,7 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH</button>
       <button class="tile" onclick="openFcf()"><span>📶</span>Recharges</button>
       <button class="tile" onclick="openOps()"><span>📱</span>Numéros</button>
+      <button class="tile" onclick="openSim()"><span>📞</span>Numéros SIM<em>nouveau</em></button>
     </div>
     <div class="grp">Mon compte</div>
     <div class="rb">
@@ -512,6 +513,20 @@ body.lg #demo{display:block}
     <button class="lnk" onclick="helpBack()">← Retour</button>
   </section>
 
+  <section id="sim" class="card hide">
+    <h1>Numéros SIM</h1><p class="sub">Un vrai numéro MTN, Moov, Celtiis… dans le pays de votre choix. En stock : livré tout de suite. Sinon : livré sous <b id="sim_h">24</b> h par notre équipe.</p>
+    <div id="sim_off" class="msg er hide" style="display:none">Service en cours d'activation. Revenez bientôt.</div>
+    <div id="sim_form">
+      <label class="sub">Pays</label><select id="sim_c" onchange="simOps()"></select>
+      <label class="sub">Opérateur</label><select id="sim_o" onchange="simPrice()"></select>
+      <label class="sub" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="sim_n" onchange="simPrice()" style="width:auto;margin:0"> Enregistrer la ligne à mon nom (+<span id="sim_rf"></span>)</label>
+      <div id="sim_k" class="hide"><input id="sim_hn" placeholder="Nom et prénom comme sur la pièce" maxlength="120"><select id="sim_it"></select><input id="sim_in" placeholder="Numéro de la pièce" maxlength="40"><p class="sub" style="margin:6px 0">Ces informations servent uniquement à enregistrer votre ligne chez l'opérateur.</p></div>
+      <p class="sub" style="margin:10px 0">Prix : <b id="sim_p"></b> · <span id="sim_mode"></span></p>
+      <button class="pri" id="sim_b" onclick="simBuy()">Commander</button>
+    </div>
+    <div id="sim_m" class="msg"></div>
+    <div class="grp" style="margin-top:16px">Mes numéros</div><div id="sim_l"></div>
+  </section>
   <section id="vn" class="card hide">
     <h1>Numéros virtuels</h1><p class="sub">Choisissez un pays et un service, recevez un numéro, puis votre code SMS s'affiche ici.</p>
     <div id="vn_off" class="msg er hide" style="display:none">Service en cours d'activation. Revenez bientôt.</div>
@@ -3070,7 +3085,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','sim','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3605,6 +3620,28 @@ const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 var VNT=null,VNO=null,VNP={};
 function vnPrice(){var i=$('vn_c').value;$('vn_p').textContent=i&&VNP[i]?fmt(VNP[i]):'selon le pays'}
 const VNST={active:'En attente du SMS',done:'Code reçu',expired:'Expiré · remboursé',failed:'Annulé',renting:'En cours'};
+var SIMC=[],SIMD={};
+async function openSim(){$('sim_m').className='msg';show('sim');
+ try{const d=await api('/api/sim/catalog');SIMD=d;SIMC=d.countries||[];$('sim_h').textContent=d.deliveryHours;$('sim_rf').textContent=fmt(d.registerFee);
+  $('sim_it').innerHTML=(d.idTypes||[]).map(function(x){return '<option>'+escH(x)+'</option>'}).join('');
+  if(!d.enabled){$('sim_form').classList.add('hide');$('sim_off').style.display='block'}else{$('sim_form').classList.remove('hide');$('sim_off').style.display='none';
+   $('sim_c').innerHTML=SIMC.map(function(c,i){return '<option value="'+i+'">'+escH(c.name)+'</option>'}).join('');simOps()}}catch(e){msg('sim_m',e.message)}
+ simList()}
+function simOps(){var c=SIMC[$('sim_c').value];if(!c)return;$('sim_o').innerHTML=c.ops.map(function(o,i){return '<option value="'+i+'">'+escH(o.name)+' · '+fmt(o.price)+'</option>'}).join('');simPrice()}
+function simPrice(){var c=SIMC[$('sim_c').value];if(!c)return;var o=c.ops[$('sim_o').value]||c.ops[0],mine=$('sim_n').checked;
+ $('sim_k').classList.toggle('hide',!mine);$('sim_p').textContent=fmt(o.price+(mine?SIMD.registerFee:0));
+ $('sim_mode').textContent=(o.mode==='stock'&&!mine)?'en stock, livré tout de suite':'sur commande, livré sous '+SIMD.deliveryHours+' h (remboursé si impossible)'}
+async function simBuy(){var c=SIMC[$('sim_c').value],o=c&&c.ops[$('sim_o').value];if(!o)return msg('sim_m','Choisissez un pays et un opérateur.');
+ var mine=$('sim_n').checked,body={iso:c.iso,operator:o.name,inMyName:mine};
+ if(mine){body.holderName=$('sim_hn').value;body.idType=$('sim_it').value;body.idNumber=$('sim_in').value}
+ $('sim_b').disabled=true;msg('sim_m','Commande en cours…',true);
+ try{const r=await api('/api/sim/order',{method:'POST',body:body});
+  if(S.wallet&&r.newBalance!=null){S.wallet.balance=r.newBalance;$('bal').textContent=fmt(r.newBalance)}
+  msg('sim_m',r.order.status==='ready'?'Votre numéro : '+r.order.number:'Commande reçue. Livraison sous '+r.deliveryHours+' h, vous serez notifié.',true);simList()}
+ catch(e){msg('sim_m',e.message)}$('sim_b').disabled=false}
+const SIMST={pending:'En attente de livraison',ready:'Livré',cancelled:'Annulé · remboursé'};
+async function simList(){try{const d=await api('/api/sim/mine'),L=d.orders||[];
+ $('sim_l').innerHTML=L.length?L.map(function(r){return '<div class="card" style="margin-top:8px;padding:12px"><b>'+escH(r.operator)+' · '+escH(r.iso)+'</b> <small style="opacity:.7">'+(SIMST[r.status]||escH(r.status))+(r.inMyName?' · à mon nom':'')+'</small><br>'+(r.number?'<span style="font-size:18px;font-weight:800;letter-spacing:1px">'+escH(r.number)+'</span>':'<small>Numéro en préparation</small>')+'<br><small style="opacity:.7">'+fmt(r.price)+'</small></div>'}).join(''):'<p class="sub">Aucun numéro pour le moment.</p>'}catch(e){}}
 async function openVn(){vnPopPaint();$('vn_m').className='msg';$('vn_o').classList.add('hide');show('vn');vnPayLoad();
  try{const d=await api('/api/vn/info');VNP=Object.fromEntries((d.countries||[]).map(c=>[c.iso,c.price]));vnPrice();
   if(!d.enabled){$('vn_form').classList.add('hide');$('vn_off').style.display='block'}else{$('vn_form').classList.remove('hide');$('vn_off').style.display='none';
@@ -3995,22 +4032,6 @@ function shareAff(){const t='Rejoins OMNIPAY, ton quotidien financier tout-en-un
 #pwa{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;display:none;align-items:center;gap:12px;background:#0e1b36;color:#f2f6fc;border:1px solid #22304d;border-radius:18px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
 #pwa.on{display:flex}#pwa img{width:42px;height:42px;border-radius:11px}#pwa .t{flex:1;font-size:13px;line-height:1.35}#pwa .t b{display:block;font-size:14px}
 #pwa button{width:auto;margin:0;padding:9px 14px;font-size:13px;border-radius:12px}#pwa .x{background:transparent;border:0;color:#8fa0bf;font-size:20px;padding:4px 8px}
-/* v66 — boutons carrés, nets, uniformes */
-:root{--rb:10px}
-button{border-radius:var(--rb);letter-spacing:.2px;transition:transform .1s,box-shadow .15s,filter .15s;-webkit-tap-highlight-color:transparent}
-button:not(:disabled):active{transform:translateY(1px) scale(.985)}
-button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
-.pri{box-shadow:0 6px 16px rgba(31,185,138,.28),inset 0 1px 0 rgba(255,255,255,.25);border:0;text-transform:none}
-.pri:not(:disabled):hover{filter:brightness(1.06)}
-.sec{border-radius:var(--rb);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
-.tile,.qa button{border-radius:12px}
-.rb .tile span,.qa button span{border-radius:12px}
-.rb .tile:active span{transform:scale(.94)}
-.mkiv button,.pwb button.eye{border-radius:8px}
-.dtop button{border-radius:10px}
-#hx button{border-radius:var(--rb)}
-.lnk{border-radius:6px}
-input,select,textarea{border-radius:var(--rb)}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>

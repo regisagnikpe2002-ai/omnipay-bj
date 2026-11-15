@@ -162,6 +162,7 @@ mount("/api/pispi", "./routes/pispiBridge", "Brancheur PI-SPI (crédit automatiq
 mount("/api/activity", "./routes/activity", "Clients et activité (admin, lecture seule)");
 mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
 mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
+mount("/api/sim", "./routes/simNumbers", "Numéros SIM africains (MTN, Moov, Celtiis)");
 mount("/api/exchange", "./routes/exchange", "OMNICHANGE (portefeuille crypto)");
 mount("/api/cryptowallets", "./routes/cryptoWallets", "OMNIWALLET : 10 adresses crypto par client");
 mount("/api/cards", "./routes/cards", "Cartes virtuelles OMNIPAY");
