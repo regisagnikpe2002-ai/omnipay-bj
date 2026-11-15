@@ -24,5 +24,6 @@ async function setup(product, subKey) {
   const out = ["MTN_MOMO_BASE=" + BASE, "MTN_MOMO_ENV=sandbox", "MTN_MOMO_CURRENCY=EUR"];
   if (coll) { const c = await setup("collection", coll); out.push("MTN_MOMO_COLL_SUB_KEY=" + coll, "MTN_MOMO_COLL_API_USER=" + c.user, "MTN_MOMO_COLL_API_KEY=" + c.apiKey); console.error("Collections : " + (c.tokenOk ? "OK (jeton obtenu)" : "identifiants créés mais jeton refusé")); }
   if (disb) { const d = await setup("disbursement", disb); out.push("MTN_MOMO_SUB_KEY=" + disb, "MTN_MOMO_API_USER=" + d.user, "MTN_MOMO_API_KEY=" + d.apiKey); console.error("Décaissements : " + (d.tokenOk ? "OK (jeton obtenu)" : "identifiants créés mais jeton refusé")); }
+  if (process.env.RAW === "1") { console.log(out.join("\n")); return; } // pour « >> fichier » : uniquement les lignes CLE=VALEUR, rien à recopier à la main
   console.log("\nÀ COPIER dans Render → Environment (puis supprime ce texte de ton terminal) :\n\n" + out.join("\n") + "\n");
 })().catch((e) => { console.error("ERREUR : " + e.message); process.exit(1); });
