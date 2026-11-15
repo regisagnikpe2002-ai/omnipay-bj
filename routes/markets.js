@@ -91,8 +91,10 @@ router.get("/sparklines", async (req, res) => {
   try {
     const r = await cached("spark", 120000, async () => {
       const out = {};
-      const all = await Promise.allSettled(SYMBOLS.map((s) => getJson(`${base()}/api/v3/klines?symbol=${s}&interval=1h&limit=24`)));
-      all.forEach((x, i) => { if (x.status === "fulfilled" && Array.isArray(x.value)) { const c = x.value.map((k) => Number(k[4])).filter(Number.isFinite); if (c.length > 1) out[SYMBOLS[i]] = c; } });
+      let syms = SYMBOLS.slice();
+      try { const u = await universe(); syms = Array.from(new Set(SYMBOLS.concat(u.data.items.slice(0, 40).map((x) => x.symbol)))); } catch (_) {}
+      const all = await Promise.allSettled(syms.map((s) => getJson(`${base()}/api/v3/klines?symbol=${s}&interval=1h&limit=24`)));
+      all.forEach((x, i) => { if (x.status === "fulfilled" && Array.isArray(x.value)) { const c = x.value.map((k) => Number(k[4])).filter(Number.isFinite); if (c.length > 1) out[syms[i]] = c; } });
       if (!Object.keys(out).length) throw new Error("aucune série");
       return out;
     });
