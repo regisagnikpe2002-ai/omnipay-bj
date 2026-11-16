@@ -480,6 +480,7 @@ body.lg #demo{display:block}
 
   <section id="dep" class="card hide">
     <h1>Déposer sur mon solde</h1><p class="sub">Choisissez comment payer. Vous envoyez l'argent sur le compte OMNIPAY indiqué, puis vous nous le déclarez : votre solde est crédité dès que la réception est vérifiée.</p>
+    <button class="opt" onclick="openIO('pd')"><i>💳</i><span><b>Carte / Mobile Money (paiement sécurisé)</b><small>Crédit automatique après paiement</small></span></button>
     <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Mobile Money</b><small>MTN, Moov, Celtiis : envoi depuis votre téléphone</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
@@ -3380,7 +3381,7 @@ async function ordTake(id){try{const r=await api('/api/orders/'+id+'/take',{body
 async function ordRelease(id){try{const r=await api('/api/orders/'+id+'/release',{body:{}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message)}}
 async function ordExec(id){try{const v=($('ord_ref_'+id)||{}).value||'';const r=await api('/api/orders/'+id+'/execute',{body:{reference:v.trim()}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message);await ordLoad()}}
 function openDep(){show('dep')}
-function openIO(m){if(m==='in'){return openDep()}ioMode=m;$('io_msg').className='msg';
+function openIO(m){if(m==='in'){return openDep()}if(m==='pd')m='in';ioMode=m;$('io_msg').className='msg';
   $('io_t').textContent=m==='in'?'Dépôt : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
   $('io_s').textContent=m==='in'?'Vous serez redirigé vers la page de paiement sécurisée pour finaliser le dépôt.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
   $('io_ch').innerHTML=m==='in'?'<option value="paydunya">Mobile Money / carte (paiement sécurisé)</option>':OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
