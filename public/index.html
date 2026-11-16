@@ -336,13 +336,22 @@ body.lg #demo{display:block}
     <div class="tk" id="tk"><div id="tk_i"></div></div>
     <div class="bal"><div class="bl">Solde OMNIPAY</div><div class="v" id="bal">0 FCFA</div><div class="bh"><button id="av" onclick="openPrefs()" aria-label="Mon avatar et mes options" style="width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-size:18px;font-weight:700;padding:0;margin:0;cursor:pointer;display:flex;align-items:center;justify-content:center"></button><small id="who"></small></div></div>
     <div id="pf" class="card hide" style="margin-bottom:16px"></div>
-    <div class="qh"><b>Actions rapides</b><i>Services</i></div>
+    <div class="qh"><b>Actions rapides</b></div>
     <div class="qa">
-      <button class="pri" onclick="show('xfer')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>Envoyer</button>
-      <button onclick="openQr()"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7L7 17M15 17H7V9"/></svg></span>Recevoir</button>
-      <button onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
+      <button class="pri" onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
       <button onclick="openIO('out')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></svg></span>Retrait</button>
+      <button onclick="show('xfer')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>Payer</button>
+      <button onclick="openQr()"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7L7 17M15 17H7V9"/></svg></span>Lien / QR</button>
     </div>
+    <div class="qh"><b>Services</b></div>
+    <div class="rb" id="hsv">
+      <button class="tile" onclick="openHist()"><span>🕘</span>Historique</button>
+      <button class="tile" onclick="openRc()"><span>🧾</span>Reçus</button>
+      <button class="tile" onclick="openCard()"><span>💳</span>Carte</button>
+      <button class="tile" onclick="openSim()"><span>📞</span>Numéros SIM</button>
+    </div>
+    <div class="card" id="rtc" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>Transactions récentes</b><a href="#" onclick="openHist();return false" style="font-size:13px;color:var(--mint);font-weight:700;text-decoration:none">Tout voir</a></div><div id="rtx" style="margin-top:8px"><p class="sub" style="margin:0">Aucune opération pour le moment.</p></div></div>
+    <details id="allsvc" class="card" style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:800;font-size:15px">Tous les services ▾ <small style="opacity:.7;font-weight:500">marchés, crypto, cash, compte…</small></summary>
     <div class="card" id="dj" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>✨ Du jour</b><small id="dj_n" style="opacity:.7"></small></div><div id="dj_c" style="margin-top:8px"></div><div id="dj_s" class="hide" style="margin-top:8px"><input id="dj_t" maxlength="200" placeholder="Votre idée de marché ou de service"><button class="pri" onclick="djSend()">Envoyer</button></div><div id="dj_m" class="msg"></div></div>
     <div class="card" id="flc" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>📊 Entrées / sorties</b><small style="opacity:.7">automatique</small></div><div id="flc_b"><p class="sub" style="margin:8px 0 0">Chargement…</p></div></div>
     <div class="card" id="otc" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="vi" style="width:44px;height:44px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px">🌾</span><div style="flex:1;min-width:150px"><h2 style="margin:0 0 2px">OMNITRADE</h2><p class="sub" style="margin:0">Prix du jour des produits locaux et vendeurs vérifiés, en contact direct.</p></div><button class="pri" style="margin:0;width:100%" onclick="openOt()">Ouvrir la bourse</button></div>
@@ -409,6 +418,7 @@ body.lg #demo{display:block}
       <button class="pri" onclick="openLnk()">🔗 Relier mon compte (Mobile Money · banque · crypto)</button>
       <button class="sec" onclick="openCash()">💵 Mes retraits en espèces</button>
       <div id="net_list"><div class="tx"><div>Chargement…</div></div></div></div>
+    </details>
     <button class="sec" onclick="logout()">Se déconnecter</button>
     <p class="dfoot">Version 2026.11 · Novembre 2026</p>
   </section>
@@ -3201,6 +3211,7 @@ const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',
 const CREDIT=['deposit','transfer_in','refund'];
 function render(){
   $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();try{spChart()}catch(e){}try{flSoon()}catch(e){}
+  try{const r=$('rtx');if(r){r.innerHTML=(S.txs||[]).slice(0,5).map(t=>{const c=CREDIT.includes(t.type);return `<div class="tx" style="cursor:pointer" onclick="openReceipt('${refOf(t.id)}')"><div>${t.provider==='bundle'?LABEL.bundle:t.provider==='virtualnum'?'Numéro virtuel':(LABEL[t.type]||t.type)}<small>${new Date(t.createdAt).toLocaleString('fr-FR')}</small></div><b style="color:${c?'var(--mint)':'inherit'}">${c?'+':'−'}${fmt(t.amount)}</b></div>`}).join('')||r.innerHTML}}catch(e){}
   const el=$('txs');
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
   el.innerHTML=S.txs.map(t=>{const c=CREDIT.includes(t.type),d=new Date(t.createdAt).toLocaleString('fr-FR');
