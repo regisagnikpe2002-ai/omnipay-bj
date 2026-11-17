@@ -120,6 +120,7 @@ function mount(urlPath, modulePath, label) {
 // Routes à chemin précis AVANT les routes montées sur /api
 try { app.use(require("./routes/otp").guard); } catch (e) { console.error("[otp] garde NON chargée :", e.message); }
 try { app.use(require("./lib/firstDepositGate")); } catch (e) { console.error("[gate] verrou premier dépôt NON chargé :", e.message); }
+mount("/api/v1", "./routes/coreApi", "API OMNIPAY v1 (clés API)");
 mount("/api/notify", "./routes/notify", "Notifications");
 mount("/api/business", "./routes/business", "Business");
 mount("/api/flows", "./routes/flows", "Entrées/sorties");

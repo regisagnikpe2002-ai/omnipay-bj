@@ -276,6 +276,7 @@ body.lg #demo{display:block}
 <button onclick="openSim()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg> Numéros SIM</button>
 <button onclick="openBz()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Business</button>
 <button onclick="openHist()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Historique</button>
+<button data-n="api" onclick="openApi()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg> Clés API</button>
 <button onclick="openHelp()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"/></svg> Aide</button>
 <button onclick="navProfile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg> Profil</button>
 </aside>
@@ -331,11 +332,20 @@ body.lg #demo{display:block}
   <section id="dash" class="hide">
     <div class="dtop"><div class="lgo"><img src="/omnipay-shield.svg" alt="OMNIPAY" width="38" height="42"><div><b>OMNIPAY</b><small>HOLDING</small></div></div><div class="ic"><button onclick="openNt()" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot" id="bdot" style="display:none"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
     <div class="dsheet"></div>
+    <div class="gr"><h1 id="gr_h">Bonjour</h1><small>OMNIPAY <i>›</i> <b>Tableau de bord</b></small></div>
     <div class="card hide" id="gate_b" style="margin:0 0 16px;border:1px solid var(--mint)"><b>🔓 Activez votre compte OMNIPAY</b><p class="sub" style="margin:6px 0 10px" id="gate_t"></p><button onclick="openDep()" style="margin:0">Faire mon premier dépôt</button></div>
 
     <div class="tk" id="tk"><div id="tk_i"></div></div>
-    <div class="bal"><div class="bl">Solde OMNIPAY</div><div class="v" id="bal">0 FCFA</div><div class="bh"><button id="av" onclick="openPrefs()" aria-label="Mon avatar et mes options" style="width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-size:18px;font-weight:700;padding:0;margin:0;cursor:pointer;display:flex;align-items:center;justify-content:center"></button><small id="who"></small></div></div>
+    <div class="bal"><div class="bl">Solde total<small id="bal_s"> · compte principal FCFA</small></div><div class="v" id="bal">0 FCFA</div><div class="bh"><button id="av" onclick="openPrefs()" aria-label="Mon avatar et mes options" style="width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-size:18px;font-weight:700;padding:0;margin:0;cursor:pointer;display:flex;align-items:center;justify-content:center"></button><small id="who"></small></div><div class="bp"><button onclick="openIO('in')">⬇ Déposer</button><button onclick="show('xfer')">➚ Envoyer</button><button onclick="openIO('out')">⬆ Retirer</button><button onclick="openEx()">⇄ Échange</button></div></div>
     <div id="pf" class="card hide" style="margin-bottom:16px"></div>
+    <div class="card" id="apc"><div class="aph"><b>Aperçu</b><small>7 derniers jours</small></div><div id="ap_c"></div><div class="apl"><span><i style="background:#2563eb"></i>Dépôts <b id="ap_in">0 FCFA</b></span><span><i style="background:#ef4444"></i>Dépenses <b id="ap_out">0 FCFA</b></span></div></div>
+    <div id="cpt"><h2>Comptes &amp; portefeuilles</h2><div class="cg">
+      <button class="ca" onclick="openHist()"><span class="ci" style="background:#16a34a">F</span><b>FCFA</b><em id="cp_f">0 FCFA</em><small id="cp_fn">Compte principal</small></button>
+      <button class="ca" onclick="openOw()"><span class="ci" style="background:#26a17b">₮</span><b>USDT</b><em>Adresse à votre nom</em><small>OMNIWALLET · dépôt et retrait</small></button>
+      <button class="ca" onclick="openCard()"><span class="ci" style="background:#2563eb">▭</span><b>Cartes virtuelles</b><em>Achats en ligne</em><small>Alimentées depuis votre solde</small></button>
+      <button class="ca" onclick="openApi()"><span class="ci" style="background:#7c3aed">⌘</span><b>Clés API</b><em>Pour votre site</em><small>Solde, historique, paiements</small></button>
+    </div></div>
+    <div id="prm"><div><b>Créez votre carte virtuelle OMNIPAY</b><p>Payez en ligne avec une carte alimentée depuis votre solde.</p></div><button onclick="openCard()">Demander maintenant →</button></div>
     <div class="qh"><b>Actions rapides</b></div>
     <div class="qa">
       <button class="pri" onclick="openIO('in')"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>Dépôt</button>
@@ -548,6 +558,20 @@ body.lg #demo{display:block}
     <button class="pri" onclick="sendFb()">Envoyer</button>
     <div id="h_out" class="msg"></div>
     <button class="lnk" onclick="helpBack()">← Retour</button>
+  </section>
+
+  <section id="api" class="card hide">
+    <h1>Clés API</h1><p class="sub">Branchez votre site ou votre caisse sur OMNIPAY. Une clé peut <b>lire</b> votre solde et votre historique et <b>créer des demandes de paiement</b>. Elle ne peut jamais envoyer ni retirer de l'argent.</p>
+    <div class="row"><input id="ak_n" maxlength="40" placeholder="Nom de la clé (ex. Boutique web)"><button class="pri" style="width:auto;margin:0;padding:0 18px" onclick="apiNew()">Créer</button></div>
+    <div id="ak_new" class="card hide" style="margin:12px 0;border:1px solid var(--mint)"><b>Votre nouvelle clé</b><p class="sub" style="margin:6px 0">Copiez-la maintenant : elle ne sera plus jamais affichée en entier.</p><input id="ak_v" readonly style="font-family:monospace;font-size:12px"><button class="sec" onclick="apiCopy()">Copier la clé</button></div>
+    <div id="ak_l" style="margin-top:12px"></div><div id="ak_m" class="msg"></div>
+    <div class="card" style="margin-top:14px"><b>Exemple</b><pre style="white-space:pre-wrap;font-size:12px;margin:8px 0 0;overflow:auto">curl https://www.omnipay-bj.com/api/v1/balance \
+  -H "Authorization: Bearer VOTRE_CLE"
+
+curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
+  -H "Authorization: Bearer VOTRE_CLE" -H "Content-Type: application/json" \
+  -d '{"amount":2500,"note":"Commande 42"}'</pre><p class="sub" style="margin:8px 0 0;font-size:12px">Limite : 60 requêtes par minute et par clé. Gardez vos clés secrètes ; révoquez-les au moindre doute.</p></div>
+    <button class="sec" onclick="show('dash')">← Retour</button>
   </section>
 
   <section id="sim" class="card hide">
@@ -3122,7 +3146,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','sim','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3211,6 +3235,7 @@ const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',
 const CREDIT=['deposit','transfer_in','refund'];
 function render(){
   $('bal').textContent=fmt(S.wallet&&S.wallet.balance);renderAlias();dashMk();try{spChart()}catch(e){}try{flSoon()}catch(e){}
+  try{apDraw();grApply()}catch(e){}
   try{const r=$('rtx');if(r){r.innerHTML=(S.txs||[]).slice(0,5).map(t=>{const c=CREDIT.includes(t.type);return `<div class="tx" style="cursor:pointer" onclick="openReceipt('${refOf(t.id)}')"><div>${t.provider==='bundle'?LABEL.bundle:t.provider==='virtualnum'?'Numéro virtuel':(LABEL[t.type]||t.type)}<small>${new Date(t.createdAt).toLocaleString('fr-FR')}</small></div><b style="color:${c?'var(--mint)':'inherit'}">${c?'+':'−'}${fmt(t.amount)}</b></div>`}).join('')||r.innerHTML}}catch(e){}
   const el=$('txs');
   if(!S.txs.length){el.innerHTML='<p class="sub" style="margin:0">Aucune opération pour le moment.</p>';return}
@@ -3267,6 +3292,21 @@ function mkFlash(items){try{const rows=document.querySelectorAll('#mk_list .mkro
  function anim(e,from,to,suf){var t0=performance.now();busy=true;(function f(t){var k=Math.min(1,(t-t0)/700),v=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));e.textContent=v.toLocaleString('fr-FR')+suf;if(k<1)requestAnimationFrame(f);else busy=false})(t0)}
  function init(){el=document.getElementById('bal');if(!el)return;new MutationObserver(function(){if(busy)return;var to=num(el.textContent);if(!isFinite(to))return;var suf=/FCFA/.test(el.textContent)?' FCFA':'';if(last!=null&&last!==to&&Math.abs(to-last)>=1)anim(el,last,to,suf);last=to}).observe(el,{childList:true,characterData:true,subtree:true})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init()})();
+
+/* v73 : tableau de bord pro (aperçu, comptes) + clés API */
+function apDraw(){try{var tx=S.txs||[],days=[],now=new Date();now.setHours(0,0,0,0);for(var i=6;i>=0;i--){var d=new Date(now);d.setDate(now.getDate()-i);days.push({t:d.getTime(),i:0,o:0})}
+ tx.forEach(function(x){if(x.status==='failed')return;var c=new Date(x.createdAt);c.setHours(0,0,0,0);var k=days.find(function(z){return z.t===c.getTime()});if(!k)return;var a=Number(x.amount)||0;if(CREDIT.indexOf(x.type)>=0)k.i+=a;else k.o+=a});
+ var ti=0,to=0;days.forEach(function(z){ti+=z.i;to+=z.o});$('ap_in').textContent=fmt(ti);$('ap_out').textContent=fmt(to);
+ var mx=Math.max.apply(null,days.map(function(z){return Math.max(z.i,z.o)}).concat([1])),W=320,H=120,pad=18;
+ function pts(f){return days.map(function(z,i){return (pad+i*(W-2*pad)/6).toFixed(1)+','+(H-12-(z[f]/mx)*(H-30)).toFixed(1)}).join(' ')}
+ var lab=days.map(function(z,i){return '<text x="'+(pad+i*(W-2*pad)/6).toFixed(1)+'" y="'+(H+6)+'" text-anchor="middle" font-size="9" fill="currentColor" opacity=".6">'+new Date(z.t).toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','')+'</text>'}).join('');
+ $('ap_c').innerHTML='<svg viewBox="0 0 '+W+' '+(H+12)+'" width="100%" role="img" aria-label="Dépôts et dépenses des 7 derniers jours"><line x1="'+pad+'" x2="'+(W-pad)+'" y1="'+(H-12)+'" y2="'+(H-12)+'" stroke="currentColor" opacity=".15"/><polyline fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="'+pts('i')+'"/><polyline fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="'+pts('o')+'"/>'+lab+'</svg>'}catch(e){}}
+function grApply(){try{var u=S.user||{},h=new Date().getHours(),n=u.firstName||u.name||u.fullName||'';$('gr_h').textContent=(h<18?'Bonjour':'Bonsoir')+(n?', '+n:'');var f=$('cp_f');if(f){f.textContent=fmt(S.wallet&&S.wallet.balance);$('cp_fn').textContent=(S.txs||[]).length+' opération'+((S.txs||[]).length>1?'s':'')+' · principal'}}catch(e){}}
+async function openApi(){show('api');$('ak_new').classList.add('hide');$('ak_m').className='msg';await apiLoad()}
+async function apiLoad(){try{var d=await api('/api/v1/keys');$('ak_l').innerHTML=d.keys.length?d.keys.map(function(k){return '<div class="tx"><div>'+escH(k.name)+(k.revoked?' <small>(révoquée)</small>':'')+'<small>'+escH(k.hint)+' · créée le '+new Date(k.createdAt).toLocaleDateString('fr-FR')+(k.lastUsedAt?' · utilisée le '+new Date(k.lastUsedAt).toLocaleDateString('fr-FR'):' · jamais utilisée')+'</small></div>'+(k.revoked?'':'<button class="sec" style="width:auto;margin:0;padding:6px 12px" onclick="apiRev(\''+k.id+'\')">Révoquer</button>')+'</div>'}).join(''):'<p class="sub">Aucune clé pour le moment.</p>'}catch(e){msg('ak_m',e.message)}}
+async function apiNew(){var n=$('ak_n').value.trim();if(n.length<2)return msg('ak_m','Donnez un nom à la clé.');try{var d=await api('/api/v1/keys',{body:{name:n}});$('ak_v').value=d.key;$('ak_new').classList.remove('hide');$('ak_n').value='';$('ak_m').className='msg';await apiLoad()}catch(e){msg('ak_m',e.message)}}
+function apiCopy(){var v=$('ak_v');v.select();try{navigator.clipboard.writeText(v.value)}catch(e){document.execCommand('copy')}msg('ak_m','Clé copiée.',true)}
+async function apiRev(id){if(!confirm('Révoquer cette clé ? Les sites qui l\'utilisent cesseront de fonctionner.'))return;try{await api('/api/v1/keys/'+id,{method:'DELETE'});await apiLoad()}catch(e){msg('ak_m',e.message)}}
 var MKSORT='volume',MKQ_T=null;
 function mkTab(s){MKSORT=s;document.querySelectorAll('#mk_tabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));mkAllLoad()}
 function mkSearch(){clearTimeout(MKQ_T);MKQ_T=setTimeout(mkAllLoad,250)}
@@ -4161,6 +4201,39 @@ body.inapp .foot{padding-bottom:70px}
  body.inapp .foot{max-width:none;margin-left:244px}
  body.inapp section.card:not(#dash){margin-left:0;margin-right:auto}
  body.inapp #dash .dtop{display:none}
+}
+
+/* v73 — style tableau de bord pro */
+.gr{margin:4px 0 14px}.gr h1{font-size:26px;margin:0;letter-spacing:-.4px}.gr small{display:block;margin-top:4px;opacity:.65;font-size:13px}.gr small i{font-style:normal;margin:0 3px}.gr small b{opacity:1}
+.bp{display:none}
+#apc{margin-bottom:16px}.aph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.aph b{font-size:17px}.aph small{opacity:.65}
+.apl{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-top:6px}.apl i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}.apl b{margin-left:4px}
+#cpt h2{font-size:17px;margin:0 0 10px}.cg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ca{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:14px;margin:0;border-radius:14px;background:var(--card);border:1px solid var(--line);color:var(--txt);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.ca .ci{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;margin-bottom:4px}
+.ca b{font-size:15px}.ca em{font-style:normal;font-weight:800;font-size:15px}.ca small{opacity:.65;font-size:11.5px;line-height:1.3}
+#prm{display:none}
+@media(max-width:1023px){#cpt{display:none}body.inapp #dash{display:flex;flex-direction:column}body.inapp #dash #apc{order:1}body.inapp #dash #allsvc,body.inapp #dash>button.sec,body.inapp #dash>.dfoot{order:2}}
+@media(min-width:1024px){
+ body.inapp #dash{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);column-count:auto;gap:18px 24px;align-items:start}
+ body.inapp #dash>*{grid-column:1/-1;break-inside:auto}
+ body.inapp #dash>#apc{grid-column:1}body.inapp #dash>#cpt{grid-column:2}
+ #dash .qh,#dash .qa,#dash #hsv{display:none}
+ .gr h1{font-size:32px}
+ #dash .bal{background:radial-gradient(90% 160% at 100% 0%,rgba(56,189,248,.45),transparent 55%),linear-gradient(110deg,#0f3fae,#1e6bff 60%,#2b8cff)!important;border-radius:20px;padding:26px 30px;display:grid!important;grid-template-columns:1fr auto;grid-template-areas:"l p" "v p";align-items:center;gap:2px 20px}
+ #dash .bal .bl{grid-area:l;font-weight:700;font-size:15px}#dash .bal .bl small{opacity:.8;font-weight:500}
+ #dash .bal .v{grid-area:v;font-size:44px!important}
+ #dash .bal .bh{position:absolute;top:14px;right:18px}
+ #dash .bal .bp{grid-area:p;display:flex;gap:10px;margin-top:26px}
+ .bp button{margin:0;width:auto;padding:12px 20px;border-radius:999px;background:#fff;color:#0f3fae;font-weight:800;font-size:14px;border:0;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+ #prm{display:flex;grid-column:1/-1;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;border-radius:16px;background:linear-gradient(100deg,rgba(37,99,235,.16),rgba(56,189,248,.16));border:1px solid rgba(37,99,235,.25)}
+ #prm b{font-size:16px}#prm p{margin:4px 0 0;font-size:13px;opacity:.75}
+ #prm button{margin:0;width:auto;padding:12px 22px;border-radius:999px;background:#1e4fd8;color:#fff;font-weight:800;border:0;white-space:nowrap}
+ #sb{background:linear-gradient(180deg,#0c2f78,#071a48)!important;border-right:0!important;color:#fff}
+ #sb .sbl b{color:#fff}#sb .sbl small{color:rgba(255,255,255,.6)}
+ #sb button{color:rgba(255,255,255,.86)!important}#sb button svg{color:rgba(255,255,255,.6)!important}
+ #sb button:hover{background:rgba(255,255,255,.09)!important}
+ #sb button.on{background:#2563eb!important;color:#fff!important}#sb button.on svg{color:#fff!important}
 }
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>

@@ -125,7 +125,7 @@ router.post("/admin/test", (req, res, next) => (isAdmin(req) ? next() : res.stat
 });
 
 // ---------- garde : exige le jeton OTP sur les routes d'argent ----------
-const GUARDED = [/^\/wallet\/(transfer|withdraw|deposit)$/, /^\/api\/exchange\/(buy|sell|withdraw|deposit)$/, /^\/api\/bundles\/order$/, /^\/api\/vn\/rent$/, /^\/api\/sim\/order$/, /^\/api\/omnicash\/cashout\/request$/,
+const GUARDED = [/^\/api\/v1\/keys$/, /^\/wallet\/(transfer|withdraw|deposit)$/, /^\/api\/exchange\/(buy|sell|withdraw|deposit)$/, /^\/api\/bundles\/order$/, /^\/api\/vn\/rent$/, /^\/api\/sim\/order$/, /^\/api\/omnicash\/cashout\/request$/,
   /^\/api\/notify\/subscribe$/, /^\/api\/omniwallet\/book$/, /^\/api\/linked\/?$/, /^\/api\/business\/checkout\/[^/]+\/pay$/, /^\/api\/cards\/?$/, /^\/api\/cards\/[^/]+\/(fund|reveal|close)$/];
 function guard(req, res, next) {
   if (req.method !== "POST" || !enforced() || isDemo()) return next();
