@@ -373,6 +373,7 @@ body.lg #demo{display:block}
       <button class="tile p" onclick="openIO('in')"><span>⬇️</span>Déposer</button>
       <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retirer</button>
       <button class="tile" onclick="openLnk()"><span>🔗</span>Relier un compte</button>
+      <button class="tile" onclick="openPis()"><span>🧪</span>Simulateur PI-SPI</button>
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
     </div>
     <div class="grp ex">Crypto · Binance</div>
@@ -402,10 +403,7 @@ body.lg #demo{display:block}
     <div id="ops_g" class="hide"><div id="ops_b"></div></div>
     <div id="gd_g" class="hide"><div id="gd_l"></div><p id="gd_w"></p></div>
     <div class="secn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 014 0V11"/></svg><div><b>Sécurité · Ne partagez jamais vos codes</b><small>OMNIPAY ne vous demande jamais votre code OTP, votre PIN ou votre mot de passe.</small></div></div>
-    <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
-      <div class="row"><input id="id_v" readonly style="font-weight:800;font-size:16px;letter-spacing:1px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyId()">Copier</button></div>
-      <div id="id_msg" class="msg"></div>
-      <p class="sub" style="margin:10px 0 0;font-size:12px">Utilisable uniquement entre clients OMNIPAY. Ce n'est pas un IBAN bancaire.</p></div>
+    <input id="id_v" type="hidden"><div id="id_msg" class="msg hide"></div>
     <div class="card" style="margin-bottom:16px"><h2>Mon alias OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre adresse de paiement unique : partagez-la pour recevoir de l'argent sans donner d'IBAN.</p>
       <div class="row"><input id="alias_v" readonly style="font-weight:700;font-size:14px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyAlias()">Copier</button></div>
       <div id="alias_msg" class="msg"></div>
@@ -442,12 +440,23 @@ body.lg #demo{display:block}
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
-  <section id="iban" class="card hide">
-    <h1>Vérificateur IBAN</h1><p class="sub">Contrôlez un IBAN avant un virement (structure et clé de contrôle). Le contrôle se fait sur votre appareil, rien n'est envoyé.</p>
-    <label>IBAN</label><input id="ib_v" placeholder="Ex : FR76 3000 6000 0112 3456 7890 189" autocapitalize="characters" autocomplete="off">
-    <button class="pri" onclick="checkIban()">Vérifier</button>
-    <div id="ib_out" class="msg"></div>
-    <p class="sub" style="margin-top:12px;font-size:12px">Un IBAN valide a la bonne structure, mais cela ne prouve pas que le compte existe ni qu'il appartient à la bonne personne.</p>
+  <section id="pis" class="card hide">
+    <h1>Simulateur PI-SPI</h1><p class="sub">Entraînez-vous à envoyer et recevoir par alias. <b>Simulation : aucun argent ne bouge, aucun solde n'est modifié.</b></p>
+    <div class="pis-c"><small>Mon alias</small><div class="pis-a"><span id="pis_a">—</span><button class="pis-cp" onclick="pisCopy()" aria-label="Copier mon alias">⧉</button></div>
+      <button class="pis-b" onclick="pisBal()" id="pis_bb">Voir mon solde</button></div>
+    <div class="rb" style="margin-top:14px">
+      <button class="tile p" onclick="pisTab('send')"><span>⇄</span>Envoyer</button>
+      <button class="tile" onclick="pisTab('recv')"><span>⬇️</span>Recevoir</button>
+      <button class="tile" onclick="openQr()"><span>▦</span>Payer par QR</button>
+      <button class="tile" onclick="openHist()"><span>🕘</span>Historique</button>
+    </div>
+    <div id="pis_send">
+      <label>Alias ou numéro du bénéficiaire</label><input id="pis_d" placeholder="Ex : 0197000000@omnipay" autocomplete="off">
+      <label>Montant (FCFA)</label><input id="pis_m" type="number" inputmode="numeric" placeholder="5000">
+      <button class="pri" onclick="pisGo()">Simuler le transfert</button>
+    </div>
+    <div id="pis_recv" class="hide"><p class="sub">Donnez votre alias, ou montrez un code QR, pour être payé.</p><button class="sec" onclick="pisCopy()">Copier mon alias</button><button class="sec" onclick="openQr()">Afficher mon QR</button></div>
+    <div id="pis_o" class="msg"></div><div id="pis_h"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3122,7 +3131,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','iban','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3314,13 +3323,12 @@ var SVC={
 'qr':{i:'▦',t:'Mes QR',s:'on',what:'Des QR codes à faire scanner pour recevoir un paiement : votre QR de réception, des demandes avec montant et libellé, un QR commerçant et un QR de parrainage.',steps:['Générez le QR et le lien d\u2019une demande (montant et libellé).','Faites-le scanner ou partagez le lien (WhatsApp, copie).','Le paiement apparaît dans vos reçus dès qu\u2019il est terminé.'],fees:['Voir les frais affichés avant confirmation.'],safe:['Une demande à montant fixe ne peut être payée qu\u2019une fois et expire au bout de 24 h.','Sans montant, le QR est réutilisable : ne le partagez qu\u2019avec les personnes concernées.','Le QR de retrait chez un terminal partenaire arrive plus tard.']},
 'recus':{i:'🧾',t:'Reçus',s:'on',what:'L’historique de vos opérations avec la référence de chacune.',steps:['Touchez une opération pour afficher son reçu.','Gardez la référence si vous contactez l’assistance.'],fees:['Gratuit.'],safe:['Une opération « en attente » n’est pas perdue : elle attend sa vérification.']},
 'recuspdf':{i:'🖨️',t:'Reçus PDF',s:'on',what:'Imprimez ou enregistrez en PDF la page affichée (reçu, historique).',steps:['Ouvrez le reçu voulu, puis touchez Reçus PDF.','Choisissez « Enregistrer au format PDF » dans la fenêtre d’impression.'],fees:['Gratuit.'],safe:['Ne partagez pas un reçu qui montre votre identifiant à n’importe qui.']},
-'iban':{i:'🏦',t:'Vérificateur IBAN',s:'on',what:'Contrôle la structure et la clé de vérification d’un IBAN avant un virement.',steps:['Saisissez l’IBAN.','Le contrôle se fait sur votre appareil : rien n’est envoyé.'],fees:['Gratuit.'],safe:['Un IBAN valide a la bonne structure, mais cela ne prouve pas que le compte existe ni qu’il appartient à la bonne personne.']},
 'carte':{i:'💳',t:'Ma carte OMNIPAY',s:'on',what:'Votre carte d’identité de paiement : montrez votre identifiant ou votre alias pour recevoir de l’argent d’un autre client OMNIPAY.',steps:['Ouvrez Carte.','Faites copier ou scanner votre identifiant.'],fees:['Gratuit.'],safe:['Ce n’est pas une carte bancaire : elle ne permet pas de payer chez un commerçant.']},
 'affiliation':{i:'🎁',t:'Affiliation',s:'on',what:'Invitez des clients avec votre lien et gagnez 50 FCFA pour chaque client parrainé qui rejoint OMNIPAY (un seul niveau : vos filleuls directs).',steps:['Copiez votre lien d\u2019affiliation ou faites scanner votre QR de parrainage.','Le gain est enregistré quand votre filleul rejoint.'],fees:['Gratuit.'],safe:['Seuls vos filleuls directs comptent.']},
 'aide':{i:'🛟',t:'Aide & avis',s:'on',what:'Des réponses à vos questions et la possibilité de nous dire ce qui ne va pas ou ce que vous aimeriez voir.',steps:['Consultez l’aide ou écrivez-nous.','Gardez la référence de l’opération concernée.'],fees:['Gratuit.'],safe:['L’équipe OMNIPAY ne vous demandera jamais votre mot de passe, votre code PIN ou un code reçu par SMS.']},
 'olatounde':{i:'💬',t:'OLATOUNDE',s:'on',what:'Votre assistante OMNIPAY. Elle explique, suit vos opérations et répond à vos questions, mais ne déplace jamais d’argent.',steps:['Posez une question : « où en est mon dépôt ? », « comment retirer ? »…'],fees:['Gratuit.'],safe:['Ne lui donnez jamais vos mots de passe ni vos codes.','Elle peut se tromper : pour un montant important, vérifiez dans vos reçus.']}
 };
-var SVMAP={'OMNIP2P':'omnip2p','Crypto':'crypto','Directs':'directs','PI-SPI':'pispi','Marchés':'marches','Défis':'defis','OMNICASH':'omnicash','Numéros':'numeros','Recharges':'recharges','Historique':'recus','Mon alias':'alias','Mes QR':'qr','Reçus':'recus','Reçus PDF':'recuspdf','IBAN':'iban','Carte':'carte','Affiliation':'affiliation','Aide':'aide','Olatounde':'olatounde','Boutique':'boutique'};
+var SVMAP={'OMNIP2P':'omnip2p','Crypto':'crypto','Directs':'directs','PI-SPI':'pispi','Marchés':'marches','Défis':'defis','OMNICASH':'omnicash','Numéros':'numeros','Recharges':'recharges','Historique':'recus','Mon alias':'alias','Mes QR':'qr','Reçus':'recus','Reçus PDF':'recuspdf','Carte':'carte','Affiliation':'affiliation','Aide':'aide','Olatounde':'olatounde','Boutique':'boutique'};
 var SVCUR=null,SVTILE=null;
 function svcOpen(k,tile){var d=SVC[k];if(!d)return;SVCUR=k;SVTILE=tile||null;
  $('svc_i').textContent=d.i;$('svc_t').textContent=d.t;var st=$('svc_s');st.className='svst '+(d.s==='on'?'on':d.s==='rv'?'rv':'so');st.textContent=d.s==='on'?'Disponible':d.s==='rv'?'Sur validation OMNIPAY':'Bientôt';
@@ -3662,20 +3670,20 @@ async function sendFb(){
     msg('h_out',d.message||'Merci pour votre retour.',true);$('h_msg').value=''}catch(e){msg('h_out',e.message)}
 }
 
-/* ===== Vérificateur IBAN (ISO 13616, modulo 97) ===== */
-const IBAN_LEN={AD:24,AE:23,AL:28,AT:20,AZ:28,BA:20,BE:16,BG:22,BH:22,BR:29,BY:28,CH:21,CR:22,CY:28,CZ:24,DE:22,DK:18,DO:28,EE:20,EG:29,ES:24,FI:18,FO:18,FR:27,GB:22,GE:22,GI:23,GL:18,GR:27,GT:28,HR:21,HU:28,IE:22,IL:23,IQ:23,IS:26,IT:27,JO:30,KW:30,KZ:20,LB:28,LC:32,LI:21,LT:20,LU:20,LV:21,MC:27,MD:24,ME:22,MK:19,MR:27,MT:31,MU:30,NL:18,NO:15,PK:24,PL:28,PS:29,PT:25,QA:29,RO:24,RS:22,SA:24,SC:31,SE:24,SI:19,SK:24,SM:27,ST:25,SV:28,TL:23,TN:24,TR:26,UA:29,VA:22,VG:24,XK:20};
-function ibanOk(raw){
-  const s=String(raw||'').replace(/\s+/g,'').toUpperCase();
-  if(!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(s))return {ok:false,why:'Format invalide : 2 lettres, 2 chiffres, puis le numéro de compte.'};
-  const cc=s.slice(0,2);if(!IBAN_LEN[cc])return {ok:false,why:'Pays « '+cc+' » non reconnu pour les IBAN.'};
-  if(s.length!==IBAN_LEN[cc])return {ok:false,why:'Longueur incorrecte pour '+cc+' : '+s.length+' caractères au lieu de '+IBAN_LEN[cc]+'.'};
-  const r=(s.slice(4)+s.slice(0,4)).replace(/[A-Z]/g,c=>c.charCodeAt(0)-55);
-  let m=0;for(const ch of r)m=(m*10+ +ch)%97;
-  if(m!==1)return {ok:false,why:'Clé de contrôle invalide : il y a une erreur de saisie.'};
-  return {ok:true,cc,fmt:s.replace(/(.{4})/g,'$1 ').trim()}
-}
-function checkIban(){const r=ibanOk($('ib_v').value);
-  if(r.ok){$('ib_v').value=r.fmt;msg('ib_out','✔ IBAN valide ('+r.cc+') : '+r.fmt,true)}else msg('ib_out',r.why)}
+/* ===== Simulateur PI-SPI (aucun argent ne bouge) ===== */
+var PIS_H=[];
+function pisAlias(){var a=aliasOf();return a||'Indisponible (reconnectez-vous)'}
+function openPis(){show('pis');$('pis_a').textContent=pisAlias();$('pis_bb').textContent='Voir mon solde';$('pis_o').className='msg';pisTab('send');pisHist()}
+function pisTab(t){$('pis_send').classList.toggle('hide',t!=='send');$('pis_recv').classList.toggle('hide',t!=='recv')}
+function pisCopy(){var a=aliasOf();if(!a)return msg('pis_o','Reconnectez-vous pour afficher votre alias.');(navigator.clipboard?navigator.clipboard.writeText(a):Promise.reject()).then(function(){msg('pis_o','Alias copié.',true)}).catch(function(){msg('pis_o','Copiez : '+a,true)})}
+function pisBal(){var b=$('pis_bb'),w=S.wallet;if(b.dataset.on==='1'){b.dataset.on='';b.textContent='Voir mon solde';return}b.dataset.on='1';b.textContent=w?fmt(w.balance):'Solde indisponible'}
+function pisGo(){var d=$('pis_d').value.trim(),m=Math.floor(Number($('pis_m').value));
+  if(d.length<4)return msg('pis_o','Entrez un alias ou un numéro.');
+  if(!Number.isFinite(m)||m<100)return msg('pis_o','Montant minimum : 100 FCFA.');
+  var r={txId:String(Date.now()).slice(-9),payeurNumero:pisAlias(),payeNumero:d,montant:m,statut:'INITIE',dateEnvoi:new Date().toISOString()};
+  PIS_H.unshift(r);PIS_H=PIS_H.slice(0,5);
+  msg('pis_o','✔ Transfert simulé : '+fmt(m)+' vers '+d+' — statut INITIE (réf. '+r.txId+'). Aucun argent n\'a bougé.',true);pisHist()}
+function pisHist(){$('pis_h').innerHTML=PIS_H.length?'<h3 style="margin:14px 0 6px">Dernières simulations</h3>'+PIS_H.map(function(x){return '<div class="tx"><div><b>'+escH(x.payeNumero)+'</b><br><small>'+escH(x.txId)+' · '+escH(x.statut)+'</small></div><b>'+fmt(x.montant)+'</b></div>'}).join(''):''}
 
 /* ===== Dépôt / retrait directs (validés par OMNIPAY) ===== */
 const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4219,6 +4227,7 @@ body.inapp .foot{padding-bottom:70px}
 button.pri{border-radius:14px}
 #ops_g,#gd_g{display:none!important}
 body.inapp #dash.hide,#dash.hide{display:none!important}
+.pis-c{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;border-radius:18px;padding:18px;margin:12px 0}.pis-c small{opacity:.85}.pis-a{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;margin:8px 0 12px;font-weight:700;word-break:break-all}.pis-cp{width:auto;margin:0;padding:4px 10px;background:none;border:0;color:#fff;font-size:18px}.pis-b{margin:0;background:none;border:1.5px solid #fff;color:#fff;border-radius:12px;padding:12px}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>
