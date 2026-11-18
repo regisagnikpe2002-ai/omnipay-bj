@@ -133,4 +133,16 @@ router.get("/status", adminOnly, async (req, res) => {
 });
 
 module.exports = router;
+
+// Test d'envoi PI-SPI (administrateur seulement, ne touche à aucun solde client).
+router.get("/send-status", adminOnly, (req, res) => { res.json({ configured: require("../lib/pispiClient").ready() }); });
+router.post("/send-test", adminOnly, async (req, res) => {
+  try {
+    const c = require("../lib/pispiClient");
+    const b = req.body || {};
+    const r = await c.initiateTransfer({ txId: b.txId, payeurNumero: b.payeurNumero || process.env.PISPI_PAYER_ACCOUNT, payeNumero: b.payeNumero, montant: b.montant });
+    res.status(r.ok ? 200 : 502).json(r);
+  } catch (e) { console.error("PISPI_SEND", e.message); res.status(502).json({ error: e.message }); }
+});
+
 module.exports._interpret = interpret;
