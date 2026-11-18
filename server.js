@@ -162,9 +162,7 @@ mount("/api/momo", "./routes/momo", "MTN MoMo (dépôts et suivi des retraits)")
 mount("/api/channels", "./routes/channels", "Canaux entrants indépendants (PI-SPI, Mobile Money)");
 mount("/api/pispi", "./routes/pispiBridge", "Brancheur PI-SPI (crédit automatique plafonné)");
 mount("/api/activity", "./routes/activity", "Clients et activité (admin, lecture seule)");
-mount("/api/bundles", "./routes/bundles", "Recharges et forfaits");
 mount("/api/vn", "./routes/virtualNumbers", "Numéros virtuels (SMS)");
-mount("/api/sim", "./routes/simNumbers", "Numéros SIM africains (MTN, Moov, Celtiis)");
 mount("/api/exchange", "./routes/exchange", "OMNICHANGE (portefeuille crypto)");
 mount("/api/cryptowallets", "./routes/cryptoWallets", "OMNIWALLET : 10 adresses crypto par client");
 mount("/api/cards", "./routes/cards", "Cartes virtuelles OMNIPAY");
@@ -173,14 +171,12 @@ mount("/api/daily", "./routes/daily", "Du jour (cartes quotidiennes)");
 mount("/api/omnitrade", "./routes/omnitrade", "OMNITRADE (bourse des produits locaux)");
 mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
-mount("/api/paypal", "./routes/paypal", "PayPal");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");
 mount("/api/p2pdesk", "./routes/p2pdesk", "Bureau P2P (garde-fou libération)");
 mount("/api/linked", "./routes/linkedAccounts", "Comptes reliés (retraits vers vos comptes)");
 mount("/api/cashdesk", "./routes/cashdesk", "Bureau Cash OMNIXPAY (retraits espèces sous séquestre)");
 mount("/api/pay", "./routes/payRequests", "Demandes de paiement par QR/lien (usage unique, expiration)");
-mount("/api/mpesa", "./routes/mpesa", "M-Pesa Open API (clé de session)");
 mount("/api/web3", "./routes/web3", "Web3");
 mount("/api", "./routes/binance", "Binance");
 

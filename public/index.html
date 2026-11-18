@@ -273,7 +273,6 @@ body.lg #demo{display:block}
 <button onclick="openEx()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v14M3 14l4 4 4-4M17 20V6M13 10l4-4 4 4"/></svg> Échange crypto</button>
 <button onclick="openMk()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 16l4-5 3 3 5-7"/></svg> Marchés</button>
 <button onclick="openCard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19"/></svg> Cartes</button>
-<button onclick="openSim()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg> Numéros SIM</button>
 <button onclick="openBz()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Business</button>
 <button onclick="openHist()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Historique</button>
 <button data-n="api" onclick="openApi()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg> Clés API</button>
@@ -358,64 +357,51 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openHist()"><span>🕘</span>Historique</button>
       <button class="tile" onclick="openRc()"><span>🧾</span>Reçus</button>
       <button class="tile" onclick="openCard()"><span>💳</span>Carte</button>
-      <button class="tile" onclick="openSim()"><span>📞</span>Numéros SIM</button>
     </div>
     <div class="card" id="rtc" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>Transactions récentes</b><a href="#" onclick="openHist();return false" style="font-size:13px;color:var(--mint);font-weight:700;text-decoration:none">Tout voir</a></div><div id="rtx" style="margin-top:8px"><p class="sub" style="margin:0">Aucune opération pour le moment.</p></div></div>
-    <details id="allsvc" class="card" style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:800;font-size:15px">Tous les services ▾ <small style="opacity:.7;font-weight:500">marchés, crypto, cash, compte…</small></summary>
+    <details id="allsvc" open class="card" style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:800;font-size:15px">Tous les services ▾ <small style="opacity:.7;font-weight:500">marchés, crypto, cash, compte…</small></summary>
     <div class="card" id="dj" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>✨ Du jour</b><small id="dj_n" style="opacity:.7"></small></div><div id="dj_c" style="margin-top:8px"></div><div id="dj_s" class="hide" style="margin-top:8px"><input id="dj_t" maxlength="200" placeholder="Votre idée de marché ou de service"><button class="pri" onclick="djSend()">Envoyer</button></div><div id="dj_m" class="msg"></div></div>
     <div class="card" id="flc" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b>📊 Entrées / sorties</b><small style="opacity:.7">automatique</small></div><div id="flc_b"><p class="sub" style="margin:8px 0 0">Chargement…</p></div></div>
     <div class="card" id="otc" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="vi" style="width:44px;height:44px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px">🌾</span><div style="flex:1;min-width:150px"><h2 style="margin:0 0 2px">OMNITRADE</h2><p class="sub" style="margin:0">Prix du jour des produits locaux et vendeurs vérifiés, en contact direct.</p></div><button class="pri" style="margin:0;width:100%" onclick="openOt()">Ouvrir la bourse</button></div>
-    <div class="card" id="hx" style="margin-bottom:16px"><span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><h2 style="margin:0 0 2px">Numéros virtuels</h2><p class="sub" style="margin:0">Un numéro temporaire pour recevoir vos codes de vérification, sans carte SIM et sans exposer votre numéro personnel.</p></div><button style="margin:0" onclick="openVn()">Obtenir un numéro</button></div>
 
     <div class="card" id="hc" style="margin-bottom:16px"><h2>🪙 OMNIWALLET · Crypto</h2><div id="hc_l"><p class="sub" style="margin:0">Chargement des adresses…</p></div><div id="hc_m" class="msg"></div></div>
     <div class="card" id="dmk" style="margin-bottom:16px"><h2>📈 Cours crypto en direct</h2><div id="dmk_l"><p class="sub" style="margin:0">Chargement des cours…</p></div><p class="sub" id="dmk_t" style="margin:8px 0 0;font-size:12px"></p>
       <div id="dmk_c" class="chc" style="margin-top:10px;cursor:pointer" onclick="openChl()"><b>🏆 Défis</b><br><small id="dmk_cs">Relevez des défis et gagnez des points.</small></div>
       <div class="row" style="margin-top:10px"><button class="sec" style="margin:0" onclick="openMk()">Tous les marchés</button><button class="sec" style="margin:0" onclick="openHist()">🕘 Historique</button></div></div>
-    <div class="grp ex">OMNIWALLET</div>
+    <div class="grp ex">PI-SPI · Mobile Money &amp; banques</div>
+    <div class="rb ex">
+      <button class="tile p" onclick="openIO('in')"><span>⬇️</span>Déposer</button>
+      <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retirer</button>
+      <button class="tile" onclick="openLnk()"><span>🔗</span>Relier un compte</button>
+      <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
+    </div>
+    <div class="grp ex">Crypto · Binance</div>
     <div class="rb ex">
       <button class="tile" onclick="openOw()"><span>👛</span>OMNIWALLET</button>
-      <button class="tile" onclick="openOw('cash')"><span>🏧</span>Retrait TPE</button>
-      <button class="tile" onclick="openOw('flow')"><span>📊</span>Entrées/sorties</button>
-    </div>
-    <div class="grp ex">OMNIEXCHANGE</div>
-    <div class="rb ex">
+      <button class="tile" onclick="openEx()"><span>🪙</span>Échange crypto</button>
       <button class="tile" onclick="openP2p()"><span>💱</span>OMNIP2P</button>
-      <button class="tile" onclick="openEx()"><span>🪙</span>Crypto</button>
-      <button class="tile" onclick="openMan()"><span>💸</span>Directs</button>
-    </div>
-    <div class="grp">Marchés &amp; Défis</div>
-    <div class="rb">
-      <button class="tile" onclick="openOt()"><span>🌾</span>OMNITRADE</button>
-      <button class="tile" onclick="openBz()"><span>🏪</span>Business</button>
       <button class="tile" onclick="openMk()"><span>📈</span>Marchés</button>
-      <button class="tile" onclick="openChl()"><span>🏆</span>Défis</button>
     </div>
-    <div class="grp">OMNICASH · Cash</div>
+    <div class="grp">Business &amp; API</div>
     <div class="rb">
-      <button class="tile" onclick="openOc()"><span>🏧</span>OMNICASH</button>
-      <button class="tile" onclick="openFcf()"><span>📶</span>Recharges</button>
-      <button class="tile" onclick="openOps()"><span>📱</span>Numéros</button>
-      <button class="tile" onclick="openSim()"><span>📞</span>Numéros SIM<em>nouveau</em></button>
+      <button class="tile" onclick="openApi()"><span>⌘</span>Clés API</button>
+      <button class="tile" onclick="openBz()"><span>🏪</span>Business</button>
+      <button class="tile" onclick="openOt()"><span>🌾</span>OMNITRADE</button>
+      <button class="tile" onclick="openQr()"><span>▦</span>Mes QR</button>
     </div>
     <div class="grp">Mon compte</div>
     <div class="rb">
-      <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
-      <button class="tile" onclick="openQr()"><span>▦</span>Mes QR</button>
       <button class="tile" onclick="openHist()"><span>🕘</span>Historique</button>
       <button class="tile" onclick="openRc()"><span>🧾</span>Reçus</button>
-      <button class="tile" onclick="window.print()"><span>🖨️</span>Reçus PDF</button>
-      <button class="tile" onclick="$('ib_out').className='msg';show('iban')"><span>🏦</span>IBAN</button>
-      <button class="tile" onclick="openCard()"><span>💳</span>Carte<em>nouveau</em></button>
+      <button class="tile" onclick="openCard()"><span>💳</span>Carte virtuelle</button>
       <button class="tile" onclick="openAff()"><span>🎁</span>Affiliation</button>
+      <button class="tile" onclick="openChl()"><span>🏆</span>Défis</button>
       <button class="tile" onclick="openHelp()"><span>🛟</span>Aide</button>
+      <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde</button>
     </div>
-        <div id="ops_g" class="hide"><div class="grp">Opérateurs</div><div class="rb" id="ops_b"></div></div>
-    <div id="gd_g" class="hide"><div class="grp">Services recommandés</div><div class="card" style="margin-bottom:16px"><div id="gd_l"></div><p class="sub" id="gd_w" style="margin:8px 0 0;font-size:12px"></p></div></div>
+    <div id="ops_g" class="hide"><div id="ops_b"></div></div>
+    <div id="gd_g" class="hide"><div id="gd_l"></div><p id="gd_w"></p></div>
     <div class="secn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 014 0V11"/></svg><div><b>Sécurité · Ne partagez jamais vos codes</b><small>OMNIPAY ne vous demande jamais votre code OTP, votre PIN ou votre mot de passe.</small></div></div>
-    <div class="grp">Assistance</div>
-    <div class="rb">
-      <button class="tile" onclick="openOlat()"><span><img class="olav" src="/olatounde-avatar.svg" alt="OLATOUNDE" width="38" height="38" loading="lazy" onerror="this.outerHTML='💬'"></span>Olatounde<em>assistante</em></button>
-    </div>
     <div class="card" style="margin-bottom:16px;border-color:var(--mint)"><h2>Mon identifiant OMNIPAY</h2><p class="sub" style="margin-bottom:10px">Votre « IBAN » interne : donnez-le pour recevoir de l'argent d'un autre client OMNIPAY, instantanément.</p>
       <div class="row"><input id="id_v" readonly style="font-weight:800;font-size:16px;letter-spacing:1px;padding:14px 8px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyId()">Copier</button></div>
       <div id="id_msg" class="msg"></div>
@@ -4231,6 +4217,7 @@ body.inapp .foot{padding-bottom:70px}
 .rb .tile:active{transform:scale(.96)}
 .rb .tile:hover{border-color:var(--mint)!important}
 button.pri{border-radius:14px}
+#ops_g,#gd_g{display:none!important}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>
