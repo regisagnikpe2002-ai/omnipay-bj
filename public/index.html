@@ -608,7 +608,7 @@ curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
   </section>
   <section id="rcd" class="card hide">
     <div id="rc_body"></div>
-    <div class="row no-print"><button class="sec" onclick="dlReceipt()">Télécharger</button><button class="sec" onclick="window.print()">Imprimer / PDF</button><button class="sec" onclick="shareRc()">WhatsApp</button></div>
+    <div class="row no-print" style="flex-wrap:wrap;gap:8px"><button class="sec" onclick="dlReceipt()">Télécharger</button><button class="sec" onclick="window.print()">Imprimer / PDF</button><button class="sec" onclick="shareRc()">WhatsApp</button></div>
     <div id="rcd_msg" class="msg no-print"></div>
     <button class="lnk no-print" onclick="openRc()">← Mes reçus</button>
   </section>
@@ -3690,9 +3690,11 @@ async function pisGo(){var d=$('pis_d').value.trim().replace(/@omnipay$/i,''),m=
     PIS_H.unshift({txId:x.receiptRef||'—',payeNumero:d,montant:m,statut:'EFFECTUÉ'});PIS_H=PIS_H.slice(0,5);
     await refresh();$('pis_bb').dataset.on='';pisHist();if(x.receiptRef)setTimeout(function(){openReceipt(x.receiptRef)},900)}
   catch(e){msg('pis_o',e.message)}}
-function dlReceipt(){var h=$('rc_body').innerHTML,ref=(typeof rcLast!=='undefined'&&rcLast&&rcLast.reference)||'recu';
-  var doc='<!doctype html><meta charset="utf-8"><title>Reçu OMNIPAY</title><style>body{font-family:Arial,sans-serif;max-width:560px;margin:24px auto;padding:0 16px;color:#111}.tx{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}small{color:#666;display:block}img{display:none}</style>'+h;
-  var u=URL.createObjectURL(new Blob([doc],{type:'text/html'})),a=document.createElement('a');a.href=u;a.download='recu-OMNIPAY-'+String(ref).replace(/[^\w-]/g,'')+'.html';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},1000)}
+async function dlReceipt(){var h=$('rc_body').innerHTML,ref=String((typeof rcLast!=='undefined'&&rcLast&&rcLast.reference)||'recu').replace(/[^\w-]/g,''),name='recu-OMNIPAY-'+ref+'.html';
+  var doc='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reçu OMNIPAY</title><style>body{font-family:Arial,sans-serif;max-width:560px;margin:24px auto;padding:0 16px;color:#111}.tx{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}small{color:#666;display:block}img{display:none}</style>'+h;
+  var f=null;try{f=new File([doc],name,{type:'text/html'})}catch(e){}
+  try{if(f&&navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Reçu OMNIPAY'});return}}catch(e){if(e&&e.name==='AbortError')return}
+  var u=URL.createObjectURL(new Blob([doc],{type:'text/html'})),a=document.createElement('a');a.href=u;a.download=name;a.target='_blank';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},60000)}
 function pisHist(){$('pis_h').innerHTML=PIS_H.length?'<h3 style="margin:14px 0 6px">Dernières simulations</h3>'+PIS_H.map(function(x){return '<div class="tx"><div><b>'+escH(x.payeNumero)+'</b><br><small>'+escH(x.txId)+' · '+escH(x.statut)+'</small></div><b>'+fmt(x.montant)+'</b></div>'}).join(''):''}
 
 /* ===== Dépôt / retrait directs (validés par OMNIPAY) ===== */
@@ -4238,6 +4240,7 @@ button.pri{border-radius:14px}
 #ops_g,#gd_g{display:none!important}
 body.inapp #dash.hide,#dash.hide{display:none!important}
 .pis-c{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;border-radius:18px;padding:18px;margin:12px 0}.pis-c small{opacity:.85}.pis-a{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;margin:8px 0 12px;font-weight:700;word-break:break-all}.pis-cp{width:auto;margin:0;padding:4px 10px;background:none;border:0;color:#fff;font-size:18px}.pis-b{margin:0;background:none;border:1.5px solid #fff;color:#fff;border-radius:12px;padding:12px}
+#rcd .row.no-print button{flex:1 1 140px;min-width:0}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>
