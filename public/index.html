@@ -373,7 +373,7 @@ body.lg #demo{display:block}
       <button class="tile p" onclick="openIO('in')"><span>⬇️</span>Déposer</button>
       <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retirer</button>
       <button class="tile" onclick="openLnk()"><span>🔗</span>Relier un compte</button>
-      <button class="tile" onclick="openPis()"><span>🧪</span>Simulateur PI-SPI</button>
+      <button class="tile" onclick="openPis()"><span>⇄</span>Envoyer PI-SPI</button>
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
     </div>
     <div class="grp ex">Crypto · Binance</div>
@@ -441,7 +441,7 @@ body.lg #demo{display:block}
   </section>
 
   <section id="pis" class="card hide">
-    <h1>Simulateur PI-SPI</h1><p class="sub">Entraînez-vous à envoyer et recevoir par alias. <b>Simulation : aucun argent ne bouge, aucun solde n'est modifié.</b></p>
+    <h1>PI-SPI · Envoyer &amp; recevoir</h1><p class="sub">Envoyez de l'argent à un alias ou un numéro OMNIPAY. <b>Vrais montants, vrai solde</b> (commission 50 FCFA). Vers les banques et Mobile Money : activé dès l'homologation PI-SPI.</p>
     <div class="pis-c"><small>Mon alias</small><div class="pis-a"><span id="pis_a">—</span><button class="pis-cp" onclick="pisCopy()" aria-label="Copier mon alias">⧉</button></div>
       <button class="pis-b" onclick="pisBal()" id="pis_bb">Voir mon solde</button></div>
     <div class="rb" style="margin-top:14px">
@@ -453,7 +453,8 @@ body.lg #demo{display:block}
     <div id="pis_send">
       <label>Alias ou numéro du bénéficiaire</label><input id="pis_d" placeholder="Ex : 0197000000@omnipay" autocomplete="off">
       <label>Montant (FCFA)</label><input id="pis_m" type="number" inputmode="numeric" placeholder="5000">
-      <button class="pri" onclick="pisGo()">Simuler le transfert</button>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="pis_demo" style="width:auto;margin:0"> Mode démo (aucun argent ne bouge)</label>
+      <button class="pri" onclick="pisGo()">Envoyer</button>
     </div>
     <div id="pis_recv" class="hide"><p class="sub">Donnez votre alias, ou montrez un code QR, pour être payé.</p><button class="sec" onclick="pisCopy()">Copier mon alias</button><button class="sec" onclick="openQr()">Afficher mon QR</button></div>
     <div id="pis_o" class="msg"></div><div id="pis_h"></div>
@@ -607,7 +608,7 @@ curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
   </section>
   <section id="rcd" class="card hide">
     <div id="rc_body"></div>
-    <div class="row no-print"><button class="sec" onclick="window.print()">Imprimer / PDF</button><button class="sec" onclick="shareRc()">WhatsApp</button></div>
+    <div class="row no-print"><button class="sec" onclick="dlReceipt()">Télécharger</button><button class="sec" onclick="window.print()">Imprimer / PDF</button><button class="sec" onclick="shareRc()">WhatsApp</button></div>
     <div id="rcd_msg" class="msg no-print"></div>
     <button class="lnk no-print" onclick="openRc()">← Mes reçus</button>
   </section>
@@ -3677,12 +3678,21 @@ function openPis(){show('pis');$('pis_a').textContent=pisAlias();$('pis_bb').tex
 function pisTab(t){$('pis_send').classList.toggle('hide',t!=='send');$('pis_recv').classList.toggle('hide',t!=='recv')}
 function pisCopy(){var a=aliasOf();if(!a)return msg('pis_o','Reconnectez-vous pour afficher votre alias.');(navigator.clipboard?navigator.clipboard.writeText(a):Promise.reject()).then(function(){msg('pis_o','Alias copié.',true)}).catch(function(){msg('pis_o','Copiez : '+a,true)})}
 function pisBal(){var b=$('pis_bb'),w=S.wallet;if(b.dataset.on==='1'){b.dataset.on='';b.textContent='Voir mon solde';return}b.dataset.on='1';b.textContent=w?fmt(w.balance):'Solde indisponible'}
-function pisGo(){var d=$('pis_d').value.trim(),m=Math.floor(Number($('pis_m').value));
+async function pisGo(){var d=$('pis_d').value.trim().replace(/@omnipay$/i,''),m=Math.floor(Number($('pis_m').value));
   if(d.length<4)return msg('pis_o','Entrez un alias ou un numéro.');
   if(!Number.isFinite(m)||m<100)return msg('pis_o','Montant minimum : 100 FCFA.');
-  var r={txId:String(Date.now()).slice(-9),payeurNumero:pisAlias(),payeNumero:d,montant:m,statut:'INITIE',dateEnvoi:new Date().toISOString()};
-  PIS_H.unshift(r);PIS_H=PIS_H.slice(0,5);
-  msg('pis_o','✔ Transfert simulé : '+fmt(m)+' vers '+d+' — statut INITIE (réf. '+r.txId+'). Aucun argent n\'a bougé.',true);pisHist()}
+  if($('pis_demo').checked){var r={txId:String(Date.now()).slice(-9),payeNumero:d,montant:m,statut:'INITIE'};PIS_H.unshift(r);PIS_H=PIS_H.slice(0,5);
+    msg('pis_o','Démo : '+fmt(m)+' vers '+d+' — statut INITIE (réf. '+r.txId+'). Aucun argent n\'a bougé.',true);return pisHist()}
+  if(!confirm('Envoyer '+fmt(m)+' à '+d+' ? (+50 FCFA de commission)'))return;
+  try{var byId=/^om/i.test(d);
+    var x=byId?await api('/api/id/transfer',{body:{code:d.replace(/\s/g,'').toUpperCase(),amount:m,note:''}}):await api('/wallet/transfer',{body:{recipientPhone:d,amount:m}});
+    msg('pis_o',(x.message||'Transfert effectué.')+(x.receiptRef?' Reçu : '+x.receiptRef:''),true);
+    PIS_H.unshift({txId:x.receiptRef||'—',payeNumero:d,montant:m,statut:'EFFECTUÉ'});PIS_H=PIS_H.slice(0,5);
+    await refresh();$('pis_bb').dataset.on='';pisHist();if(x.receiptRef)setTimeout(function(){openReceipt(x.receiptRef)},900)}
+  catch(e){msg('pis_o',e.message)}}
+function dlReceipt(){var h=$('rc_body').innerHTML,ref=(typeof rcLast!=='undefined'&&rcLast&&rcLast.reference)||'recu';
+  var doc='<!doctype html><meta charset="utf-8"><title>Reçu OMNIPAY</title><style>body{font-family:Arial,sans-serif;max-width:560px;margin:24px auto;padding:0 16px;color:#111}.tx{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}small{color:#666;display:block}img{display:none}</style>'+h;
+  var u=URL.createObjectURL(new Blob([doc],{type:'text/html'})),a=document.createElement('a');a.href=u;a.download='recu-OMNIPAY-'+String(ref).replace(/[^\w-]/g,'')+'.html';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},1000)}
 function pisHist(){$('pis_h').innerHTML=PIS_H.length?'<h3 style="margin:14px 0 6px">Dernières simulations</h3>'+PIS_H.map(function(x){return '<div class="tx"><div><b>'+escH(x.payeNumero)+'</b><br><small>'+escH(x.txId)+' · '+escH(x.statut)+'</small></div><b>'+fmt(x.montant)+'</b></div>'}).join(''):''}
 
 /* ===== Dépôt / retrait directs (validés par OMNIPAY) ===== */
