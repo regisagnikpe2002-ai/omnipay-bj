@@ -825,17 +825,7 @@ curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
-  <!-- PAYER -->
-  <section id="pay" class="card hide">
-    <h1>Payer un prestataire</h1><p class="sub">Le paiement est émis par OMNIPAY.</p>
-    <label>Prestataire</label><select id="p_pr"></select>
-    <label>Référence client / numéro</label><input id="p_ref" placeholder="Numéro de facture, compteur, téléphone…">
-    <label>Montant (FCFA)</label><input id="p_am" type="number" min="100" value="500">
-    <button class="pri" onclick="doPay()">Payer</button>
-    <div id="p_msg" class="msg"></div>
-    <div id="receipt" class="hide"></div>
-    <button class="lnk" onclick="show('dash')">← Retour</button>
-  </section>
+
 
 
 </div>
@@ -3333,7 +3323,6 @@ var SVC={
 'marches':{i:'📈',t:'Marchés',s:'on',what:'Prix des principales cryptos en direct, en dollars et en FCFA, avec un graphique et un convertisseur indicatif.',steps:['Touchez une crypto pour voir son graphique (15 min, 1 h, 4 h, 1 jour).','Utilisez le convertisseur pour estimer une valeur en FCFA.'],fees:['Gratuit. Écran en lecture seule.'],safe:['Ce sont des cours de marché, pas un prix garanti ni un conseil d’investissement.','Aucune opération n’est lancée depuis cet écran.']},
 'defis':{i:'🏆',t:'Défis',s:'on',what:'Des objectifs calculés à partir de vos vraies opérations terminées. Vous gagnez des points de fidélité et montez de niveau.',steps:['Ouvrez Défis pour voir votre niveau et votre activité des 6 dernières semaines.','Réalisez des opérations réelles pour faire avancer les défis.'],fees:['Gratuit.'],safe:['Les points n’ont aucune valeur monétaire pour l’instant.','Impossible de tricher : seuls les paiements réellement terminés comptent.']},
 'omnicash':{i:'🏧',t:'OMNICASH',s:'rv',what:'Déposez ou retirez des espèces auprès d\u2019un agent OMNICASH, ou devenez agent vous-même.',steps:['Ouvrez OMNICASH pour voir vos opérations ou déposer une demande d\u2019agent.','Remettez ou recevez des espèces uniquement après confirmation dans l\u2019application.','Une demande d\u2019agent est étudiée par l\u2019équipe OMNIPAY avant activation.'],fees:['Les frais appliqués sont affichés avant confirmation.'],safe:['Ne donnez votre code qu\u2019à la personne qui vous remet les espèces, et seulement après avoir reçu le montant complet.']},
-'payer':{i:'💳',t:'Payer',s:'so',what:'Régler un prestataire (facture, abonnement, service) depuis votre solde OMNIPAY.',steps:['Ce service n’est pas encore ouvert.'],fees:['Annoncés à l’ouverture.'],safe:['Vous serez prévenu dès qu’il est disponible.']},
 'numeros':{i:'📱',t:'Numéros Mobile Money',s:'on',what:'Enregistrez vos numéros MTN, Moov ou Celtiis pour les retrouver en un clic lors de vos retraits.',steps:['Ajoutez un numéro, choisissez l’opérateur.','Marquez-en un par défaut pour aller plus vite.'],fees:['Gratuit.'],safe:['Pour votre sécurité, les retraits peuvent exiger un compte relié et validé par OMNIPAY.','OMNIPAY ne vous demande jamais le code PIN de votre Mobile Money.']},
 'alias':{i:'🆔',t:'Mon alias',s:'on',what:'Votre identifiant OMNIPAY (OM + 11 chiffres) : donnez-le pour recevoir de l’argent d’un autre client OMNIPAY.',steps:['Ouvrez Mon alias et copiez votre identifiant.','Communiquez-le à la personne qui doit vous payer.'],fees:['Gratuit.'],safe:['Ce n’est pas un IBAN bancaire : il ne fonctionne qu’entre clients OMNIPAY.','Un dernier chiffre de contrôle détecte les fautes de frappe avant l’envoi.']},
 'qr':{i:'▦',t:'Mes QR',s:'on',what:'Des QR codes à faire scanner pour recevoir un paiement : votre QR de réception, des demandes avec montant et libellé, un QR commerçant et un QR de parrainage.',steps:['Générez le QR et le lien d\u2019une demande (montant et libellé).','Faites-le scanner ou partagez le lien (WhatsApp, copie).','Le paiement apparaît dans vos reçus dès qu\u2019il est terminé.'],fees:['Voir les frais affichés avant confirmation.'],safe:['Une demande à montant fixe ne peut être payée qu\u2019une fois et expire au bout de 24 h.','Sans montant, le QR est réutilisable : ne le partagez qu\u2019avec les personnes concernées.','Le QR de retrait chez un terminal partenaire arrive plus tard.']},
@@ -3343,10 +3332,9 @@ var SVC={
 'carte':{i:'💳',t:'Ma carte OMNIPAY',s:'on',what:'Votre carte d’identité de paiement : montrez votre identifiant ou votre alias pour recevoir de l’argent d’un autre client OMNIPAY.',steps:['Ouvrez Carte.','Faites copier ou scanner votre identifiant.'],fees:['Gratuit.'],safe:['Ce n’est pas une carte bancaire : elle ne permet pas de payer chez un commerçant.']},
 'affiliation':{i:'🎁',t:'Affiliation',s:'on',what:'Invitez des clients avec votre lien et gagnez 50 FCFA pour chaque client parrainé qui rejoint OMNIPAY (un seul niveau : vos filleuls directs).',steps:['Copiez votre lien d\u2019affiliation ou faites scanner votre QR de parrainage.','Le gain est enregistré quand votre filleul rejoint.'],fees:['Gratuit.'],safe:['Seuls vos filleuls directs comptent.']},
 'aide':{i:'🛟',t:'Aide & avis',s:'on',what:'Des réponses à vos questions et la possibilité de nous dire ce qui ne va pas ou ce que vous aimeriez voir.',steps:['Consultez l’aide ou écrivez-nous.','Gardez la référence de l’opération concernée.'],fees:['Gratuit.'],safe:['L’équipe OMNIPAY ne vous demandera jamais votre mot de passe, votre code PIN ou un code reçu par SMS.']},
-'olatounde':{i:'💬',t:'OLATOUNDE',s:'on',what:'Votre assistante OMNIPAY. Elle explique, suit vos opérations et répond à vos questions, mais ne déplace jamais d’argent.',steps:['Posez une question : « où en est mon dépôt ? », « comment retirer ? »…'],fees:['Gratuit.'],safe:['Ne lui donnez jamais vos mots de passe ni vos codes.','Elle peut se tromper : pour un montant important, vérifiez dans vos reçus.']},
-'boutique':{i:'🏪',t:'Boutique',s:'so',what:'Achats de services et de produits depuis votre solde OMNIPAY.',steps:['Ce service n’est pas encore ouvert.'],fees:['Annoncés à l’ouverture.'],safe:['Vous serez prévenu dès qu’il est disponible.']}
+'olatounde':{i:'💬',t:'OLATOUNDE',s:'on',what:'Votre assistante OMNIPAY. Elle explique, suit vos opérations et répond à vos questions, mais ne déplace jamais d’argent.',steps:['Posez une question : « où en est mon dépôt ? », « comment retirer ? »…'],fees:['Gratuit.'],safe:['Ne lui donnez jamais vos mots de passe ni vos codes.','Elle peut se tromper : pour un montant important, vérifiez dans vos reçus.']}
 };
-var SVMAP={'OMNIP2P':'omnip2p','Crypto':'crypto','Directs':'directs','PI-SPI':'pispi','Marchés':'marches','Défis':'defis','OMNICASH':'omnicash','Payer':'payer','Numéros':'numeros','Recharges':'recharges','Historique':'recus','Mon alias':'alias','Mes QR':'qr','Reçus':'recus','Reçus PDF':'recuspdf','IBAN':'iban','Carte':'carte','Affiliation':'affiliation','Aide':'aide','Olatounde':'olatounde','Boutique':'boutique'};
+var SVMAP={'OMNIP2P':'omnip2p','Crypto':'crypto','Directs':'directs','PI-SPI':'pispi','Marchés':'marches','Défis':'defis','OMNICASH':'omnicash','Numéros':'numeros','Recharges':'recharges','Historique':'recus','Mon alias':'alias','Mes QR':'qr','Reçus':'recus','Reçus PDF':'recuspdf','IBAN':'iban','Carte':'carte','Affiliation':'affiliation','Aide':'aide','Olatounde':'olatounde','Boutique':'boutique'};
 var SVCUR=null,SVTILE=null;
 function svcOpen(k,tile){var d=SVC[k];if(!d)return;SVCUR=k;SVTILE=tile||null;
  $('svc_i').textContent=d.i;$('svc_t').textContent=d.t;var st=$('svc_s');st.className='svst '+(d.s==='on'?'on':d.s==='rv'?'rv':'so');st.textContent=d.s==='on'?'Disponible':d.s==='rv'?'Sur validation OMNIPAY':'Bientôt';
@@ -4235,6 +4223,14 @@ body.inapp .foot{padding-bottom:70px}
  #sb button:hover{background:rgba(255,255,255,.09)!important}
  #sb button.on{background:#2563eb!important;color:#fff!important}#sb button.on svg{color:#fff!important}
 }
+/* v75 — boutons carrés modernes */
+.rb{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))!important;gap:10px!important}
+.rb .tile{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:16px!important;padding:14px 6px 12px!important;min-height:92px;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:transform .15s,border-color .15s}
+.rb .tile span{width:44px!important;height:44px!important;border-radius:13px!important;background:rgba(46,204,160,.12)!important;border:0!important;box-shadow:none!important;font-size:22px!important;margin:0 0 8px!important}
+.rb .tile.p span{background:linear-gradient(135deg,var(--mint),var(--mint2))!important}
+.rb .tile:active{transform:scale(.96)}
+.rb .tile:hover{border-color:var(--mint)!important}
+button.pri{border-radius:14px}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>
