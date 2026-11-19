@@ -79,6 +79,23 @@ router.post("/auto", adminOnly, async (req, res) => {
   catch (e) { console.error("RECON_AUTO", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Résumé de l'argent des clients — LECTURE SEULE, ne modifie rien. Admin.
+// Montre : total des soldes, opérations par type/statut/canal (pour repérer crédits de test, manuels, remboursements), plus gros soldes (numéros masqués).
+router.get("/summary", adminOnly, async (req, res) => {
+  try {
+    const q = sql();
+    const tot = (await q`SELECT count(*)::int AS wallets, coalesce(sum(balance),0)::float AS total_xof, count(*) FILTER (WHERE balance > 0)::int AS positifs FROM wallets WHERE coalesce(currency,'XOF') = 'XOF'`)[0];
+    const groups = await q`SELECT type, status, coalesce(provider,'-') AS provider, count(*)::int AS n, coalesce(sum(amount),0)::float AS total_xof
+      FROM transactions GROUP BY 1,2,3 ORDER BY total_xof DESC LIMIT 60`;
+    const top = await q`SELECT w.balance::float AS balance, right(coalesce(u.phone,''),4) AS tel_fin, left(coalesce(u.email,''),3) AS email_debut, w.updated_at
+      FROM wallets w JOIN users u ON u.id = w.user_id WHERE coalesce(w.currency,'XOF') = 'XOF' ORDER BY w.balance DESC LIMIT 10`;
+    const sus = (await q`SELECT count(*)::int AS n, coalesce(sum(amount),0)::float AS total_xof FROM transactions WHERE type = 'withdrawal' AND status IN ('pending','processing')`)[0];
+    const fail = (await q`SELECT count(*)::int AS n, coalesce(sum(amount),0)::float AS total_xof FROM transactions WHERE type = 'withdrawal' AND status = 'failed'`)[0];
+    res.json({ soldesClients: tot, retraitsEnAttente: sus, retraitsEchouesARembourser: fail, parTypeStatutCanal: groups, plusGrosSoldes: top,
+      lecture: "provider = canal (paydunya, momo, manual, admin, sandbox…). Les crédits « admin », « sandbox » ou « manual » ne sont pas des dépôts confirmés par un opérateur." });
+  } catch (e) { console.error("RECON_SUMMARY", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
 router.get("/mine", requireAuth, async (req, res) => {
   try {
     const h = userHours();
