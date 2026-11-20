@@ -48,54 +48,54 @@ async function lookupRecipient(req, res) {
   }
 }
 
+// Envoi entre clients. ATOMIQUE : une seule requête SQL débite l'expéditeur (seulement si le solde suffit) ET crédite le destinataire.
+// Deux envois simultanés ne peuvent donc jamais dépenser deux fois le même argent. Plafond journalier : DAILY_LIMIT_XOF (500000 par défaut).
 async function transfer(req, res) {
   try {
-    const { recipientPhone, amount } = req.body;
+    const { neon } = require("@neondatabase/serverless");
+    const q = neon(process.env.DATABASE_URL);
+    const { recipientPhone, amount } = req.body || {};
     const numericAmount = Number(amount);
-    if (!recipientPhone || !numericAmount || numericAmount <= 0) {
+    if (!recipientPhone || !Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 1e9) {
       return res.status(400).json({ error: "recipientPhone et amount (> 0) sont requis." });
     }
+    const uid = req.user.userId;
+    const sw = (await q`SELECT id FROM wallets WHERE user_id = ${uid}::uuid`)[0];
+    if (!sw) return res.status(404).json({ error: "Wallet expéditeur introuvable." });
+    const ru = (await q`SELECT id FROM users WHERE phone = ${String(recipientPhone)}`)[0];
+    if (!ru) return res.status(404).json({ error: "Destinataire introuvable." });
+    if (String(ru.id) === String(uid)) return res.status(400).json({ error: "Vous ne pouvez pas vous envoyer de l'argent à vous-même." });
+    const rw = (await q`SELECT id FROM wallets WHERE user_id = ${ru.id}::uuid`)[0];
+    if (!rw) return res.status(404).json({ error: "Wallet destinataire introuvable." });
 
-    const senderWallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, req.user.userId) });
-    if (!senderWallet) return res.status(404).json({ error: "Wallet expéditeur introuvable." });
-
-    const totalDebit = numericAmount + COMMISSION;
-    if (Number(senderWallet.balance) < totalDebit) {
-      return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
+    const dayLimit = Number(process.env.DAILY_LIMIT_XOF || 500000);
+    const used = Number((await q`SELECT coalesce(sum(amount),0)::float AS s FROM transactions
+      WHERE wallet_id = ${sw.id}::uuid AND type IN ('transfer_out','withdrawal') AND status NOT IN ('failed','cancelled','refunded')
+        AND created_at > now() - interval '24 hours'`)[0].s);
+    if (dayLimit > 0 && used + numericAmount > dayLimit) {
+      return res.status(429).json({ error: `Plafond journalier atteint (${dayLimit} FCFA par 24 h). Déjà utilisé : ${Math.round(used)} FCFA.` });
     }
 
-    const recipientUser = await db.query.users.findFirst({ where: eq(users.phone, recipientPhone) });
-    if (!recipientUser) return res.status(404).json({ error: "Destinataire introuvable." });
+    const totalDebit = numericAmount + COMMISSION;
+    const r = await q`WITH d AS (
+        UPDATE wallets SET balance = balance - ${totalDebit}::numeric, updated_at = now()
+        WHERE id = ${sw.id}::uuid AND balance >= ${totalDebit}::numeric RETURNING balance),
+      c AS (
+        UPDATE wallets SET balance = balance + ${numericAmount}::numeric, updated_at = now()
+        WHERE id = ${rw.id}::uuid AND EXISTS (SELECT 1 FROM d) RETURNING balance)
+      SELECT d.balance::text AS sb, c.balance::text AS rb FROM d, c`;
+    if (!r.length) return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
+    const newSenderBalance = Number(r[0].sb).toFixed(2), newRecipientBalance = Number(r[0].rb).toFixed(2);
 
-    const recipientWallet = await db.query.wallets.findFirst({ where: eq(wallets.userId, recipientUser.id) });
-    if (!recipientWallet) return res.status(404).json({ error: "Wallet destinataire introuvable." });
-
-    const idempotencyKey = crypto.randomUUID();
-    const newSenderBalance = (Number(senderWallet.balance) - totalDebit).toFixed(2);
-    const newRecipientBalance = (Number(recipientWallet.balance) + numericAmount).toFixed(2);
-
-    await db.update(wallets).set({ balance: newSenderBalance }).where(eq(wallets.id, senderWallet.id));
-    await db.update(wallets).set({ balance: newRecipientBalance }).where(eq(wallets.id, recipientWallet.id));
-
-    await db.insert(transactions).values({
-      walletId: senderWallet.id, type: "transfer_out", amount: numericAmount.toFixed(2),
-      balanceAfter: newSenderBalance, status: "completed", provider: "internal",
-      idempotencyKey: idempotencyKey + "-out", counterpartyUserId: recipientUser.id,
-    });
-    await db.insert(transactions).values({
-      walletId: recipientWallet.id, type: "transfer_in", amount: numericAmount.toFixed(2),
-      balanceAfter: newRecipientBalance, status: "completed", provider: "internal",
-      idempotencyKey: idempotencyKey + "-in", counterpartyUserId: req.user.userId,
-    });
-    await db.insert(transactions).values({
-      walletId: senderWallet.id, type: "commission", amount: COMMISSION.toFixed(2),
-      balanceAfter: newSenderBalance, status: "completed", provider: "internal",
-      idempotencyKey: idempotencyKey + "-fee",
-    });
+    const key = crypto.randomUUID();
+    await q`INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, idempotency_key, counterparty_user_id) VALUES
+      (${sw.id}::uuid, 'transfer_out', ${numericAmount.toFixed(2)}::numeric, ${newSenderBalance}::numeric, 'completed', 'internal', ${key + "-out"}, ${ru.id}::uuid),
+      (${rw.id}::uuid, 'transfer_in', ${numericAmount.toFixed(2)}::numeric, ${newRecipientBalance}::numeric, 'completed', 'internal', ${key + "-in"}, ${uid}::uuid),
+      (${sw.id}::uuid, 'commission', ${COMMISSION.toFixed(2)}::numeric, ${newSenderBalance}::numeric, 'completed', 'internal', ${key + "-fee"}, NULL)`;
 
     return res.status(200).json({ message: "Transfert effectué avec succès.", newBalance: newSenderBalance });
   } catch (err) {
-    console.error(err);
+    console.error("TRANSFER", err.message);
     return res.status(500).json({ error: "Erreur serveur lors du transfert." });
   }
 }
