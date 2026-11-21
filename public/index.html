@@ -388,6 +388,7 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openApi()"><span>⌘</span>Clés API</button>
       <button class="tile" onclick="openBz()"><span>🏪</span>Business</button>
       <button class="tile" onclick="openOt()"><span>🌾</span>OMNITRADE</button>
+      <button class="tile" onclick="openGift()"><span>🎁</span>OMNIGIFT</button>
       <button class="tile" onclick="openQr()"><span>▦</span>Mes QR</button>
     </div>
     <div class="grp">Mon compte</div>
@@ -458,6 +459,22 @@ body.lg #demo{display:block}
     </div>
     <div id="pis_recv" class="hide"><p class="sub">Donnez votre alias, ou montrez un code QR, pour être payé.</p><button class="sec" onclick="pisCopy()">Copier mon alias</button><button class="sec" onclick="openQr()">Afficher mon QR</button></div>
     <div id="pis_o" class="msg"></div><div id="pis_h"></div>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="gift" class="card hide">
+    <h1>OMNIGIFT · Cartes cadeaux</h1><p class="sub">Vendez une carte cadeau à OMNIPAY. Nous la vérifions, puis votre solde est crédité. <b>Aucun crédit avant vérification.</b></p>
+    <div class="rb" style="margin-top:14px"><button class="tile p" onclick="giftTab('sell')"><span>💳</span>Vendre</button><button class="tile" onclick="giftTab('buy')"><span>🛒</span>Acheter</button></div>
+    <div id="gf_sell">
+      <label>Type de carte</label><select id="gf_b"></select>
+      <label>Valeur de la carte</label><div class="row"><input id="gf_v" type="number" inputmode="decimal" placeholder="50" style="flex:2"><select id="gf_c" style="flex:1"></select></div>
+      <label>Code de la carte</label><input id="gf_k" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX">
+      <label>Photo de la carte (facultatif)</label><input id="gf_p" type="file" accept="image/*">
+      <p class="sub" id="gf_n">Le code n'est lisible que par OMNIPAY. Ne soumettez jamais un code déjà utilisé : cela bloque votre compte.</p>
+      <button class="pri" onclick="giftSell()">Envoyer pour vérification</button>
+    </div>
+    <div id="gf_buy" class="hide"><p class="sub">Acheter une carte cadeau : bientôt disponible.</p></div>
+    <div id="gf_o" class="msg"></div><div id="gf_h"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3132,7 +3149,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3676,6 +3693,24 @@ var PIS_H=[];
 function pisAlias(){var a=aliasOf();return a||'Indisponible (reconnectez-vous)'}
 function openPis(){show('pis');$('pis_a').textContent=pisAlias();$('pis_bb').textContent='Voir mon solde';$('pis_o').className='msg';pisTab('send');pisHist()}
 function pisTab(t){$('pis_send').classList.toggle('hide',t!=='send');$('pis_recv').classList.toggle('hide',t!=='recv')}
+/* ===== OMNIGIFT : vente de cartes cadeaux (validation humaine) ===== */
+var GIFT_PHOTO='';
+function giftTab(t){$('gf_sell').classList.toggle('hide',t!=='sell');$('gf_buy').classList.toggle('hide',t!=='buy')}
+async function openGift(){show('gift');giftTab('sell');$('gf_o').className='msg';GIFT_PHOTO='';$('gf_p').value='';
+  try{var c=await api('/api/omnigift/catalog');$('gf_b').innerHTML=c.sell.brands.map(function(b){return '<option>'+escH(b)+'</option>'}).join('');$('gf_c').innerHTML=c.sell.currencies.map(function(b){return '<option>'+escH(b)+'</option>'}).join('');
+    $('gf_n').textContent="Le code n'est lisible que par OMNIPAY. Délai de sécurité avant crédit : "+c.sell.holdHours+" h. Ne soumettez jamais un code déjà utilisé."}catch(e){msg('gf_o',e.message)}
+  giftHist()}
+function giftImg(file){return new Promise(function(ok,ko){var r=new FileReader();r.onerror=function(){ko(new Error('Photo illisible.'))};r.onload=function(){var im=new Image();im.onerror=function(){ko(new Error('Photo illisible.'))};im.onload=function(){var k=Math.min(1,1200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);var q=.7,u=c.toDataURL('image/jpeg',q);while(u.length>600000&&q>.3){q-=.1;u=c.toDataURL('image/jpeg',q)}u.length>650000?ko(new Error('Photo trop lourde.')):ok(u)};im.src=r.result};r.readAsDataURL(file)})}
+async function giftSell(){var v=Number($('gf_v').value),k=$('gf_k').value.trim();
+  if(!(v>0))return msg('gf_o','Indiquez la valeur de la carte.');
+  if(k.replace(/[\s-]/g,'').length<6)return msg('gf_o','Indiquez le code de la carte.');
+  try{var f=$('gf_p').files&&$('gf_p').files[0],ph=f?await giftImg(f):'';
+    var x=await api('/api/omnigift/sell',{body:{brand:$('gf_b').value,value:v,currency:$('gf_c').value,code:k,photo:ph}});
+    msg('gf_o',x.message||'Carte reçue.',true);$('gf_k').value='';$('gf_v').value='';$('gf_p').value='';giftHist()}
+  catch(e){msg('gf_o',e.message)}}
+var GST={pending:'En vérification',validated:'Validée · crédit après délai',paid:'Créditée',refused:'Refusée'};
+async function giftHist(){try{var d=await api('/api/omnigift/mine');$('gf_h').innerHTML=d.sales.length?'<h3 style="margin:14px 0 6px">Mes cartes</h3>'+d.sales.map(function(x){return '<div class="tx"><div><b>'+escH(x.brand)+'</b> · '+fmt0(x.value)+' '+escH(x.currency)+'<br><small>'+escH(GST[x.status]||x.status)+(x.note?' · '+escH(x.note):'')+'</small></div><b>'+(x.credit_xof?fmt(x.credit_xof):'')+'</b></div>'}).join(''):''}catch(e){}}
+function fmt0(n){return new Intl.NumberFormat('fr-FR').format(Number(n)||0)}
 function pisCopy(){var a=aliasOf();if(!a)return msg('pis_o','Reconnectez-vous pour afficher votre alias.');(navigator.clipboard?navigator.clipboard.writeText(a):Promise.reject()).then(function(){msg('pis_o','Alias copié.',true)}).catch(function(){msg('pis_o','Copiez : '+a,true)})}
 function pisBal(){var b=$('pis_bb'),w=S.wallet;if(b.dataset.on==='1'){b.dataset.on='';b.textContent='Voir mon solde';return}b.dataset.on='1';b.textContent=w?fmt(w.balance):'Solde indisponible'}
 async function pisGo(){var d=$('pis_d').value.trim().replace(/@omnipay$/i,''),m=Math.floor(Number($('pis_m').value));

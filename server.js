@@ -32,6 +32,8 @@ app.use(cors());
 // Indique au site s'il est en mode démo (bandeau « DÉMO » affiché sur chaque écran).
 app.get("/api/mode", (req, res) => res.json({ mode: require("./lib/appMode").isDemo() ? "demo" : "live" }));
 
+// OMNIGIFT : la photo de la carte (compressée) dépasse la limite JSON par défaut ; limite relevée pour cette seule route.
+app.use("/api/omnigift/sell", express.json({ limit: "1mb" }));
 // rawBody conservé : nécessaire à la vérification des webhooks (Binance Pay, PayDunya).
 app.use(
   express.json({
@@ -172,6 +174,7 @@ mount("/api/omnitrade", "./routes/omnitrade", "OMNITRADE (bourse des produits lo
 mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
+mount("/api/omnigift", "./routes/omnigift", "OMNIGIFT (cartes cadeaux)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");
 mount("/api/p2pdesk", "./routes/p2pdesk", "Bureau P2P (garde-fou libération)");
 mount("/api/linked", "./routes/linkedAccounts", "Comptes reliés (retraits vers vos comptes)");
