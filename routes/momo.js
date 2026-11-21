@@ -35,6 +35,10 @@ const cfg = () => ({
   sub: process.env.MTN_MOMO_COLL_SUB_KEY, user: process.env.MTN_MOMO_COLL_API_USER, key: process.env.MTN_MOMO_COLL_API_KEY,
 });
 const ready = (c) => Boolean(c.base && c.sub && c.user && c.key);
+// SÉCURITÉ : en « sandbox » MTN répond SUCCESSFUL sans qu'aucun argent ne circule. Aucun solde client ne doit alors être crédité.
+// (Pour un essai volontaire sur un compte de test seulement : MTN_MOMO_ALLOW_SANDBOX_CREDIT=on.)
+const sandbox = (c) => /sandbox/i.test(String(c.env || "")) && !on("MTN_MOMO_ALLOW_SANDBOX_CREDIT");
+const live = (c) => ready(c) && !sandbox(c);
 
 let tokenCache = { t: null, exp: 0 };
 async function token(c) {
@@ -72,6 +76,10 @@ async function settle(ref) {
   if (!t.length) return { status: "unknown" };
   if (t[0].status !== "pending") return { status: t[0].status };
   if (!ready(c)) return { status: "pending" };
+  if (sandbox(c)) { // jamais de crédit en sandbox : la demande est close sans toucher au solde
+    if (t[0].old) await q`UPDATE transactions SET status = 'failed', metadata = coalesce(metadata,'{}'::jsonb) || '{"momoReason":"SANDBOX_NO_CREDIT"}'::jsonb WHERE provider_ref = ${ref} AND provider = 'momo' AND status = 'pending'`;
+    return { status: "pending" };
+  }
   let d;
   try { d = await collectionStatus(c, ref); }
   catch (e) {
@@ -104,12 +112,12 @@ async function settle(ref) {
 }
 
 // ---------------- Client ----------------
-router.get("/status", requireAuth, (req, res) => res.json({ enabled: ready(cfg()), min: MIN(), max: MAX() }));
+router.get("/status", requireAuth, (req, res) => res.json({ enabled: live(cfg()), min: MIN(), max: MAX() }));
 
 router.post("/deposit", requireAuth, async (req, res) => {
   try {
     const c = cfg();
-    if (!ready(c)) return res.status(503).json({ error: "Dépôt MTN MoMo indisponible pour le moment." });
+    if (!live(c)) return res.status(503).json({ error: "Dépôt MTN MoMo indisponible pour le moment." });
     const amount = Math.floor(Number(req.body?.amount));
     if (!Number.isFinite(amount) || amount < MIN() || amount > MAX()) return res.status(400).json({ error: `Montant entre ${MIN()} et ${MAX()} FCFA.` });
     const digits = String(req.body?.phone || "").replace(/\D/g, "");
@@ -209,6 +217,15 @@ router.get("/admin/status", adminOnly, async (req, res) => {
       coalesce((SELECT sum(amount) FROM transactions WHERE provider = 'momo' AND type = 'deposit' AND status = 'completed' AND created_at > now() - interval '24 hours'), 0)::float AS deposits24`)[0];
     res.json({ env: c.env, currency: c.currency, collection: coll, disbursement: dis, routeMtn: po.routeFor("mtn"), autoPayout: on("AUTO_PAYOUT"), autoRefund: on("MOMO_AUTO_REFUND"), ...n });
   } catch (e) { console.error("MOMO_ASTATUS", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+// Lecture seule : dépôts « momo » déjà crédités. Tant que MTN était en sandbox, ces crédits ne correspondent à AUCUN argent réel.
+router.get("/admin/sandbox-credits", adminOnly, async (req, res) => {
+  try {
+    const rows = await sql()`SELECT u.email, t.amount::float AS amount, t.created_at, t.provider_ref FROM transactions t JOIN wallets w ON w.id = t.wallet_id JOIN users u ON u.id = w.user_id
+      WHERE t.provider = 'momo' AND t.type = 'deposit' AND t.status = 'completed' ORDER BY t.created_at DESC LIMIT 200`;
+    res.json({ env: cfg().env, sandbox: sandbox(cfg()), count: rows.length, totalXof: rows.reduce((a, r) => a + r.amount, 0), credits: rows,
+      note: "Lecture seule. Si MTN_MOMO_ENV était « sandbox », ces crédits n'ont reçu aucun argent réel : à vérifier ligne par ligne avant toute correction de solde." });
+  } catch (e) { console.error("MOMO_SBX", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 router.post("/admin/run", adminOnly, async (req, res) => {
   try { res.json(await tick()); } catch (e) { console.error("MOMO_RUN", e.message); res.status(500).json({ error: "Erreur serveur." }); }

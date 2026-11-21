@@ -40,6 +40,7 @@ async function settleDeposit(ref) {
   let d; try { d = await fp.collectStatus(t[0].feda_id); } catch (e) { return { status: "pending" }; }
   if (d.found === false) return { status: "pending" };
   if (d.status === "completed") {
+    if (d.reference && d.reference !== String(ref)) { console.error("FEDAPAY_REF_MISMATCH", ref); return { status: "pending", alert: true }; }
     if ((d.currency && String(d.currency).toUpperCase() !== "XOF") || !Number.isFinite(d.amount) || d.amount + 0.0001 < t[0].amount) {
       await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ fedapayMismatch: { amount: d.amount, currency: d.currency } })}::jsonb WHERE provider_ref = ${ref} AND provider = 'fedapay'`;
       console.error("FEDAPAY_MISMATCH", ref, d.amount, d.currency); return { status: "pending", alert: true };

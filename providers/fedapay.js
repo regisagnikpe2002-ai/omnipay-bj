@@ -107,6 +107,6 @@ async function collectStatus(id) {
   if (r.status >= 400) throw new Error("FedaPay " + r.status);
   const t = one(r.data, "transaction") || {}; const s = String(t.status || "").toLowerCase();
   const st = s === "approved" || s === "transferred" ? "completed" : s === "declined" || s === "canceled" || s === "cancelled" || s === "refunded" ? "failed" : "pending";
-  return { found: true, status: st, amount: Number(t.amount), currency: t.currency && (t.currency.iso || t.currency), raw: s };
+  return { found: true, status: st, amount: Number(t.amount), currency: t.currency && (t.currency.iso || t.currency), reference: t.merchant_reference == null ? null : String(t.merchant_reference), raw: s };
 }
 module.exports = { collect, collectStatus, collectMode,  payout, status, ready, env, ensure, cap, _mapStatus: mapStatus, _first: first };
