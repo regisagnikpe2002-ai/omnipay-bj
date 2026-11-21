@@ -22,7 +22,7 @@ const adminOnly = (req, res, next) => (isAdmin(req) ? next() : res.status(403).j
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
 
-const BRANDS = ["Google Play", "PlayStation", "Steam", "Apple", "Amazon", "Airbnb", "Netflix", "Spotify", "Paysafecard", "Autre"];
+const BRANDS = ["Apple", "Steam", "Google Play", "PlayStation", "Xbox", "Razer", "Roblox", "Amazon", "Paysafecard", "One4all", "Netflix", "Spotify", "Airbnb"];
 const CURRENCIES = ["EUR", "USD", "XOF", "GBP"];
 const MAX_OPEN = () => Number(process.env.GIFT_MAX_OPEN || 3);
 const HOLD_H = () => Math.max(0, Number(process.env.GIFT_HOLD_HOURS == null || process.env.GIFT_HOLD_HOURS === "" ? 24 : process.env.GIFT_HOLD_HOURS));
@@ -58,16 +58,24 @@ function ensure() {
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, brand varchar(40) NOT NULL, face_value numeric(14,2) NOT NULL, currency varchar(5) NOT NULL,
       code_enc text, code_hash varchar(64) NOT NULL, photo_enc text, status varchar(12) NOT NULL DEFAULT 'pending', credit_xof numeric(14,2), admin_note varchar(300),
       credit_after timestamptz, created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz, paid_at timestamptz)`;
+    await q`ALTER TABLE omnigift_sales ADD COLUMN IF NOT EXISTS est_xof numeric(14,2)`;
+    await q`CREATE TABLE IF NOT EXISTS omnigift_rates (brand varchar(40) NOT NULL, currency varchar(5) NOT NULL, rate_xof numeric(12,2) NOT NULL, active boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (brand, currency))`;
     await q`CREATE UNIQUE INDEX IF NOT EXISTS omnigift_code_uq ON omnigift_sales (code_hash)`;
     await q`CREATE INDEX IF NOT EXISTS omnigift_user_idx ON omnigift_sales (user_id, created_at DESC)`;
   })().catch((e) => { ready = null; throw e; });
   return ready;
 }
 
-router.get("/catalog", requireAuth, (req, res) => res.json({
-  sell: { enabled: Boolean(keyBytes()), brands: BRANDS, currencies: CURRENCIES, holdHours: HOLD_H(), maxOpen: MAX_OPEN() },
-  buy: { enabled: false, message: "Acheter : bientôt disponible." },
-}));
+router.get("/catalog", requireAuth, async (req, res) => {
+  try {
+    await ensure();
+    const rates = (await sql()`SELECT brand, currency, rate_xof::float AS rate FROM omnigift_rates WHERE active ORDER BY brand, currency`);
+    res.json({
+      sell: { enabled: Boolean(keyBytes()) && rates.length > 0, rates, brands: BRANDS, currencies: CURRENCIES, holdHours: HOLD_H(), maxOpen: MAX_OPEN() },
+      buy: { enabled: false, message: "Acheter : bientôt disponible." },
+    });
+  } catch (e) { console.error("GIFT_CAT", e.message); res.status(500).json({ error: "Erreur." }); }
+});
 
 router.post("/sell", requireAuth, async (req, res) => {
   try {
@@ -82,23 +90,26 @@ router.post("/sell", requireAuth, async (req, res) => {
     if (photo && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(photo) || photo.length > MAX_PHOTO)) return res.status(400).json({ error: "Photo invalide ou trop lourde." });
     await ensure();
     const q = sql();
+    const rt = await q`SELECT rate_xof::float AS rate FROM omnigift_rates WHERE brand = ${brand} AND currency = ${currency} AND active`;
+    if (!rt.length) return res.status(400).json({ error: "Cette carte n'est pas acceptée pour le moment." });
+    const est = Math.round(value * rt[0].rate);
     const [open] = await q`SELECT count(*)::int AS n FROM omnigift_sales WHERE user_id = ${req.user.userId}::uuid AND status IN ('pending','validated')`;
     if (open.n >= MAX_OPEN()) return res.status(429).json({ error: "Vous avez déjà des cartes en cours de vérification." });
     const h = codeHash(code);
     const dup = await q`SELECT 1 FROM omnigift_sales WHERE code_hash = ${h} LIMIT 1`;
     if (dup.length) return res.status(409).json({ error: "Ce code a déjà été soumis." });
-    const rows = await q`INSERT INTO omnigift_sales (user_id, brand, face_value, currency, code_enc, code_hash, photo_enc)
-      VALUES (${req.user.userId}::uuid, ${brand}, ${value}, ${currency}, ${enc(code)}, ${h}, ${photo ? enc(photo) : null}) ON CONFLICT (code_hash) DO NOTHING RETURNING id`;
+    const rows = await q`INSERT INTO omnigift_sales (user_id, brand, face_value, currency, code_enc, code_hash, photo_enc, est_xof)
+      VALUES (${req.user.userId}::uuid, ${brand}, ${value}, ${currency}, ${enc(code)}, ${h}, ${photo ? enc(photo) : null}, ${est}) ON CONFLICT (code_hash) DO NOTHING RETURNING id`;
     if (!rows.length) return res.status(409).json({ error: "Ce code a déjà été soumis." });
     try { require("../lib/mailer").sendAdminNotification("OMNIGIFT : nouvelle carte à vérifier", `<p>Une carte ${brand} de ${value} ${currency} attend votre vérification dans OMNICHECK (le code n'est pas envoyé par e-mail).</p>`).catch(() => {}); } catch (_) {}
-    res.status(201).json({ id: rows[0].id, message: "Carte reçue. OMNIPAY la vérifie, vous serez crédité après validation." });
+    res.status(201).json({ id: rows[0].id, estimateXof: est, message: "Carte reçue. OMNIPAY la vérifie, vous serez crédité après validation." });
   } catch (e) { console.error("GIFT_SELL", e.message); res.status(500).json({ error: "Impossible d'enregistrer la carte." }); }
 });
 
 router.get("/mine", requireAuth, async (req, res) => {
   try {
     await ensure();
-    const rows = await sql()`SELECT id, brand, face_value::float AS value, currency, status, credit_xof::float AS credit_xof, admin_note AS note, credit_after, created_at
+    const rows = await sql()`SELECT id, brand, face_value::float AS value, currency, status, credit_xof::float AS credit_xof, est_xof::float AS est_xof, admin_note AS note, credit_after, created_at
       FROM omnigift_sales WHERE user_id = ${req.user.userId}::uuid ORDER BY created_at DESC LIMIT 20`;
     res.json({ sales: rows });
   } catch (e) { console.error("GIFT_MINE", e.message); res.status(500).json({ error: "Erreur." }); }
@@ -108,10 +119,26 @@ router.get("/mine", requireAuth, async (req, res) => {
 router.get("/admin/list", adminOnly, async (req, res) => {
   try {
     await ensure();
-    const rows = await sql()`SELECT s.id, s.brand, s.face_value::float AS value, s.currency, s.status, s.credit_xof::float AS credit_xof, s.credit_after, s.created_at, u.email
+    const rows = await sql()`SELECT s.id, s.brand, s.face_value::float AS value, s.currency, s.status, s.credit_xof::float AS credit_xof, s.est_xof::float AS est_xof, s.credit_after, s.created_at, u.email
       FROM omnigift_sales s JOIN users u ON u.id = s.user_id WHERE s.status IN ('pending','validated') ORDER BY s.created_at LIMIT 100`;
     res.json({ sales: rows, holdHours: HOLD_H() });
   } catch (e) { console.error("GIFT_LIST", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+router.get("/admin/rates", adminOnly, async (req, res) => {
+  try { await ensure(); res.json({ brands: BRANDS, currencies: CURRENCIES, rates: await sql()`SELECT brand, currency, rate_xof::float AS rate, active, updated_at FROM omnigift_rates ORDER BY brand, currency` }); }
+  catch (e) { console.error("GIFT_RATES", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.post("/admin/rates", adminOnly, async (req, res) => {
+  try {
+    const brand = clean(req.body?.brand, 40), currency = clean(req.body?.currency, 5).toUpperCase(), rate = Number(req.body?.rate), active = req.body?.active !== false;
+    if (!BRANDS.includes(brand) || !CURRENCIES.includes(currency)) return res.status(400).json({ error: "Carte ou devise inconnue." });
+    if (!Number.isFinite(rate) || rate <= 0 || rate > 100000) return res.status(400).json({ error: "Taux invalide (FCFA pour 1 unité)." });
+    await ensure();
+    await sql()`INSERT INTO omnigift_rates (brand, currency, rate_xof, active) VALUES (${brand}, ${currency}, ${rate}, ${active})
+      ON CONFLICT (brand, currency) DO UPDATE SET rate_xof = EXCLUDED.rate_xof, active = EXCLUDED.active, updated_at = now()`;
+    res.json({ ok: true });
+  } catch (e) { console.error("GIFT_RATE_SET", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 
 router.get("/admin/:id", adminOnly, async (req, res) => {
@@ -120,7 +147,7 @@ router.get("/admin/:id", adminOnly, async (req, res) => {
     await ensure();
     const r = (await sql()`SELECT s.*, u.email FROM omnigift_sales s JOIN users u ON u.id = s.user_id WHERE s.id = ${req.params.id}::uuid`)[0];
     if (!r) return res.status(404).json({ error: "Introuvable." });
-    res.json({ id: r.id, email: r.email, brand: r.brand, value: Number(r.face_value), currency: r.currency, status: r.status, code: dec(r.code_enc), photo: dec(r.photo_enc), note: r.admin_note, creditXof: r.credit_xof == null ? null : Number(r.credit_xof), creditAfter: r.credit_after, createdAt: r.created_at });
+    res.json({ id: r.id, email: r.email, brand: r.brand, value: Number(r.face_value), currency: r.currency, status: r.status, code: dec(r.code_enc), photo: dec(r.photo_enc), note: r.admin_note, creditXof: r.credit_xof == null ? null : Number(r.credit_xof), estXof: r.est_xof == null ? null : Number(r.est_xof), creditAfter: r.credit_after, createdAt: r.created_at });
   } catch (e) { console.error("GIFT_ONE", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 

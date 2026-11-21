@@ -466,12 +466,17 @@ body.lg #demo{display:block}
     <h1>OMNIGIFT · Cartes cadeaux</h1><p class="sub">Vendez une carte cadeau à OMNIPAY. Nous la vérifions, puis votre solde est crédité. <b>Aucun crédit avant vérification.</b></p>
     <div class="rb" style="margin-top:14px"><button class="tile p" onclick="giftTab('sell')"><span>💳</span>Vendre</button><button class="tile" onclick="giftTab('buy')"><span>🛒</span>Acheter</button></div>
     <div id="gf_sell">
-      <label>Type de carte</label><select id="gf_b"></select>
-      <label>Valeur de la carte</label><div class="row"><input id="gf_v" type="number" inputmode="decimal" placeholder="50" style="flex:2"><select id="gf_c" style="flex:1"></select></div>
-      <label>Code de la carte</label><input id="gf_k" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX">
-      <label>Photo de la carte (facultatif)</label><input id="gf_p" type="file" accept="image/*">
-      <p class="sub" id="gf_n">Le code n'est lisible que par OMNIPAY. Ne soumettez jamais un code déjà utilisé : cela bloque votre compte.</p>
-      <button class="pri" onclick="giftSell()">Envoyer pour vérification</button>
+      <div id="gf_list"></div>
+      <div id="gf_form" class="hide">
+        <h3 id="gf_t" style="margin:14px 0 4px"></h3><p class="sub" id="gf_r"></p>
+        <label>Valeur de la carte</label><input id="gf_v" type="number" inputmode="decimal" placeholder="50" oninput="giftEst()">
+        <p class="sub" id="gf_e"></p>
+        <label>Code de la carte</label><input id="gf_k" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX">
+        <label>Photo de la carte (facultatif)</label><input id="gf_p" type="file" accept="image/*">
+        <p class="sub" id="gf_n">Le code n'est lisible que par OMNIPAY. Ne soumettez jamais un code déjà utilisé : cela bloque votre compte.</p>
+        <button class="pri" onclick="giftSell()">Envoyer pour vérification</button>
+        <button class="lnk" onclick="giftBack()">← Choisir une autre carte</button>
+      </div>
     </div>
     <div id="gf_buy" class="hide"><p class="sub">Acheter une carte cadeau : bientôt disponible.</p></div>
     <div id="gf_o" class="msg"></div><div id="gf_h"></div>
@@ -3694,19 +3699,24 @@ function pisAlias(){var a=aliasOf();return a||'Indisponible (reconnectez-vous)'}
 function openPis(){show('pis');$('pis_a').textContent=pisAlias();$('pis_bb').textContent='Voir mon solde';$('pis_o').className='msg';pisTab('send');pisHist()}
 function pisTab(t){$('pis_send').classList.toggle('hide',t!=='send');$('pis_recv').classList.toggle('hide',t!=='recv')}
 /* ===== OMNIGIFT : vente de cartes cadeaux (validation humaine) ===== */
-var GIFT_PHOTO='';
+var GF_SEL=null,GF_RATES=[];
 function giftTab(t){$('gf_sell').classList.toggle('hide',t!=='sell');$('gf_buy').classList.toggle('hide',t!=='buy')}
-async function openGift(){show('gift');giftTab('sell');$('gf_o').className='msg';GIFT_PHOTO='';$('gf_p').value='';
-  try{var c=await api('/api/omnigift/catalog');$('gf_b').innerHTML=c.sell.brands.map(function(b){return '<option>'+escH(b)+'</option>'}).join('');$('gf_c').innerHTML=c.sell.currencies.map(function(b){return '<option>'+escH(b)+'</option>'}).join('');
-    $('gf_n').textContent="Le code n'est lisible que par OMNIPAY. Délai de sécurité avant crédit : "+c.sell.holdHours+" h. Ne soumettez jamais un code déjà utilisé."}catch(e){msg('gf_o',e.message)}
+function giftBack(){GF_SEL=null;$('gf_form').classList.add('hide');$('gf_list').classList.remove('hide')}
+async function openGift(){show('gift');giftTab('sell');giftBack();$('gf_o').className='msg';$('gf_p').value='';
+  try{var c=await api('/api/omnigift/catalog');GF_RATES=c.sell.rates||[];
+    $('gf_n').textContent="Le code n'est lisible que par OMNIPAY. Délai de sécurité avant crédit : "+c.sell.holdHours+" h. Ne soumettez jamais un code déjà utilisé.";
+    $('gf_list').innerHTML=GF_RATES.length?GF_RATES.map(function(r,i){return '<button class="tile" style="width:100%;display:flex;justify-content:space-between;align-items:center;margin:6px 0;text-align:left" onclick="giftPick('+i+')"><span><b>'+escH(r.brand)+'</b><br><small>Carte en '+escH(r.currency)+'</small></span><span><b>'+fmt0(r.rate)+' F</b><br><small>pour 1 '+escH(r.currency)+'</small></span></button>'}).join(''):'<p class="sub">Aucune carte n\'est acceptée pour le moment. Revenez bientôt.</p>'}catch(e){msg('gf_o',e.message)}
   giftHist()}
+function giftPick(i){GF_SEL=GF_RATES[i];$('gf_list').classList.add('hide');$('gf_form').classList.remove('hide');$('gf_t').textContent=GF_SEL.brand+' · '+GF_SEL.currency;$('gf_r').textContent='Taux : '+fmt0(GF_SEL.rate)+' FCFA pour 1 '+GF_SEL.currency+'. Le crédit final dépend de la vérification de la carte.';$('gf_v').value='';$('gf_e').textContent=''}
+function giftEst(){var v=Number($('gf_v').value);$('gf_e').textContent=v>0&&GF_SEL?'≈ '+fmt(Math.round(v*GF_SEL.rate))+' (estimation)':''}
 function giftImg(file){return new Promise(function(ok,ko){var r=new FileReader();r.onerror=function(){ko(new Error('Photo illisible.'))};r.onload=function(){var im=new Image();im.onerror=function(){ko(new Error('Photo illisible.'))};im.onload=function(){var k=Math.min(1,1200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);var q=.7,u=c.toDataURL('image/jpeg',q);while(u.length>600000&&q>.3){q-=.1;u=c.toDataURL('image/jpeg',q)}u.length>650000?ko(new Error('Photo trop lourde.')):ok(u)};im.src=r.result};r.readAsDataURL(file)})}
 async function giftSell(){var v=Number($('gf_v').value),k=$('gf_k').value.trim();
+  if(!GF_SEL)return msg('gf_o','Choisissez une carte.');
   if(!(v>0))return msg('gf_o','Indiquez la valeur de la carte.');
   if(k.replace(/[\s-]/g,'').length<6)return msg('gf_o','Indiquez le code de la carte.');
   try{var f=$('gf_p').files&&$('gf_p').files[0],ph=f?await giftImg(f):'';
-    var x=await api('/api/omnigift/sell',{body:{brand:$('gf_b').value,value:v,currency:$('gf_c').value,code:k,photo:ph}});
-    msg('gf_o',x.message||'Carte reçue.',true);$('gf_k').value='';$('gf_v').value='';$('gf_p').value='';giftHist()}
+    var x=await api('/api/omnigift/sell',{body:{brand:GF_SEL.brand,value:v,currency:GF_SEL.currency,code:k,photo:ph}});
+    msg('gf_o',(x.message||'Carte reçue.')+(x.estimateXof?' Estimation : '+fmt(x.estimateXof)+'.':''),true);$('gf_k').value='';$('gf_v').value='';$('gf_p').value='';giftBack();giftHist()}
   catch(e){msg('gf_o',e.message)}}
 var GST={pending:'En vérification',validated:'Validée · crédit après délai',paid:'Créditée',refused:'Refusée'};
 async function giftHist(){try{var d=await api('/api/omnigift/mine');$('gf_h').innerHTML=d.sales.length?'<h3 style="margin:14px 0 6px">Mes cartes</h3>'+d.sales.map(function(x){return '<div class="tx"><div><b>'+escH(x.brand)+'</b> · '+fmt0(x.value)+' '+escH(x.currency)+'<br><small>'+escH(GST[x.status]||x.status)+(x.note?' · '+escH(x.note):'')+'</small></div><b>'+(x.credit_xof?fmt(x.credit_xof):'')+'</b></div>'}).join(''):''}catch(e){}}
