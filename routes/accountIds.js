@@ -117,6 +117,16 @@ router.get("/receipts", requireAuth, async (req, res) => {
   } catch (e) { console.error("RC_LIST", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Libellé neutre du canal : les fournisseurs techniques (FedaPay, PayDunya, MTN…) ne doivent jamais apparaître sur un reçu.
+function channelLabel(provider) {
+  const p = String(provider || "").toLowerCase();
+  if (!p || p === "internal" || p === "omnipay") return "OMNIPAY";
+  if (/pispi|pi-spi/.test(p)) return "PI-SPI";
+  if (/binance|coingate|crypto|usdt/.test(p)) return "Crypto";
+  if (/manual|admin/.test(p)) return "Traitement OMNIPAY";
+  return "Mobile Money";
+}
+
 router.get("/receipts/:ref", requireAuth, async (req, res) => {
   try {
     const m = /^OMP-R([0-9A-F]{10})$/.exec(String(req.params.ref || "").toUpperCase());
@@ -140,7 +150,7 @@ router.get("/receipts/:ref", requireAuth, async (req, res) => {
     res.json({
       reference: refOf(t.id), label: LABEL[t.type] || t.type, type: t.type, status: t.status, date: t.created_at,
       amount: t.amount, fee, total: t.type === "deposit" || t.type === "transfer_in" || t.type === "refund" ? t.amount : t.amount + fee,
-      balanceAfter: t.balance_after, channel: t.provider, destination: phone, counterparty: cp, note: (t.metadata && t.metadata.note) || null,
+      balanceAfter: t.balance_after, channel: channelLabel(t.provider), destination: phone, counterparty: cp, note: (t.metadata && t.metadata.note) || null,
       issuer: "OMNIPAY — ETS OMNIPAY, Abomey-Calavi, Bénin",
     });
   } catch (e) { console.error("RC_ONE", e.message); res.status(500).json({ error: "Erreur serveur." }); }
