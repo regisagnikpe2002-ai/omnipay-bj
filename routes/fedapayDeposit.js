@@ -1,7 +1,7 @@
 "use strict";
 // OMNIPAY — DÉPÔTS PAR FEDAPAY (rail secondaire d'encaissement Mobile Money MTN / Moov). FICHIER AJOUTÉ.
 //   GET  /api/fedapay/deposit/status   -> { enabled, min, max }
-//   POST /api/fedapay/deposit          {amount, phone, provider:'mtn'|'moov'} -> demande de paiement sur le téléphone du client
+//   POST /api/fedapay/deposit          {amount, phone, provider:'mtn'|'moov'|'celtiis'} -> demande de paiement sur le téléphone du client
 //   GET  /api/fedapay/deposit/:ref     -> relit le statut chez FedaPay et règle le dépôt (jamais de crédit sur la foi d'un callback)
 // Le client valide lui-même sur sa SIM. Crédit atomique, une seule fois, après vérification du montant. Suivi automatique toutes les 60 s.
 const express = require("express");
@@ -18,7 +18,7 @@ const digits = (p) => { let d = String(p || "").replace(/\D/g, ""); if (d.starts
 const sandboxOk = () => ["on", "true", "1", "yes"].includes(String(process.env.FEDAPAY_SANDBOX_DEPOSITS || "off").toLowerCase());
 const enabled = () => fp.ready() && (fp.env() === "live" || sandboxOk()) && String(process.env.FEDAPAY_DEPOSITS || "on").toLowerCase() !== "off";
 
-router.get("/status", requireAuth, (req, res) => res.json({ enabled: enabled(), env: fp.env(), providers: ["mtn", "moov"], min: MIN(), max: MAX() }));
+router.get("/status", requireAuth, (req, res) => res.json({ enabled: enabled(), env: fp.env(), providers: ["mtn", "moov", "celtiis"], min: MIN(), max: MAX() }));
 
 const creditPending = (ref) => sql()`
   WITH t AS (SELECT id, wallet_id, amount FROM transactions WHERE provider_ref = ${ref} AND provider = 'fedapay' AND type = 'deposit' AND status = 'pending' FOR UPDATE),
@@ -59,7 +59,7 @@ router.post("/", requireAuth, async (req, res) => {
     const amount = Math.floor(Number(req.body && req.body.amount));
     if (!Number.isFinite(amount) || amount < MIN() || amount > MAX()) return res.status(400).json({ error: `Montant entre ${MIN()} et ${MAX()} FCFA.` });
     const provider = String((req.body && req.body.provider) || "").toLowerCase();
-    if (!["mtn", "moov"].includes(provider)) return res.status(400).json({ error: "Choisissez MTN ou Moov." });
+    if (!["mtn", "moov", "celtiis"].includes(provider)) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
     const phone = digits(req.body && req.body.phone);
     if (!/^229\d{8,10}$/.test(phone)) return res.status(400).json({ error: "Numéro invalide." });
     const q = sql();

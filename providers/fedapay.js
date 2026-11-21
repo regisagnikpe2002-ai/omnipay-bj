@@ -3,7 +3,7 @@
 // Totalement séparé du fonds de réserve OMNICHECK : aucune table ni route commune. FedaPay débite SON propre solde marchand (à alimenter dans le tableau de bord FedaPay).
 // Activation : PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV / PAYOUT_ROUTE_CELTIIS = fedapay (providers/payoutRouter.js).
 // Réglages Render : FEDAPAY_SECRET_KEY (clé secrète), FEDAPAY_ENV (live | sandbox, défaut live), FEDAPAY_PAYOUT_MAX_XOF (plafond automatique, 50000),
-//   FEDAPAY_MODE_MTN / FEDAPAY_MODE_MOOV / FEDAPAY_MODE_CELTIIS (valeur « mode » du retrait chez FedaPay, défaut mobile_money : à confirmer dans votre tableau de bord),
+//   FEDAPAY_MODE_MTN / FEDAPAY_MODE_MOOV / FEDAPAY_MODE_CELTIIS (mode du retrait chez FedaPay ; défauts Bénin : mtn_open / moov / sbin),
 //   FEDAPAY_SANDBOX_PAYOUTS=on (autorise l'essai en sandbox : aucun argent réel ne bouge).
 // Sécurité : jamais de double envoi. Une ligne par retrait (fedapay_payouts, clé = id de la transaction) est écrite AVANT l'appel ; si la réponse est incertaine, on ne renvoie jamais.
 const { neon } = require("@neondatabase/serverless");
@@ -14,7 +14,9 @@ const env = () => (String(process.env.FEDAPAY_ENV || process.env.FEDAPAY_ENVIRON
 const base = () => (env() === "sandbox" ? "https://sandbox-api.fedapay.com/v1" : "https://api.fedapay.com/v1");
 const ready = () => key().length > 15;
 const cap = () => (Number(process.env.FEDAPAY_PAYOUT_MAX_XOF) > 0 ? Number(process.env.FEDAPAY_PAYOUT_MAX_XOF) : 50000);
-const modeFor = (op) => process.env["FEDAPAY_MODE_" + String(op || "").toUpperCase()] || "mobile_money";
+// Modes FedaPay pour le Bénin (docs.fedapay.com, « Méthodes de paiement ») : MTN = mtn_open, Moov = moov, Celtiis = sbin (collecte ET dépôt/payout).
+const BJ_MODES = { mtn: "mtn_open", moov: "moov", celtiis: "sbin" };
+const modeFor = (op) => process.env["FEDAPAY_MODE_" + String(op || "").toUpperCase()] || BJ_MODES[String(op || "").toLowerCase()] || "mobile_money";
 const local = (p) => { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); return d.startsWith("229") ? d.slice(3) : d; };
 
 let tbl = false;
@@ -74,8 +76,8 @@ async function status(payoutId) {
 }
 
 // ---- ENCAISSEMENT (dépôts clients) : transaction -> jeton -> demande de paiement sur le téléphone du client (code secret) ----
-// Modes d'encaissement chez FedaPay : FEDAPAY_COLLECT_MODE_MTN (défaut « mtn »), FEDAPAY_COLLECT_MODE_MOOV (défaut « moov »). À valider d'abord en sandbox (500 F).
-const collectMode = (op) => process.env["FEDAPAY_COLLECT_MODE_" + String(op || "").toUpperCase()] || (String(op).toLowerCase() === "moov" ? "moov" : "mtn");
+// Modes d'encaissement chez FedaPay : FEDAPAY_COLLECT_MODE_MTN (défaut « mtn_open »), FEDAPAY_COLLECT_MODE_MOOV (défaut « moov »), FEDAPAY_COLLECT_MODE_CELTIIS (défaut « sbin »). À valider d'abord en sandbox (500 F).
+const collectMode = (op) => process.env["FEDAPAY_COLLECT_MODE_" + String(op || "").toUpperCase()] || BJ_MODES[String(op || "").toLowerCase()] || "mtn_open";
 const one = (d, k) => { if (!d) return null; const w = d["v1/" + k] || d[k] || (Array.isArray(d["v1/" + k + "s"]) ? d["v1/" + k + "s"][0] : null) || (Array.isArray(d) ? d[0] : null); return w || d; };
 // -> { status:'sent'|'refused'|'uncertain'|'unavailable', detail, id }
 async function collect({ ref, operator, phone, amount, name }) {

@@ -518,7 +518,7 @@ body.lg #demo{display:block}
 
   <section id="dep" class="card hide">
     <h1>Déposer sur mon solde</h1><p class="sub">Choisissez comment payer. Vous envoyez l'argent sur le compte OMNIPAY indiqué, puis vous nous le déclarez : votre solde est crédité dès que la réception est vérifiée.</p>
-    <button class="opt" onclick="openIO('pd')"><i>💳</i><span><b>Carte / Mobile Money (paiement sécurisé)</b><small>Crédit automatique après paiement</small></span></button>
+    <button class="opt" onclick="openIO('pd')"><i>💳</i><span><b>Mobile Money (MTN, Moov, Celtiis)</b><small>Demande sur votre téléphone, crédit automatique</small></span></button>
     <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Mobile Money</b><small>MTN, Moov, Celtiis : envoi depuis votre téléphone</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
@@ -3438,15 +3438,21 @@ async function ordRelease(id){try{const r=await api('/api/orders/'+id+'/release'
 async function ordExec(id){try{const v=($('ord_ref_'+id)||{}).value||'';const r=await api('/api/orders/'+id+'/execute',{body:{reference:v.trim()}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message);await ordLoad()}}
 function openDep(){show('dep')}
 function openIO(m){if(m==='in'){return openDep()}if(m==='pd')m='in';ioMode=m;$('io_msg').className='msg';
-  $('io_t').textContent=m==='in'?'Dépôt : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
-  $('io_s').textContent=m==='in'?'Vous serez redirigé vers la page de paiement sécurisée pour finaliser le dépôt.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
-  $('io_ch').innerHTML=m==='in'?'<option value="paydunya">Mobile Money / carte (paiement sécurisé)</option>':OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
-  $('io_accw').classList.toggle('hide',m==='in');$('io_savw').classList.add('hide');if(m==='out')loadSav();
+  $('io_t').textContent=m==='in'?'Dépôt Mobile Money : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
+  $('io_s').textContent=m==='in'?'Choisissez votre opérateur et entrez le numéro qui paie. Vous recevez une demande sur votre téléphone : validez avec votre code secret. Crédit automatique.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
+  $('io_ch').innerHTML=m==='in'?'<option value="mtn">MTN Mobile Money</option><option value="moov">Moov Money</option><option value="celtiis">Celtiis Cash</option>':OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
+  $('io_l').textContent=m==='in'?'Numéro Mobile Money qui paie':'Numéro Mobile Money';
+  $('io_accw').classList.remove('hide');$('io_savw').classList.add('hide');if(m==='out')loadSav();
   $('tIn').style.borderColor=m==='in'?'var(--mint)':'var(--line)';$('tOut').style.borderColor=m==='out'?'var(--mint)':'var(--line)';show('io')}
+async function depPoll(ref,n){if(n>24){return msg('io_msg','Toujours en attente. Votre solde sera crédité dès la confirmation de l\'opérateur.',true)}
+  try{var r=await api('/api/fedapay/deposit/'+ref);
+    if(r.status==='completed'){await refresh();return msg('io_msg','Dépôt reçu : votre solde est crédité.',true)}
+    if(r.status==='failed')return msg('io_msg','Dépôt refusé ou annulé. Aucun montant n\'a été débité chez nous.')}catch(e){}
+  setTimeout(function(){depPoll(ref,n+1)},5000)}
 async function doIO(){
   const am=parseInt($('io_am').value,10);if(!(am>0))return msg('io_msg','Montant invalide.');
   try{
-    if(ioMode==='in'){const d=await api('/wallet/deposit',{body:{amount:am}});if(d.paymentUrl){msg('io_msg','Redirection vers le paiement…',true);location.href=d.paymentUrl}else msg('io_msg',d.message||'Dépôt initié.',true)}
+    if(ioMode==='in'){let ph=$('io_acc').value.replace(/\D/g,'');if(ph.length<8)return msg('io_msg','Entrez le numéro Mobile Money qui paie.');if(!ph.startsWith('229'))ph='229'+ph;const d=await api('/api/fedapay/deposit',{body:{amount:am,phone:ph,provider:$('io_ch').value}});msg('io_msg',d.message||'Demande envoyée.',true);if(d.reference)setTimeout(function(){depPoll(d.reference,0)},4000)}
     else{const sv=$('io_sav').value,ph=$('io_acc').value.trim();if(!sv&&!ph)return msg('io_msg','Renseignez le numéro Mobile Money.');
       if(!confirm(`Retirer ${fmt(am)} vers ${sv?$('io_sav').selectedOptions[0].textContent:ph} ? (+50 FCFA de commission)`))return;
       const d=await api('/wallet/withdraw',{body:sv?(sv.startsWith('L:')?{amount:am,linkedId:sv.slice(2)}:{amount:am,operatorId:sv}):{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
