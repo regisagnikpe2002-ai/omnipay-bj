@@ -519,10 +519,32 @@ body.lg #demo{display:block}
   <section id="dep" class="card hide">
     <h1>Déposer sur mon solde</h1><p class="sub">Choisissez comment payer. Vous envoyez l'argent sur le compte OMNIPAY indiqué, puis vous nous le déclarez : votre solde est crédité dès que la réception est vérifiée.</p>
     <button class="opt" onclick="openIO('pd')"><i>💳</i><span><b>Mobile Money (MTN, Moov, Celtiis)</b><small>Demande sur votre téléphone, crédit automatique</small></span></button>
+    <button class="opt" onclick="openBank()"><i>🏦</i><span><b>Virement bancaire (IBAN · SEPA · SWIFT)</b><small>Europe, Asie et reste du monde : depuis votre banque</small></span></button>
     <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Mobile Money</b><small>MTN, Moov, Celtiis : envoi depuis votre téléphone</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="bank" class="card hide">
+    <h1>Virement bancaire</h1><p class="sub">Faites un virement depuis votre banque vers le compte d'OMNIPAY, avec votre référence. Votre solde est crédité en FCFA après réception.</p>
+    <div class="row"><button class="sec" id="bkS" onclick="bankZone('sepa')" style="margin-top:0">🇪🇺 Europe (SEPA)</button><button class="sec" id="bkW" onclick="bankZone('swift')" style="margin-top:0">🌏 Asie / monde (SWIFT)</button></div>
+    <p class="sub" id="bk_z" style="margin-top:10px"></p>
+    <div id="bk_box" class="hide">
+      <label>Bénéficiaire</label><div class="row"><input id="bk_h" readonly><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('bk_h').value,'bk_msg')">Copier</button></div>
+      <label>IBAN</label><div class="row"><input id="bk_i" readonly style="font-weight:700;letter-spacing:.5px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('bk_i').value,'bk_msg')">Copier</button></div>
+      <label>BIC / SWIFT</label><div class="row"><input id="bk_b" readonly><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('bk_b').value,'bk_msg')">Copier</button></div>
+      <label>Banque</label><input id="bk_n" readonly>
+      <label>Référence à mettre dans le virement (obligatoire)</label><div class="row"><input id="bk_r" readonly style="font-weight:800;letter-spacing:1px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('bk_r').value,'bk_msg')">Copier</button></div>
+      <div style="border:1px solid #c0392b;background:rgba(192,57,43,.08);color:#c0392b;border-radius:12px;padding:10px;margin-top:12px;font-size:13px;font-weight:600">⚠ Sans votre référence, nous ne pouvons pas vous identifier et le crédit est retardé. Le nom du bénéficiaire doit être exactement celui indiqué.</div>
+      <h2 style="margin-top:16px">Simulation</h2>
+      <div class="row"><div><label>Montant envoyé</label><input id="bk_a" type="number" min="1" step="any" value="100" oninput="bankSim()"></div><div><label>Devise</label><select id="bk_c" onchange="bankSim()"><option>EUR</option><option>XOF</option></select></div></div>
+      <p class="sub" id="bk_s"></p>
+    </div>
+    <div id="bk_off" class="hide"><p class="sub">Le virement bancaire sera disponible très bientôt.</p></div>
+    <div id="bk_msg" class="msg"></div>
+    <button class="pri" onclick="openMan('bank')">J'ai fait le virement : le déclarer</button>
+    <button class="lnk" onclick="show('dep')">← Retour</button>
   </section>
 
   <section id="man" class="card hide">
@@ -3437,6 +3459,17 @@ async function ordTake(id){try{const r=await api('/api/orders/'+id+'/take',{body
 async function ordRelease(id){try{const r=await api('/api/orders/'+id+'/release',{body:{}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message)}}
 async function ordExec(id){try{const v=($('ord_ref_'+id)||{}).value||'';const r=await api('/api/orders/'+id+'/execute',{body:{reference:v.trim()}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message);await ordLoad()}}
 function openDep(){show('dep')}
+let BK=null;
+async function openBank(){show('bank');$('bk_msg').className='msg';try{BK=await api('/api/manual/bank')}catch(e){BK=null}
+ const ok=BK&&BK.configured;$('bk_box').classList.toggle('hide',!ok);$('bk_off').classList.toggle('hide',!!ok);
+ if(ok){$('bk_h').value=BK.holder;$('bk_i').value=BK.iban.replace(/(.{4})/g,'$1 ').trim();$('bk_b').value=BK.bic;$('bk_n').value=BK.bank+(BK.address?' · '+BK.address:'');$('bk_r').value=BK.reference}
+ bankZone('sepa')}
+function bankZone(z){$('bkS').style.opacity=z==='sepa'?1:.55;$('bkW').style.opacity=z==='swift'?1:.55;
+ $('bk_z').textContent=z==='sepa'?'Depuis une banque européenne : faites un virement international en euros vers l\'IBAN ci-dessous. Il est converti en FCFA à l\'arrivée. Délai habituel : 2 à 5 jours ouvrés.':'Depuis une banque d\'Asie ou d\'ailleurs : faites un virement SWIFT vers l\'IBAN et le BIC ci-dessous, en indiquant bien votre référence. Délai habituel : 2 à 5 jours ouvrés. Des frais de votre banque peuvent s\'appliquer.'}
+function bankSim(){if(!BK)return;const a=Number(($('bk_a')||{}).value),c=$('bk_c').value;if(!(a>0)){$('bk_s').textContent='';return}
+ const xof=c==='EUR'?a*BK.eurXof:a;const fee=Math.max(BK.feeMin,Math.round(xof*BK.feePct/100));const net=Math.max(0,Math.round(xof)-fee);
+ $('bk_s').textContent='≈ '+Math.round(xof).toLocaleString('fr-FR')+' FCFA reçus · commission OMNIPAY '+fee.toLocaleString('fr-FR')+' FCFA ('+BK.feePct+' %, min. '+BK.feeMin+' F) · crédité ≈ '+net.toLocaleString('fr-FR')+' FCFA. Les frais de votre banque ne sont pas inclus.'}
+
 function openIO(m){if(m==='in'){return openDep()}if(m==='pd')m='in';ioMode=m;$('io_msg').className='msg';
   $('io_t').textContent=m==='in'?'Dépôt Mobile Money : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
   $('io_s').textContent=m==='in'?'Choisissez votre opérateur et entrez le numéro qui paie. Vous recevez une demande sur votre téléphone : validez avec votre code secret. Crédit automatique.':'Demande traitée sous 24 h. Commission : 50 FCFA.';

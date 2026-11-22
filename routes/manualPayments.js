@@ -66,6 +66,22 @@ router.get("/instructions", requireAuth, async (req, res) => {
   });
 });
 
+// Coordonnées bancaires d'OMNIPAY pour les virements (SEPA / SWIFT). Elles viennent de Render (OMNIPAY_BANK, JSON), jamais du code.
+// Exemple : {"holder":"ETS OMNIPAY","iban":"BJ66…","bic":"ECOCBJBJ","bank":"Ecobank Bénin","address":"…","currency":"XOF"}
+router.get("/bank", requireAuth, async (req, res) => {
+  let b = {}; try { b = JSON.parse(process.env.OMNIPAY_BANK || "{}") || {}; } catch (_) { b = {}; }
+  let omId = null;
+  try { const r = await sql()`SELECT code FROM account_ids WHERE user_id = ${req.user.userId}`; omId = r[0]?.code || null; } catch (_) { /* repli */ }
+  const num = (v, d) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : d; };
+  const iban = clean(b.iban, 40).replace(/\s+/g, "").toUpperCase();
+  res.json({
+    configured: Boolean(iban && b.bic),
+    holder: clean(b.holder, 80), iban, bic: clean(b.bic, 20).toUpperCase(), bank: clean(b.bank, 80), address: clean(b.address, 160), currency: clean(b.currency || "XOF", 5),
+    reference: omId || refOf(req.user.userId),
+    feePct: num(process.env.BANK_FEE_PCT, 2), feeMin: num(process.env.BANK_FEE_MIN, 100), eurXof: 655.957,
+  });
+});
+
 router.post("/deposit", requireAuth, async (req, res) => {
   try {
     const amount = Number(req.body?.amount);
