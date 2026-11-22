@@ -227,6 +227,28 @@ router.get("/admin/sandbox-credits", adminOnly, async (req, res) => {
       note: "Lecture seule. Si MTN_MOMO_ENV était « sandbox », ces crédits n'ont reçu aucun argent réel : à vérifier ligne par ligne avant toute correction de solde." });
   } catch (e) { console.error("MOMO_SBX", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
+// Annulation de crédits « momo » sans argent réel (sandbox). Sans confirm:true, AUCUN changement : simple aperçu (solde avant / après).
+// Le solde du client peut devenir négatif si l'argent a déjà été dépensé : c'est visible dans l'aperçu avant de confirmer.
+router.post("/admin/reverse-credits", adminOnly, async (req, res) => {
+  try {
+    const refs = Array.isArray(req.body?.refs) ? req.body.refs.map(String).filter((r) => UUID.test(r)).slice(0, 20) : [];
+    if (!refs.length) return res.status(400).json({ error: "Indiquez 1 à 20 références (provider_ref) prises dans /api/momo/admin/sandbox-credits." });
+    const q = sql(), out = [];
+    for (const ref of refs) {
+      const row = (await q`SELECT u.email, t.amount::float AS amount, w.balance::float AS balance FROM transactions t JOIN wallets w ON w.id = t.wallet_id JOIN users u ON u.id = w.user_id
+        WHERE t.provider = 'momo' AND t.type = 'deposit' AND t.status = 'completed' AND t.provider_ref = ${ref}`)[0];
+      if (!row) { out.push({ ref, result: "introuvable ou déjà traité" }); continue; }
+      if (req.body?.confirm !== true) { out.push({ ref, email: row.email, amount: row.amount, balanceBefore: row.balance, balanceAfter: row.balance - row.amount, result: "aperçu (rien modifié)" }); continue; }
+      const r = await q`
+        WITH t AS (SELECT id, wallet_id, amount FROM transactions WHERE provider = 'momo' AND type = 'deposit' AND status = 'completed' AND provider_ref = ${ref} FOR UPDATE),
+        w AS (UPDATE wallets SET balance = balance - t.amount, updated_at = now() FROM t WHERE wallets.id = t.wallet_id RETURNING wallets.balance, t.id AS tx_id),
+        u AS (UPDATE transactions SET status = 'cancelled', metadata = coalesce(metadata,'{}'::jsonb) || '{"reversed":"sandbox_no_real_money"}'::jsonb FROM w WHERE transactions.id = w.tx_id RETURNING transactions.id)
+        SELECT w.balance::float AS balance FROM w`;
+      out.push(r.length ? { ref, email: row.email, amount: row.amount, balanceAfter: r[0].balance, result: "annulé" } : { ref, result: "déjà traité" });
+    }
+    res.json({ applied: req.body?.confirm === true, results: out });
+  } catch (e) { console.error("MOMO_REVERSE", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
 router.post("/admin/run", adminOnly, async (req, res) => {
   try { res.json(await tick()); } catch (e) { console.error("MOMO_RUN", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });

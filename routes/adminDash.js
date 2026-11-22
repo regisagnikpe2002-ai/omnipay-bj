@@ -26,7 +26,7 @@ function audit() {
   len("OTP_SECRET") >= 32 ? add("Secret des codes e-mail (OTP)", "ok", "Longueur suffisante.") : add("Secret des codes e-mail (OTP)", "bad", "Absent ou inférieur à 32 caractères.");
   const jwt = Object.keys(e).filter((k) => k.startsWith("JWT_"));
   jwt.length ? add("Secrets de connexion (JWT)", "ok", `${jwt.length} variable(s) définie(s).`) : add("Secrets de connexion (JWT)", "bad", "Aucune variable JWT_* trouvée.");
-  e.PAYDUNYA_MODE === "live" ? add("PayDunya", "ok", "Mode réel (live).") : add("PayDunya", "warn", "Mode test : les paiements ne sont pas réels.");
+  e.PAYDUNYA_MODE === "live" ? add("PayDunya", "ok", "Mode réel (live).") : (e.PAYDUNYA_MASTER_KEY || e.PAYDUNYA_PRIVATE_KEY || e.PAYDUNYA_TOKEN) ? add("PayDunya", "warn", "Mode test : les paiements ne sont pas réels.") : add("PayDunya", "ok", "Désactivé (aucune clé).");
   e.AUTO_PAYOUT === "on" ? add("Retraits automatiques", "warn", "Activés : surveillez les retraits « en cours ».") : add("Retraits automatiques", "ok", "Désactivés : validation manuelle.");
   e.COINGATE_API_TOKEN ? add("CoinGate", e.COINGATE_ENV === "live" ? "ok" : "warn", e.COINGATE_ENV === "live" ? "Clé présente, mode réel." : "Clé présente, mode test (sandbox).") : add("CoinGate", "warn", "Non configuré.");
   const bn = e.BINANCE_PAY_API_KEY || e.BINANCE_API_KEY;

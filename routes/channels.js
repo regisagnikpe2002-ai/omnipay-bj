@@ -173,6 +173,9 @@ router.get("/routes", adminOnly, async (req, res) => {
     const ready = (route) => route === "manual" ? { ok: true, note: "Manuel : vous payez puis cliquez « Payé »." }
       : route === "momo" ? (po.momoConfigured() ? { ok: true, note: "API MTN configurée." } : { ok: false, note: "API MTN non configurée." })
       : route === "paydunya" ? (on("PAYDUNYA_ENABLED") ? { ok: true, note: "PayDunya activé." } : { ok: false, note: "PayDunya désactivé." })
+      : route === "fedapay" ? (() => { const fp = require("../providers/fedapay.js"); const live = fp.ready() && (fp.env() === "live" || on("FEDAPAY_SANDBOX_PAYOUTS"));
+          return live ? { ok: true, note: "FedaPay prêt (retraits automatiques, plafond " + fp.cap() + " F)." } : { ok: false, note: fp.ready() ? "FedaPay en mode test : aucun argent réel." : "FedaPay : clé absente." }; })()
+      : route === "pawapay" ? (() => { const pw = require("../providers/pawapay.js"); return pw.ready() && (pw.env() === "live" || on("PAWAPAY_SANDBOX_PAYOUTS")) ? { ok: true, note: "PawaPay prêt." } : { ok: false, note: "PawaPay non prêt (clé absente ou mode test)." }; })()
       : { ok: false, note: "API non encore fournie." };
     const operators = ["mtn", "moov", "celtiis"].map((op) => { const route = po.routeFor(op); return { operator: op, route, ...ready(route) }; });
     let accounts = [];
