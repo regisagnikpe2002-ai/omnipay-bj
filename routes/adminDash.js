@@ -14,9 +14,9 @@ const safe = async (fn, fallback) => { try { return await fn(); } catch (e) { re
 // Solde attendu d'un portefeuille d'après le journal (sert à repérer les écarts, pas à corriger).
 const LEDGER = `coalesce(sum(CASE
   WHEN t.type IN ('deposit','transfer_in','refund') AND t.status = 'completed' THEN t.amount
-  WHEN t.type = 'withdrawal' AND t.status <> 'cancelled' THEN -t.amount
+  WHEN t.type = 'withdrawal' AND t.status NOT IN ('cancelled','refunded') THEN -t.amount
   WHEN t.type = 'transfer_out' AND t.status = 'completed' THEN -t.amount
-  WHEN t.type = 'commission' THEN -t.amount ELSE 0 END), 0)`;
+  WHEN t.type = 'commission' AND t.status NOT IN ('cancelled','refunded') THEN -t.amount ELSE 0 END), 0)`;
 
 function audit() {
   const e = process.env, out = [];
