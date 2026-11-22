@@ -47,8 +47,11 @@ router.get("/admin/check", adminOnly, async (req, res) => {
     const po = require("../providers/payoutRouter.js");
     const out = { configured: fp.ready(), env: fp.env(), capXof: fp.cap(), operators: ["mtn", "moov", "celtiis"].map((op) => ({ operator: op, route: po.routeFor(op), payoutMode: fp.modeFor(op), collectMode: fp.collectMode(op) })) };
     if (fp.ready()) {
-      try { const r = await fp.call("GET", "/transactions?per_page=1"); out.keyCheck = r.status === 200 ? "clé acceptée par FedaPay" : r.status === 401 || r.status === 403 ? "clé REFUSÉE par FedaPay (HTTP " + r.status + ")" : "réponse inattendue (HTTP " + r.status + ")"; }
-      catch (e) { out.keyCheck = "FedaPay injoignable : " + String(e.message).slice(0, 60); }
+      try {
+        const r = await fp.call("GET", "/currencies");
+        out.keyCheck = r.status === 200 ? "clé acceptée par FedaPay" : r.status === 401 || r.status === 403 ? "clé REFUSÉE par FedaPay (HTTP " + r.status + ")" : "réponse inattendue (HTTP " + r.status + ")";
+        if (r.status !== 200) out.detail = String((r.data && (r.data.message || JSON.stringify(r.data))) || "").slice(0, 160);
+      } catch (e) { out.keyCheck = "FedaPay injoignable : " + String(e.message).slice(0, 60); }
     } else out.keyCheck = "clé absente";
     try { const c = new AbortController(), to = setTimeout(() => c.abort(), 6000); const ip = await (await fetch("https://api.ipify.org?format=json", { signal: c.signal })).json(); clearTimeout(to); out.outboundIp = ip.ip; }
     catch (_) { out.outboundIp = "non lisible"; }
