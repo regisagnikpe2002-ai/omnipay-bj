@@ -520,11 +520,31 @@ body.lg #demo{display:block}
   <section id="dep" class="card hide">
     <h1>Déposer sur mon solde</h1><p class="sub">Choisissez comment payer. Vous envoyez l'argent sur le compte OMNIPAY indiqué, puis vous nous le déclarez : votre solde est crédité dès que la réception est vérifiée.</p>
     <button class="opt" onclick="openIO('pd')"><i>💳</i><span><b>Mobile Money (MTN, Moov, Celtiis)</b><small>Demande sur votre téléphone, crédit automatique</small></span></button>
+    <button class="opt" onclick="openUssd()"><i>📟</i><span><b>Dépôt par code USSD</b><small>Sans internet ni smartphone : composez un code sur votre téléphone</small></span></button>
     <button class="opt" onclick="openBank()"><i>🏦</i><span><b>Virement bancaire (IBAN · SEPA · SWIFT)</b><small>Europe, Asie et reste du monde : depuis votre banque</small></span></button>
     <button class="opt" onclick="openMan('momo')"><i>📱</i><span><b>Mobile Money</b><small>MTN, Moov, Celtiis : envoi depuis votre téléphone</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="ussd" class="card hide">
+    <h1>Dépôt par code USSD</h1><p class="sub">Aucune connexion internet nécessaire : un simple téléphone suffit. MTN, Moov et Celtiis.</p>
+    <div id="us_box" class="hide">
+      <label>Montant à déposer (FCFA)</label><input id="us_a" type="number" inputmode="numeric" min="100" value="5000" oninput="ussdCalc()">
+      <p class="sub" id="us_s"></p>
+      <label>Code à composer</label><div class="row"><input id="us_c" readonly style="font-weight:800;letter-spacing:.5px"><button class="sec" style="width:auto;margin:0;padding:0 16px" onclick="copyTxt($('us_c').value,'us_m')">Copier</button></div>
+      <a class="pri" id="us_t" href="#" style="display:block;text-align:center;text-decoration:none;margin-top:10px">📞 Composer maintenant</a>
+      <p class="sub" style="margin-top:10px"><b>1.</b> Composez le code. <b>2.</b> Validez avec votre code secret Mobile Money. <b>3.</b> Gardez le SMS de confirmation. <b>4.</b> Déclarez votre paiement ci-dessous : votre solde est crédité après vérification.</p>
+      <h2 style="margin-top:14px">J'ai payé : déclarer</h2>
+      <label>Numéro qui a payé</label><input id="us_p" type="tel" inputmode="tel" placeholder="01 XX XX XX XX">
+      <label>Référence du SMS de confirmation</label><input id="us_r" placeholder="Numéro de transaction reçu par SMS">
+      <p class="sub" id="us_i"></p>
+      <button class="pri" onclick="ussdDecl()">Déclarer mon paiement</button>
+    </div>
+    <div id="us_off" class="hide"><p class="sub">Le dépôt par code USSD sera disponible très bientôt.</p></div>
+    <div id="us_m" class="msg"></div>
+    <button class="lnk" onclick="show('dep')">← Retour</button>
   </section>
 
   <section id="bank" class="card hide">
@@ -3460,6 +3480,17 @@ async function ordTake(id){try{const r=await api('/api/orders/'+id+'/take',{body
 async function ordRelease(id){try{const r=await api('/api/orders/'+id+'/release',{body:{}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message)}}
 async function ordExec(id){try{const v=($('ord_ref_'+id)||{}).value||'';const r=await api('/api/orders/'+id+'/execute',{body:{reference:v.trim()}});msg('oc_msg',r.message,true);await ordLoad()}catch(e){msg('oc_msg',e.message);await ordLoad()}}
 function openDep(){show('dep')}
+var US=null;
+async function openUssd(){show('ussd');$('us_m').className='msg';try{US=await api('/api/manual/ussd')}catch(e){US=null}
+ var ok=US&&US.configured;$('us_box').classList.toggle('hide',!ok);$('us_off').classList.toggle('hide',!!ok);if(ok){$('us_i').textContent='Votre référence : '+US.reference;ussdCalc()}}
+function ussdCalc(){if(!US||!US.configured)return;var a=Math.round(Number($('us_a').value));var good=a>=US.min&&a<=US.max;
+ var code=good?US.template.replace('{MONTANT}',String(a)):US.template.replace('{MONTANT}','MONTANT');$('us_c').value=code;
+ $('us_t').setAttribute('href',good?'tel:'+encodeURIComponent(code):'#');$('us_t').style.opacity=good?1:.5;
+ var fee=Math.round(a*US.feePct/100);$('us_s').textContent=good?'Frais de service '+US.feePct+' % : '+fmt0(fee)+' FCFA. Crédité ≈ '+fmt0(Math.max(0,a-fee))+' FCFA.':'Montant : entre '+fmt0(US.min)+' et '+fmt0(US.max)+' FCFA.'}
+async function ussdDecl(){var a=Math.round(Number($('us_a').value)),ph=$('us_p').value.trim(),rf=$('us_r').value.trim();
+ if(!(a>=US.min&&a<=US.max))return msg('us_m','Montant invalide.');if(ph.replace(/\D/g,'').length<8)return msg('us_m','Indiquez le numéro qui a payé.');if(rf.length<4)return msg('us_m','Indiquez la référence du SMS.');
+ try{var d=await api('/api/manual/deposit',{body:{amount:a,currency:'XOF',method:'ussd',txRef:rf,note:'USSD · tél '+ph}});msg('us_m',d.message||'Demande enregistrée.',true);$('us_r').value=''}catch(e){msg('us_m',e.message)}}
+
 let BK=null;
 async function openBank(){show('bank');$('bk_msg').className='msg';try{BK=await api('/api/manual/bank')}catch(e){BK=null}
  const ok=BK&&BK.configured;$('bk_box').classList.toggle('hide',!ok);$('bk_off').classList.toggle('hide',!!ok);

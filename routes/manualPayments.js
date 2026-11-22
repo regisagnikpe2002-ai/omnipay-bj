@@ -82,6 +82,16 @@ router.get("/bank", requireAuth, async (req, res) => {
   });
 });
 
+// Dépôt par code USSD (sans internet). Le code vient de Render : OMNIPAY_USSD, ex. *601*14*51229*{MONTANT}#
+router.get("/ussd", requireAuth, async (req, res) => {
+  const t = String(process.env.OMNIPAY_USSD || "").trim();
+  const ok = /^[*#0-9]+\{MONTANT\}[*#0-9]*$/.test(t);
+  let omId = null;
+  try { const r = await sql()`SELECT code FROM account_ids WHERE user_id = ${req.user.userId}`; omId = r[0]?.code || null; } catch (_) { /* repli */ }
+  const n = Number(process.env.USSD_FEE_PCT);
+  res.json({ configured: ok, template: ok ? t : "", reference: omId || refOf(req.user.userId), feePct: Number.isFinite(n) && n >= 0 ? n : 2, min: 100, max: MAX });
+});
+
 router.post("/deposit", requireAuth, async (req, res) => {
   try {
     const amount = Number(req.body?.amount);
