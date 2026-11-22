@@ -74,13 +74,50 @@ function ensure() {
   return ready;
 }
 
+// ---------- Logos des cartes (fournis par l'administrateur, jamais dessinés par le code) ----------
+// PNG/JPEG/WebP uniquement (pas de SVG : il peut contenir du script). Taille limitée, servis avec nosniff.
+const slugOf = (b) => String(b || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+let logosReady = false;
+async function ensureLogos() {
+  if (logosReady) return;
+  await sql()`CREATE TABLE IF NOT EXISTS omnigift_logos (slug varchar(60) PRIMARY KEY, mime varchar(20) NOT NULL, data text NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())`;
+  logosReady = true;
+}
+router.get("/logo/:slug", async (req, res) => {
+  try {
+    await ensureLogos();
+    const r = await sql()`SELECT mime, data FROM omnigift_logos WHERE slug = ${slugOf(req.params.slug)}`;
+    if (!r.length) return res.status(404).end();
+    res.set({ "Content-Type": r[0].mime, "X-Content-Type-Options": "nosniff", "Cache-Control": "public, max-age=3600" });
+    res.send(Buffer.from(r[0].data, "base64"));
+  } catch (e) { res.status(404).end(); }
+});
+router.get("/admin/logos", adminOnly, async (req, res) => {
+  try { await ensureLogos(); res.json({ brands: [...BRANDS, "CoinGate"].map((b) => ({ brand: b, slug: slugOf(b) })), have: (await sql()`SELECT slug FROM omnigift_logos`).map((x) => x.slug) }); }
+  catch (e) { res.status(500).json({ error: "Erreur." }); }
+});
+router.post("/admin/logo", adminOnly, async (req, res) => {
+  try {
+    const brand = clean(req.body?.brand, 40);
+    if (![...BRANDS, "CoinGate"].includes(brand)) return res.status(400).json({ error: "Carte inconnue." });
+    await ensureLogos();
+    if (req.body?.remove === true) { await sql()`DELETE FROM omnigift_logos WHERE slug = ${slugOf(brand)}`; return res.json({ ok: true }); }
+    const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body?.image || ""));
+    if (!m) return res.status(400).json({ error: "Image PNG, JPEG ou WebP requise." });
+    if (m[2].length > 90000) return res.status(400).json({ error: "Image trop lourde (réduisez-la)." });
+    await sql()`INSERT INTO omnigift_logos (slug, mime, data) VALUES (${slugOf(brand)}, ${m[1]}, ${m[2]})
+      ON CONFLICT (slug) DO UPDATE SET mime = EXCLUDED.mime, data = EXCLUDED.data, updated_at = now()`;
+    res.json({ ok: true });
+  } catch (e) { console.error("GIFT_LOGO", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
 router.get("/catalog", requireAuth, async (req, res) => {
   try {
     await ensure();
     const rates = (await sql()`SELECT brand, currency, rate_xof::float AS rate FROM omnigift_rates WHERE active ORDER BY brand, currency`);
     res.json({
       sell: { enabled: Boolean(keyBytes()) && rates.length > 0, rates, brands: BRANDS, currencies: CURRENCIES, holdHours: HOLD_H(), maxOpen: MAX_OPEN() },
-      buy: { enabled: false, message: "Acheter : bientôt disponible." },
+      buy: { enabled: true, partner: { name: "CoinGate", url: "https://coingate.com/gift-cards", note: "Cartes cadeaux payables en crypto, livraison instantanée. Vous achetez directement chez CoinGate." } },
     });
   } catch (e) { console.error("GIFT_CAT", e.message); res.status(500).json({ error: "Erreur." }); }
 });
