@@ -1,0 +1,5 @@
+Logos des cartes cadeaux (OMNIGIFT)
+Déposez ici les fichiers officiels que vous avez le droit d'utiliser, en PNG carré, nommés ainsi :
+apple.png  steam.png  google-play.png  playstation.png  xbox.png  razer.png  roblox.png
+amazon.png  paysafecard.png  one4all.png  netflix.png  spotify.png  airbnb.png
+Sans fichier, l'application affiche une pastille avec les initiales de la carte.

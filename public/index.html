@@ -3705,13 +3705,18 @@ function pisAlias(){var a=aliasOf();return a||'Indisponible (reconnectez-vous)'}
 function openPis(){show('pis');$('pis_a').textContent=pisAlias();$('pis_bb').textContent='Voir mon solde';$('pis_o').className='msg';pisTab('send');pisHist()}
 function pisTab(t){$('pis_send').classList.toggle('hide',t!=='send');$('pis_recv').classList.toggle('hide',t!=='recv')}
 /* ===== OMNIGIFT : vente de cartes cadeaux (validation humaine) ===== */
+var GF_COL={apple:'#1d1d1f',steam:'#1b2838','google-play':'#0f9d58',playstation:'#003791',xbox:'#107c10',razer:'#0a8f2e',roblox:'#c4281c',amazon:'#ff9900',paysafecard:'#0033a0','one4all':'#222',netflix:'#b20710',spotify:'#1db954',airbnb:'#ff385c'};
+function giftSlug(b){return String(b||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+/* Pastille de carte : si un fichier officiel /logos/<carte>.png existe (fourni par OMNIPAY), il est affiché ; sinon des initiales neutres. */
+function giftLogo(b){var sl=giftSlug(b),ini=escH(String(b||'?').replace(/[^A-Za-z0-9 ]/g,'').split(' ').map(function(w){return w[0]||''}).join('').slice(0,2).toUpperCase()),col=GF_COL[sl]||'#556';
+  return '<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:'+col+';color:#fff;font-weight:700;font-size:14px;flex:none;overflow:hidden;margin-right:10px">'+ini+'<img src="/logos/'+sl+'.png" alt="" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff"></span>'}
 var GF_SEL=null,GF_RATES=[];
 function giftTab(t){$('gf_sell').classList.toggle('hide',t!=='sell');$('gf_buy').classList.toggle('hide',t!=='buy')}
 function giftBack(){GF_SEL=null;$('gf_form').classList.add('hide');$('gf_list').classList.remove('hide')}
 async function openGift(){show('gift');giftTab('sell');giftBack();$('gf_o').className='msg';$('gf_p').value='';
   try{var c=await api('/api/omnigift/catalog');GF_RATES=c.sell.rates||[];
     $('gf_n').textContent="Le code n'est lisible que par OMNIPAY. Délai de sécurité avant crédit : "+c.sell.holdHours+" h. Ne soumettez jamais un code déjà utilisé.";
-    $('gf_list').innerHTML=GF_RATES.length?GF_RATES.map(function(r,i){return '<button class="tile" style="width:100%;display:flex;justify-content:space-between;align-items:center;margin:6px 0;text-align:left" onclick="giftPick('+i+')"><span><b>'+escH(r.brand)+'</b><br><small>Carte en '+escH(r.currency)+'</small></span><span><b>'+fmt0(r.rate)+' F</b><br><small>pour 1 '+escH(r.currency)+'</small></span></button>'}).join(''):'<p class="sub">Aucune carte n\'est acceptée pour le moment. Revenez bientôt.</p>'}catch(e){msg('gf_o',e.message)}
+    $('gf_list').innerHTML=GF_RATES.length?GF_RATES.map(function(r,i){return '<button class="tile" style="width:100%;display:flex;justify-content:space-between;align-items:center;margin:6px 0;text-align:left" onclick="giftPick('+i+')"><span style="display:flex;align-items:center">'+giftLogo(r.brand)+'<span><b>'+escH(r.brand)+'</b><br><small>Carte en '+escH(r.currency)+'</small></span></span><span><b>'+fmt0(r.rate)+' F</b><br><small>pour 1 '+escH(r.currency)+'</small></span></button>'}).join(''):'<p class="sub">Aucune carte n\'est acceptée pour le moment. Revenez bientôt.</p>'}catch(e){msg('gf_o',e.message)}
   giftHist()}
 function giftPick(i){GF_SEL=GF_RATES[i];$('gf_list').classList.add('hide');$('gf_form').classList.remove('hide');$('gf_t').textContent=GF_SEL.brand+' · '+GF_SEL.currency;$('gf_r').textContent='Taux : '+fmt0(GF_SEL.rate)+' FCFA pour 1 '+GF_SEL.currency+'. Le crédit final dépend de la vérification de la carte.';$('gf_v').value='';$('gf_e').textContent=''}
 function giftEst(){var v=Number($('gf_v').value);$('gf_e').textContent=v>0&&GF_SEL?'≈ '+fmt(Math.round(v*GF_SEL.rate))+' (estimation)':''}

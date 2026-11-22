@@ -50,6 +50,14 @@ function dec(b64) {
 // Empreinte du code : refuse deux fois le même code (même client ou autre), sans stocker le code en clair.
 const codeHash = (code) => crypto.createHash("sha256").update("gift-code|" + String(code).replace(/[\s-]/g, "").toUpperCase() + "|" + (process.env.GIFT_ENC_KEY || process.env.ADMIN_KEY || "")).digest("hex");
 
+// Notification e-mail au client (Brevo/SMTP). Jamais de code de carte dans le message. Un échec d'envoi ne bloque jamais l'opération.
+async function notifyUser(userId, subject, lines) {
+  try {
+    const u = (await sql()`SELECT email FROM users WHERE id = ${userId}::uuid`)[0];
+    if (u && u.email) await require("../lib/mailer").sendUserNotification(u.email, subject, lines);
+  } catch (e) { console.error("GIFT_NOTIFY", e.message); }
+}
+
 let ready = null;
 function ensure() {
   if (!ready) ready = (async () => {
@@ -102,6 +110,7 @@ router.post("/sell", requireAuth, async (req, res) => {
       VALUES (${req.user.userId}::uuid, ${brand}, ${value}, ${currency}, ${enc(code)}, ${h}, ${photo ? enc(photo) : null}, ${est}) ON CONFLICT (code_hash) DO NOTHING RETURNING id`;
     if (!rows.length) return res.status(409).json({ error: "Ce code a déjà été soumis." });
     try { require("../lib/mailer").sendAdminNotification("OMNIGIFT : nouvelle carte à vérifier", `<p>Une carte ${brand} de ${value} ${currency} attend votre vérification dans OMNICHECK (le code n'est pas envoyé par e-mail).</p>`).catch(() => {}); } catch (_) {}
+    notifyUser(req.user.userId, "OMNIGIFT : carte reçue", [`Nous avons bien reçu votre carte ${brand} de ${value} ${currency}.`, "Elle est en cours de vérification. Estimation : environ " + est + " FCFA, sous réserve de validation.", "Votre solde sera crédité après la vérification et le délai de sécurité."]);
     res.status(201).json({ id: rows[0].id, estimateXof: est, message: "Carte reçue. OMNIPAY la vérifie, vous serez crédité après validation." });
   } catch (e) { console.error("GIFT_SELL", e.message); res.status(500).json({ error: "Impossible d'enregistrer la carte." }); }
 });
@@ -158,15 +167,17 @@ router.post("/admin/:id/decide", adminOnly, async (req, res) => {
     await ensure();
     const q = sql();
     if (decision === "refused") {
-      const r = await q`UPDATE omnigift_sales SET status = 'refused', admin_note = ${note || null}, decided_at = now(), code_enc = NULL, photo_enc = NULL WHERE id = ${req.params.id}::uuid AND status = 'pending' RETURNING id`;
+      const r = await q`UPDATE omnigift_sales SET status = 'refused', admin_note = ${note || null}, decided_at = now(), code_enc = NULL, photo_enc = NULL WHERE id = ${req.params.id}::uuid AND status = 'pending' RETURNING id, user_id, brand`;
+      if (r.length) notifyUser(r[0].user_id, "OMNIGIFT : carte refusée", [`Votre carte ${r[0].brand} n'a pas pu être acceptée.`, note ? "Motif : " + note : "Elle n'a pas pu être vérifiée.", "Aucun montant n'a été débité de votre compte."]);
       return r.length ? res.json({ ok: true, status: "refused" }) : res.status(409).json({ error: "Déjà traitée." });
     }
     if (decision !== "validated") return res.status(400).json({ error: "Décision invalide." });
     const credit = Number(req.body?.creditXof);
     if (!Number.isFinite(credit) || credit <= 0 || credit > 100000000) return res.status(400).json({ error: "Indiquez le montant à créditer en FCFA." });
     const r = await q`UPDATE omnigift_sales SET status = 'validated', credit_xof = ${credit}, admin_note = ${note || null}, decided_at = now(), credit_after = now() + make_interval(hours => ${HOLD_H()})
-      WHERE id = ${req.params.id}::uuid AND status = 'pending' RETURNING credit_after`;
+      WHERE id = ${req.params.id}::uuid AND status = 'pending' RETURNING credit_after, user_id, brand`;
     if (!r.length) return res.status(409).json({ error: "Déjà traitée." });
+    notifyUser(r[0].user_id, "OMNIGIFT : carte validée", [`Votre carte ${r[0].brand} est validée : ${credit} FCFA seront crédités sur votre solde OMNIPAY.`, HOLD_H() > 0 ? "Le crédit est effectué après un délai de sécurité de " + HOLD_H() + " h." : "Le crédit est effectué dans quelques instants."]);
     res.json({ ok: true, status: "validated", creditAfter: r[0].credit_after });
   } catch (e) { console.error("GIFT_DECIDE", e.message); res.status(500).json({ error: "Erreur." }); }
 });
@@ -183,8 +194,9 @@ router.post("/admin/:id/pay", adminOnly, async (req, res) => {
       w AS (UPDATE wallets SET balance = balance + (SELECT credit_xof FROM s) WHERE user_id = (SELECT user_id FROM s) AND EXISTS (SELECT 1 FROM s) RETURNING id, balance),
       t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key)
             SELECT w.id, 'deposit', s.credit_xof, w.balance, 'completed', 'omnigift', s.id::text, 'gift-' || s.id::text FROM w, s RETURNING id)
-      SELECT t.id FROM t`;
+      SELECT t.id, (SELECT user_id FROM s) AS user_id, (SELECT credit_xof FROM s) AS credit FROM t`;
     if (!rows.length) return res.status(409).json({ error: "Pas encore créditable (délai de sécurité) ou déjà payée." });
+    notifyUser(rows[0].user_id, "OMNIGIFT : solde crédité", [`Votre solde OMNIPAY a été crédité de ${Number(rows[0].credit)} FCFA pour votre carte cadeau.`, "Merci de votre confiance."]);
     res.json({ ok: true, status: "paid" });
   } catch (e) { console.error("GIFT_PAY", e.message); res.status(500).json({ error: "Erreur." }); }
 });

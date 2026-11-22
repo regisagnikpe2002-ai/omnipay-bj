@@ -41,6 +41,21 @@ router.get("/admin/status", adminOnly, async (req, res) => {
     res.json({ configured: fp.ready(), env: fp.env(), autoRefund: on("FEDAPAY_AUTO_REFUND"), capXof: fp.cap(), payouts: c, note: "Séparé du fonds de réserve. Active avec PAYOUT_ROUTE_<OPÉRATEUR>=fedapay." });
   } catch (e) { console.error("FEDAPAY_ADM", e.message); res.status(500).json({ error: "Erreur." }); }
 });
+// Diagnostic LECTURE SEULE (aucun argent ne bouge) : la clé est-elle acceptée par FedaPay ? quel mode pour chaque opérateur ? quelle adresse IP FedaPay voit-il ?
+router.get("/admin/check", adminOnly, async (req, res) => {
+  try {
+    const po = require("../providers/payoutRouter.js");
+    const out = { configured: fp.ready(), env: fp.env(), capXof: fp.cap(), operators: ["mtn", "moov", "celtiis"].map((op) => ({ operator: op, route: po.routeFor(op), payoutMode: fp.modeFor(op), collectMode: fp.collectMode(op) })) };
+    if (fp.ready()) {
+      try { const r = await fp.call("GET", "/transactions?per_page=1"); out.keyCheck = r.status === 200 ? "clé acceptée par FedaPay" : r.status === 401 || r.status === 403 ? "clé REFUSÉE par FedaPay (HTTP " + r.status + ")" : "réponse inattendue (HTTP " + r.status + ")"; }
+      catch (e) { out.keyCheck = "FedaPay injoignable : " + String(e.message).slice(0, 60); }
+    } else out.keyCheck = "clé absente";
+    try { const c = new AbortController(), to = setTimeout(() => c.abort(), 6000); const ip = await (await fetch("https://api.ipify.org?format=json", { signal: c.signal })).json(); clearTimeout(to); out.outboundIp = ip.ip; }
+    catch (_) { out.outboundIp = "non lisible"; }
+    out.ipNote = "Les retraits FedaPay exigent que l'adresse IP de sortie soit autorisée dans le tableau de bord FedaPay (« Adresses IP autorisées »). Sur Render, l'adresse peut varier : autorisez les plages Outbound du service.";
+    res.json(out);
+  } catch (e) { console.error("FEDAPAY_CHECK", e.message); res.status(500).json({ error: "Erreur." }); }
+});
 router.post("/admin/run", adminOnly, async (req, res) => { try { res.json({ ok: true, ...(await tick()) }); } catch (e) { console.error("FEDAPAY_RUN", e.message); res.status(500).json({ error: "Erreur." }); } });
 let timer = null;
 function start() { if (timer || !fp.ready() || String(process.env.FEDAPAY_WATCH || "on").toLowerCase() === "off" || !process.env.DATABASE_URL) return; timer = setInterval(() => { tick().catch((e) => console.error("FEDAPAY_WATCH", e.message)); }, 60000); if (timer.unref) timer.unref(); console.log("[FEDAPAY] suivi des retraits actif (toutes les 60 s)"); }
