@@ -76,6 +76,7 @@ function ensure() {
 
 // ---------- Logos des cartes (fournis par l'administrateur, jamais dessinés par le code) ----------
 // PNG/JPEG/WebP uniquement (pas de SVG : il peut contenir du script). Taille limitée, servis avec nosniff.
+const LOGO_BRANDS = [...BRANDS, "CoinGate", "MTN", "Moov", "Celtiis", "PI-SPI"];
 const slugOf = (b) => String(b || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 let logosReady = false;
 async function ensureLogos() {
@@ -93,13 +94,13 @@ router.get("/logo/:slug", async (req, res) => {
   } catch (e) { res.status(404).end(); }
 });
 router.get("/admin/logos", adminOnly, async (req, res) => {
-  try { await ensureLogos(); res.json({ brands: [...BRANDS, "CoinGate"].map((b) => ({ brand: b, slug: slugOf(b) })), have: (await sql()`SELECT slug FROM omnigift_logos`).map((x) => x.slug) }); }
+  try { await ensureLogos(); res.json({ brands: LOGO_BRANDS.map((b) => ({ brand: b, slug: slugOf(b) })), have: (await sql()`SELECT slug FROM omnigift_logos`).map((x) => x.slug) }); }
   catch (e) { res.status(500).json({ error: "Erreur." }); }
 });
 router.post("/admin/logo", adminOnly, async (req, res) => {
   try {
     const brand = clean(req.body?.brand, 40);
-    if (![...BRANDS, "CoinGate"].includes(brand)) return res.status(400).json({ error: "Carte inconnue." });
+    if (!LOGO_BRANDS.includes(brand)) return res.status(400).json({ error: "Carte inconnue." });
     await ensureLogos();
     if (req.body?.remove === true) { await sql()`DELETE FROM omnigift_logos WHERE slug = ${slugOf(brand)}`; return res.json({ ok: true }); }
     const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body?.image || ""));
