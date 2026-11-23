@@ -52,4 +52,34 @@ router.get("/", requireAuth, async (req, res) => {
   } catch (e) { console.error("FLOWS", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 
+// Comptes Mobile Money suivis : pour chaque opérateur, ce qui est ENTRÉ et SORTI par OMNIPAY. Ce n'est PAS le solde réel du compte Mobile Money
+// (OMNIPAY n'a aucun accès à ces comptes) : c'est le suivi des mouvements passés par OMNIPAY, calculé depuis les opérations réelles.
+const OPS = [["mtn", "MTN MoMo"], ["moov", "Moov Money"], ["celtiis", "Celtiis Cash"]];
+router.get("/operators", requireAuth, async (req, res) => {
+  try {
+    const q = sql(), uid = req.user.userId;
+    const rows = await q`SELECT CASE WHEN t.type = 'deposit' THEN lower(coalesce(t.metadata->>'provider','')) ELSE lower(t.provider) END AS op, t.type,
+        sum(t.amount)::float AS amount, count(*)::int AS n, max(t.created_at) AS last_at
+      FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+      WHERE w.user_id = ${uid}::uuid AND t.amount > 0 AND (
+        (t.type = 'deposit' AND t.provider = 'fedapay' AND t.status = 'completed') OR
+        (t.type = 'withdrawal' AND t.provider IN ('mtn','moov','celtiis') AND t.status NOT IN ('cancelled','refunded','failed')))
+      GROUP BY 1, 2`;
+    const phones = {}, state = {};
+    try { for (const r of await q`SELECT operator, phone FROM user_operators WHERE user_id = ${uid}::uuid ORDER BY is_default DESC, created_at`) if (!phones[r.operator]) phones[r.operator] = r.phone; } catch (_) { /* table absente */ }
+    try { for (const r of await q`SELECT provider, detail, status FROM linked_accounts WHERE user_id = ${uid}::uuid AND kind = 'mobile' AND status IN ('pending','verified')`) {
+      const p = String(r.provider || "").toLowerCase(); if (!phones[p]) phones[p] = r.detail; if (state[p] !== "verified") state[p] = r.status; } } catch (_) { /* table absente */ }
+    const mask = (p) => { const d = String(p || "").replace(/\D/g, ""); return d.length >= 4 ? "••••" + d.slice(-4) : null; };
+    let tin = 0, tout = 0;
+    const operators = OPS.map(([op, label]) => {
+      let i = 0, o = 0, last = null;
+      for (const r of rows) if (r.op === op) { if (r.type === "deposit") i += r.amount; else o += r.amount; if (!last || new Date(r.last_at) > new Date(last)) last = r.last_at; }
+      tin += i; tout += o;
+      const linked = state[op] || (phones[op] ? "pending" : "none");
+      return { operator: op, label, linked, phone: mask(phones[op]), in: Math.round(i), out: Math.round(o), net: Math.round(i - o), lastAt: last };
+    });
+    res.json({ operators, totals: { in: Math.round(tin), out: Math.round(tout), net: Math.round(tin - tout) } });
+  } catch (e) { console.error("FLOWS_OPS", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
 module.exports = router;
