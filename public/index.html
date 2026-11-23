@@ -752,17 +752,42 @@ curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
   </section>
 
   <section id="lnk" class="card hide">
-    <h1>Mes comptes reliés</h1><p class="sub">Enregistrez où vous voulez recevoir votre argent. OMNIPAY n'accède jamais à ces comptes et ne vous demande jamais de mot de passe, de code PIN ni de clé secrète. Après vérification par notre équipe, vos retraits s'envoient vers ces comptes.</p>
+    <h1>Mes comptes</h1><p class="sub">Reliez vos comptes Mobile Money, bancaires et crypto. OMNIPAY n'accède jamais à ces comptes et ne demande jamais de mot de passe, de code PIN ni de clé secrète. Après vérification par notre équipe, ils servent à recevoir vos retraits.</p>
+    <div id="lk_tabs" style="display:flex;gap:6px;margin:8px 0">
+      <button class="sec" data-k="mobile" style="margin:0;padding:9px 6px">📱 Mobile</button>
+      <button class="sec" data-k="bank" style="margin:0;padding:9px 6px">🏦 Banque</button>
+      <button class="sec" data-k="crypto" style="margin:0;padding:9px 6px">🪙 Crypto</button>
+    </div>
+    <div id="lk_tot"></div>
     <div id="lk_list"></div>
-    <h2 style="margin-top:14px">Ajouter un compte</h2>
-    <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire (IBAN)</option><option value="crypto">Portefeuille crypto</option></select>
-    <select id="lk_prov"></select>
-    <select id="lk_net" class="hide"><option>EVM</option><option>TRON</option><option>BITCOIN</option><option>SOLANA</option><option>STELLAR</option></select>
-    <input id="lk_det" placeholder="Numéro" autocomplete="off">
-    <input id="lk_name" placeholder="Nom du titulaire (comme sur le compte)" maxlength="120">
+    <button class="pri" onclick="lkOpen()" id="lk_addb">+ Ajouter un compte</button>
     <div id="lk_msg" class="msg"></div>
-    <button class="pri" onclick="lkAdd()">Relier ce compte</button>
     <button class="sec" onclick="show('dash')">← Retour</button>
+    <div id="lk_modal" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:60;align-items:center;justify-content:center;padding:16px">
+      <div style="background:var(--card,#fff);color:inherit;border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow:auto;padding:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="lk_mt" style="margin:0">Ajouter un compte</h2><button class="sec" style="width:auto;margin:0;padding:4px 12px" onclick="lkClose()">✕</button></div>
+        <div id="lk_steps" style="display:flex;gap:10px;font-size:13px;margin:12px 0;opacity:.9"></div>
+        <div id="lk_s1">
+          <label class="sub">Type</label>
+          <select id="lk_kind" onchange="lkKind()"><option value="mobile">Mobile Money</option><option value="bank">Compte bancaire (IBAN)</option><option value="crypto">Portefeuille crypto</option></select>
+          <label class="sub">Opérateur / banque</label>
+          <select id="lk_prov"></select>
+          <select id="lk_net" class="hide"><option>EVM</option><option>TRON</option><option>BITCOIN</option><option>SOLANA</option><option>STELLAR</option></select>
+          <label class="sub" id="lk_dl">Numéro</label>
+          <input id="lk_det" placeholder="Numéro" autocomplete="off">
+          <label class="sub">Titulaire du compte</label>
+          <input id="lk_name" placeholder="Nom exact, comme sur le compte" maxlength="120">
+          <button class="pri" onclick="lkNext()">Suivant →</button>
+        </div>
+        <div id="lk_s2" style="display:none">
+          <div id="lk_recap" class="tx" style="display:block"></div>
+          <p class="sub" style="font-size:13px">Vérification : le compte doit être <b>à votre nom</b>. Notre équipe peut vous demander une pièce d'identité avant de le valider. Statut : « En vérification » puis « Validé ».</p>
+          <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:8px 0"><input type="checkbox" id="lk_ok" style="width:auto;margin:3px 0 0"> Je certifie être le titulaire de ce compte.</label>
+          <div id="lk_msg2" class="msg"></div>
+          <div class="row"><button class="sec" onclick="lkStep(1)">← Modifier</button><button class="pri" onclick="lkAdd()">Relier ce compte</button></div>
+        </div>
+      </div>
+    </div>
   </section>
   <section id="cashs" class="card hide">
     <h1>Mes retraits en espèces</h1><p class="sub">Quand quelqu'un vous envoie de l'argent en espèces via OMNIPAY, votre code apparaît ici dès que le paiement est reçu. Donnez ce code <b>uniquement</b> à la personne qui vous remet les espèces, et seulement après avoir reçu le montant complet.</p>
@@ -3718,13 +3743,41 @@ function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.sty
 
 const LK_PROV={mobile:[['mtn','MTN MoMo'],['moov','Moov Money'],['celtiis','Celtiis Cash']],bank:[['ecobank','Ecobank'],['uba','UBA'],['bsic','BSIC'],['autre','Autre banque']],crypto:[['binance','Crypto (adresse de dépôt)']]};
 const LK_ST={pending:'En vérification',verified:'Validé ✔',rejected:'Refusé'};
-function lkKind(){const k=$('lk_kind').value;$('lk_prov').innerHTML=LK_PROV[k].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');$('lk_det').placeholder=k==='mobile'?'Numéro (ex. 01XXXXXXXX)':k==='bank'?'IBAN (ex. BJ66…)':'Adresse du portefeuille (0x…, T…)'}
-async function openLnk(){show('lnk');lkKind();$('lk_msg').className='msg';await lkList()}
-async function lkList(){try{const d=await api('/api/linked/mine');
-  $('lk_list').innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="tx"><div><b>${escH(a.provider.toUpperCase())}${a.network?' · '+escH(a.network):''}</b><small style="word-break:break-all">${escH(a.detail)} · ${escH(a.holder_name)}</small><small>${escH(LK_ST[a.status]||a.status)}${a.note?' · '+escH(a.note):''}</small></div><button class="sec" style="width:auto;margin:0;padding:6px 12px" data-id="${escH(a.id)}">Supprimer</button></div>`).join(''):'<p class="sub">Aucun compte relié.</p>';
-  $('lk_list').onclick=async e=>{const b=e.target.closest('button[data-id]');if(!b||!confirm('Supprimer ce compte ?'))return;try{await api('/api/linked/'+b.dataset.id,{method:'DELETE'});await lkList()}catch(x){msg('lk_msg',x.message)}}}catch(e){msg('lk_msg',e.message)}}
-async function lkAdd(){try{const k=$('lk_kind').value;const r=await api('/api/linked',{body:{kind:k,provider:$('lk_prov').value,network:k==='crypto'?$('lk_net').value:undefined,detail:$('lk_det').value,holderName:$('lk_name').value}});
-  msg('lk_msg',r.message,true);$('lk_det').value='';await lkList()}catch(e){msg('lk_msg',e.message)}}
+const LK_MODE={mobile:'Mobile Money',bank:'Banque',crypto:'Crypto'};
+const LK_LOGO={mtn:'MTN',moov:'Moov',celtiis:'Celtiis'};
+let LK={tab:'mobile',acc:[],ops:{}};
+function lkKind(){const k=$('lk_kind').value;$('lk_prov').innerHTML=LK_PROV[k].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');$('lk_net').classList.toggle('hide',k!=='crypto');
+  $('lk_dl').textContent=k==='mobile'?'Numéro Mobile Money':k==='bank'?'IBAN ou numéro de compte':'Adresse du portefeuille';
+  $('lk_det').placeholder=k==='mobile'?'Ex. 01XXXXXXXX':k==='bank'?'Ex. BJ…':'Adresse de dépôt'}
+function lkMask(a){const d=String(a.detail||'');return a.kind==='mobile'?'•••• '+d.slice(-4):d.length>10?d.slice(0,4)+' •••• '+d.slice(-4):d}
+function lkStep(n){$('lk_s1').style.display=n===1?'':'none';$('lk_s2').style.display=n===2?'':'none';
+  $('lk_steps').innerHTML=['Information','Vérification'].map((t,i)=>`<span style="display:flex;align-items:center;gap:6px;font-weight:${i+1===n?800:500};opacity:${i+1===n?1:.6}"><b style="display:inline-flex;width:24px;height:24px;border-radius:50%;background:${i+1<=n?'#143a8a':'#9aa4b5'};color:#fff;align-items:center;justify-content:center">${i+1}</b>${t}</span>`).join('<span style="opacity:.4">—</span>')}
+function lkOpen(){$('lk_kind').value=LK.tab;lkKind();$('lk_det').value='';$('lk_name').value='';$('lk_ok').checked=false;$('lk_msg2').className='msg';lkStep(1);$('lk_modal').style.display='flex'}
+function lkClose(){$('lk_modal').style.display='none'}
+function lkNext(){const k=$('lk_kind').value,d=$('lk_det').value.trim(),n=$('lk_name').value.trim();
+  if(n.replace(/[^A-Za-zÀ-ÿ]/g,'').length<3)return alert('Indiquez le nom du titulaire.');
+  if(d.length<(k==='mobile'?8:6))return alert(k==='mobile'?'Numéro invalide.':'Numéro ou adresse invalide.');
+  const pv=$('lk_prov').selectedOptions[0].textContent;
+  $('lk_recap').innerHTML=`<div><b>${escH(pv)}${k==='crypto'?' · '+escH($('lk_net').value):''}</b><small style="word-break:break-all">${escH(d)}</small><small>Titulaire : ${escH(n)}</small></div>`;lkStep(2)}
+function lkTab(k){LK.tab=k;document.querySelectorAll('#lk_tabs button').forEach(b=>{const on=b.dataset.k===k;b.className=on?'pri':'sec';b.style.margin='0';b.style.padding='9px 6px'});lkRender()}
+async function openLnk(){show('lnk');$('lk_msg').className='msg';lkTab(LK.tab||'mobile');await lkList()}
+async function lkList(){try{const d=await api('/api/linked/mine');LK.acc=d.accounts||[]}catch(e){msg('lk_msg',e.message)}
+  try{const f=await api('/api/flows/operators');LK.ops={};(f.operators||[]).forEach(o=>LK.ops[o.operator]=o);LK.tot=f.totals}catch(e){LK.ops={};LK.tot=null}
+  lkRender()}
+function lkRender(){const k=LK.tab,rows=LK.acc.filter(a=>a.kind===k);
+  let tot='';
+  if(k==='mobile'&&LK.tot){tot=`<div class="tx" style="display:block;margin:6px 0"><small>Total suivi par OMNIPAY (entrées − sorties)</small><div style="font-size:24px;font-weight:800">${fmt(LK.tot.net)}</div><small>Mouvements passés par OMNIPAY uniquement — ce n'est pas le solde réel de votre compte Mobile Money.</small></div>`}
+  $('lk_tot').innerHTML=tot;
+  $('lk_list').innerHTML=rows.length?rows.map(a=>{const o=LK.ops[a.provider];
+    const lg=k==='mobile'&&LK_LOGO[a.provider]?giftLogo(LK_LOGO[a.provider],40,12):`<span style="font-size:28px;margin-right:12px">${k==='bank'?'🏦':'🪙'}</span>`;
+    return `<div class="tx" style="align-items:center">${lg}<div style="flex:1;min-width:0"><b>${escH((LK_PROV[k].find(x=>x[0]===a.provider)||[0,a.provider.toUpperCase()])[1])}${a.network?' · '+escH(a.network):''}</b><small>${escH(a.holder_name)} · ${escH(lkMask(a))}</small><small>${LK_MODE[k]} · <b>${escH(LK_ST[a.status]||a.status)}</b>${a.note?' · '+escH(a.note):''}</small>${o?`<small>Entrées ${fmt(o.in)} · Sorties ${fmt(o.out)}</small>`:''}</div><button class="sec" style="width:auto;margin:0;padding:6px 12px" data-id="${escH(a.id)}">Supprimer</button></div>`}).join('')
+   :`<div style="text-align:center;padding:22px 8px"><div style="font-size:34px">${k==='mobile'?'📱':k==='bank'?'🏦':'🪙'}</div><p class="sub">Vous n'avez encore aucun compte ${k==='mobile'?'mobile':k==='bank'?'bancaire':'crypto'} relié.</p></div>`;
+  $('lk_addb').textContent='+ Ajouter un compte '+(k==='mobile'?'mobile':k==='bank'?'bancaire':'crypto');
+  $('lk_list').onclick=async e=>{const b=e.target.closest('button[data-id]');if(!b||!confirm('Supprimer ce compte ?'))return;try{await api('/api/linked/'+b.dataset.id,{method:'DELETE'});await lkList()}catch(x){msg('lk_msg',x.message)}}}
+document.addEventListener('click',e=>{const b=e.target.closest('#lk_tabs button');if(b)lkTab(b.dataset.k)});
+async function lkAdd(){if(!$('lk_ok').checked)return msg('lk_msg2','Cochez la case pour certifier que le compte est à votre nom.');
+  try{const k=$('lk_kind').value;const r=await api('/api/linked',{body:{kind:k,provider:$('lk_prov').value,network:k==='crypto'?$('lk_net').value:undefined,detail:$('lk_det').value,holderName:$('lk_name').value}});
+  lkClose();LK.tab=k;lkTab(k);msg('lk_msg',r.message,true);await lkList()}catch(e){msg('lk_msg2',e.message)}}
 const CS_ST={open:'En attente du paiement de l\'expéditeur',funded:'Payé : votre code est prêt',delivered:'Livré ✔',cancelled:'Annulé',expired:'Expiré (l\'expéditeur est remboursé)'};
 async function openCash(){show('cashs');try{const d=await api('/api/cashdesk/mine');
   $('cs_list').innerHTML=d.orders.length?d.orders.map(o=>`<div class="tx" style="display:block"><div><b>${fmt(o.amount)}</b> · ${escH(o.city)}<small>${escH(o.ref)} · ${escH(CS_ST[o.status]||o.status)}</small></div>${o.code?`<div style="font-size:30px;font-weight:800;letter-spacing:6px;margin:8px 0">${escH(o.code)}</div><small>Valable jusqu'au ${new Date(o.deadline).toLocaleString('fr-FR')}</small>`:''}</div>`).join(''):'<p class="sub">Aucun retrait en espèces pour le moment.</p>'}catch(e){msg('cs_msg',e.message)}}
