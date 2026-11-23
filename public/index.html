@@ -374,6 +374,7 @@ body.lg #demo{display:block}
       <button class="tile p" onclick="openIO('in')"><span>⬇️</span>Déposer</button>
       <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retirer</button>
       <button class="tile" onclick="openLnk()"><span>🔗</span>Relier un compte</button>
+      <button class="tile" onclick="openTerm()"><span>🧾</span>Terminal OMNIPRO</button>
       <button class="tile" onclick="openPis()"><span>⇄</span>Envoyer PI-SPI</button>
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
     </div>
@@ -751,6 +752,18 @@ curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
+  <section id="term" class="card hide">
+    <h1>Terminal OMNIPRO</h1><p class="sub">Encaissez un client sur son téléphone Mobile Money. Il reçoit la demande et la valide avec son code secret : personne ne peut le débiter sans son accord. Le montant est crédité sur votre solde dès la confirmation.</p>
+    <select id="tm_op"><option value="mtn">MTN MoMo</option><option value="moov">Moov Money</option><option value="celtiis">Celtiis Cash</option></select>
+    <input id="tm_ph" placeholder="Numéro du client (ex. 01XXXXXXXX)" inputmode="tel" autocomplete="off">
+    <input id="tm_am" placeholder="Montant (FCFA)" inputmode="numeric" autocomplete="off">
+    <input id="tm_nt" placeholder="Objet (facultatif) : ex. 2 sacs de maïs" maxlength="60" autocomplete="off">
+    <div id="tm_st" class="tx" style="display:none"></div>
+    <div id="tm_msg" class="msg"></div>
+    <button class="pri" id="tm_go" onclick="termGo()">Envoyer la demande</button>
+    <h2 style="margin-top:14px">Dernières ventes</h2><div id="tm_list"></div>
+    <button class="sec" onclick="show('dash')">← Retour</button>
+  </section>
   <section id="lnk" class="card hide">
     <h1>Mes comptes</h1><p class="sub">Reliez vos comptes Mobile Money, bancaires et crypto. OMNIPAY n'accède jamais à ces comptes et ne demande jamais de mot de passe, de code PIN ni de clé secrète. Après vérification par notre équipe, ils servent à recevoir vos retraits.</p>
     <div id="lk_tabs" style="display:flex;gap:6px;margin:8px 0">
@@ -3737,6 +3750,20 @@ async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,1
       if(s.status==='completed'){msg('pp_msg','Dépôt crédité : '+fmt(am)+'.',true);await refresh();gateLoad();ppBusy=false;return}
       if(s.status==='failed'){msg('pp_msg','Paiement refusé ou expiré. Rien n\'a été débité.');ppBusy=false;return}}
     msg('pp_msg','Toujours en attente : votre solde sera crédité automatiquement dès la confirmation.',true)}catch(e){msg('pp_msg',e.message)}ppBusy=false}
+
+/* ===== Terminal OMNIPRO ===== */
+let TM={t:null};
+const TM_ST={pending:'⏳ En attente de validation sur le téléphone',completed:'✅ Payé',failed:'❌ Refusé ou expiré'};
+async function openTerm(){show('term');$('tm_msg').className='msg';$('tm_st').style.display='none';await termList()}
+async function termList(){try{const d=await api('/api/fedapay/deposit/terminal/list');
+  $('tm_list').innerHTML=d.sales.length?d.sales.map(x=>`<div class="tx"><div><b>${fmt(x.amount)}</b> · ${escH(String(x.op||'').toUpperCase())} ${escH(x.phone)}<small>${escH(x.note||'')}${x.note?' · ':''}${new Date(x.created_at).toLocaleString('fr-FR')} · ${escH(TM_ST[x.status]||x.status)}</small></div></div>`).join(''):'<p class="sub">Aucune vente pour le moment.</p>'}catch(e){}}
+async function termGo(){const am=parseInt($('tm_am').value.replace(/\s/g,''),10),ph=$('tm_ph').value.trim();
+  if(!(am>=100))return msg('tm_msg','Montant minimum : 100 FCFA.');if(ph.replace(/\D/g,'').length<8)return msg('tm_msg','Numéro du client invalide.');
+  $('tm_go').disabled=true;try{const r=await api('/api/fedapay/deposit',{body:{amount:am,phone:ph,provider:$('tm_op').value,terminal:true,note:$('tm_nt').value}});
+    msg('tm_msg',r.message,true);const st=$('tm_st');st.style.display='block';st.textContent=TM_ST.pending;let n=0;clearInterval(TM.t);
+    TM.t=setInterval(async()=>{n++;try{const s=await api('/api/fedapay/deposit/'+r.reference);st.textContent=TM_ST[s.status]||s.status;
+      if(s.status!=='pending'||n>45){clearInterval(TM.t);$('tm_go').disabled=false;if(s.status==='pending')st.textContent='⏳ Toujours en attente : le client n\'a pas encore validé. Vérifiez plus tard dans « Dernières ventes ».';termList()}}catch(e){}},4000)
+  }catch(e){msg('tm_msg',e.message);$('tm_go').disabled=false}}
 
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}

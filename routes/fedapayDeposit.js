@@ -72,7 +72,7 @@ router.post("/", requireAuth, async (req, res) => {
     try { const [u] = await q`SELECT first_name, last_name FROM users WHERE id = ${req.user.userId}::uuid`; if (u) name = { f: String(u.first_name || "Client").slice(0, 40) || "Client", l: String(u.last_name || "OMNIPAY").slice(0, 40) || "OMNIPAY" }; } catch (_) {}
     const ref = crypto.randomUUID();
     await q`INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
-            VALUES (${w[0].id}, 'deposit', ${amount}, ${w[0].balance}, 'pending', 'fedapay', ${ref}, ${"fedapay-" + ref}, ${JSON.stringify({ phone, provider })}::jsonb)`;
+            VALUES (${w[0].id}, 'deposit', ${amount}, ${w[0].balance}, 'pending', 'fedapay', ${ref}, ${"fedapay-" + ref}, ${JSON.stringify(req.body && req.body.terminal ? { phone, provider, terminal: true, note: String(req.body.note || "").replace(/[<>]/g, "").trim().slice(0, 60) } : { phone, provider })}::jsonb)`;
     const r = await fp.collect({ ref, operator: provider, phone, amount, name });
     if (r.id) await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ fedaId: r.id })}::jsonb WHERE provider_ref = ${ref} AND provider = 'fedapay'`;
     if (r.status === "refused" || r.status === "unavailable") {
@@ -82,6 +82,16 @@ router.post("/", requireAuth, async (req, res) => {
     if (r.status === "sent") return res.status(201).json({ reference: ref, status: "pending", message: "Validez le paiement sur votre téléphone (code secret Mobile Money)." });
     res.status(202).json({ reference: ref, status: "pending", message: "Demande en cours. Votre solde sera crédité dès la confirmation." });
   } catch (e) { console.error("FEDAPAY_DEPOSIT", e.message); res.status(500).json({ error: "Impossible de lancer le dépôt." }); }
+});
+
+// Terminal marchand : dernières ventes encaissées sur le téléphone des clients du marchand connecté (numéro masqué).
+router.get("/terminal/list", requireAuth, async (req, res) => {
+  try {
+    const rows = await sql()`SELECT t.provider_ref AS ref, t.amount::float AS amount, t.status, t.created_at, t.metadata->>'phone' AS phone, t.metadata->>'provider' AS op, t.metadata->>'note' AS note
+      FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+      WHERE w.user_id = ${req.user.userId}::uuid AND t.provider = 'fedapay' AND t.type = 'deposit' AND t.metadata->>'terminal' = 'true' ORDER BY t.created_at DESC LIMIT 15`;
+    res.json({ sales: rows.map((r) => ({ ...r, phone: "••••" + String(r.phone || "").slice(-4) })) });
+  } catch (e) { console.error("FEDAPAY_TERMINAL", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
 router.get("/:ref", requireAuth, async (req, res) => {
