@@ -3666,7 +3666,7 @@ function netSim(){var r=$('ns_r'),a=Number(($('ns_a')||{}).value);if(!r)return;i
  var it=(NET.tk&&NET.tk.items)||[],c=$('ns_c'),x=it.filter(function(y){return c&&y.asset===c.value})[0];if(!x){r.textContent='';return}
  var px=x.sellXof||x.priceXof;r.innerHTML=px?'≈ <b>'+fmt0(Math.round(a*px))+' FCFA</b> à recevoir. Estimation indicative : le cours exact est celui affiché au moment de la vente.':'Cours indisponible.'}
 async function loadNet(){var box=$('net_list');if(!box)return;
- box.innerHTML='<div id="net_bn"></div><div id="net_ch" style="display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px"></div><div id="net_p"></div><div id="net_how"></div>';
+ box.innerHTML='<div id="net_ch" style="display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px"></div><div id="net_p"></div><div id="net_how"></div><div id="net_bn" style="margin-top:16px"></div>';
  netHow();netBanner();netPick(NET.k);
  try{var r=await fetch('/api/markets/tickers');if(r.ok)NET.tk=await r.json()}catch(e){}
  try{NET.gift=await api('/api/omnigift/catalog')}catch(e){}
