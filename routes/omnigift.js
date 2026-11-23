@@ -76,7 +76,7 @@ function ensure() {
 
 // ---------- Logos des cartes (fournis par l'administrateur, jamais dessinés par le code) ----------
 // PNG/JPEG/WebP uniquement (pas de SVG : il peut contenir du script). Taille limitée, servis avec nosniff.
-const LOGO_BRANDS = [...BRANDS, "CoinGate", "MTN", "Moov", "Celtiis", "PI-SPI", "Banner-gift", "Banner-crypto", "Banner-how"];
+const LOGO_BRANDS = [...BRANDS, "CoinGate", "MTN", "Moov", "Celtiis", "PI-SPI", "Banner-gift", "Banner-crypto", "Banner-how", "Banner-coingate"];
 const slugOf = (b) => String(b || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 let logosReady = false;
 async function ensureLogos() {
