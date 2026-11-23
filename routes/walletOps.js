@@ -471,5 +471,46 @@ router.post("/api/ops/withdraw/:id/check", adminOnly, async (req, res) => {
   } catch (e) { console.error("WD_CHECK", e.message); res.status(502).json({ error: "Vérification impossible : " + String(e.message).slice(0, 100) }); }
 });
 
+// ---------- Retraits 100 % automatiques : relance des retraits que le canal a refusés ou n'a pas pu traiter ----------
+// Un retrait « pending » dont l'envoi a été refusé / indisponible (FedaPay hors service, IP pas encore autorisée, fonds insuffisants…) est RELANCÉ seul,
+// avec attente croissante (5, 10, 15 min), 3 essais maximum (AUTO_RETRY_MAX), mêmes règles que l'envoi direct : AUTO_PAYOUT=on, montant < APPROVAL_XOF,
+// plafond du jour, pas de pause. Après le dernier essai : « parqué » (autoParked) et l'administrateur est prévenu. Jamais de renvoi d'un retrait « incertain ».
+const retryMax = () => { const v = Number(process.env.AUTO_RETRY_MAX); return Number.isFinite(v) && v >= 1 && v <= 10 ? Math.floor(v) : 3; };
+let sweeping = false;
+async function sweepPending() {
+  const out = { tried: 0, sent: 0, parked: 0, skipped: null };
+  if (sweeping) return out; sweeping = true;
+  try {
+    if (!autoPayout()) { out.skipped = "AUTO_PAYOUT désactivé"; return out; }
+    const guard = (() => { try { return require("../lib/omnicashGuard.js"); } catch (_) { return null; } })();
+    try { if (guard && (await guard.isPaused())) { out.skipped = "envois suspendus"; return out; } } catch (_) { /* pas de pause connue */ }
+    const q = sql(), max = retryMax();
+    const rows = await q`SELECT id, provider AS operator, provider_ref AS phone, amount::float AS amount, coalesce((metadata->>'autoTries')::int, 0) AS tries
+      FROM transactions WHERE type = 'withdrawal' AND status = 'pending' AND provider IN ('mtn','moov','celtiis')
+        AND metadata->'payout'->>'result' IN ('unavailable','refused') AND coalesce(metadata->>'autoParked','') <> 'true'
+        AND created_at > now() - interval '3 days' AND amount < ${approvalXof()}
+        AND coalesce((metadata->>'autoAt')::timestamptz, (metadata->'payout'->>'at')::timestamptz, created_at) < now() - make_interval(mins => 5 * (coalesce((metadata->>'autoTries')::int, 0) + 1))
+      ORDER BY created_at LIMIT 5`;
+    for (const r of rows) {
+      if (r.tries >= max) {
+        const k = await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || '{"autoParked":true}'::jsonb WHERE id = ${r.id}::uuid AND status = 'pending' RETURNING id`;
+        if (k.length) { out.parked++; try { await require("../lib/mailer.js").sendAdminNotification("Retrait automatique : à traiter à la main", `<p>${r.amount} XOF vers ${r.operator} : ${max} essais automatiques sans succès. Voir OMNICHECK.</p>`); } catch (_) { /* e-mail facultatif */ } }
+        continue;
+      }
+      const sent = await q`SELECT coalesce(sum(amount), 0)::float AS v FROM transactions WHERE type = 'withdrawal' AND metadata->'payout'->>'result' = 'sent' AND created_at > now() - interval '24 hours'`;
+      if (sent[0].v + r.amount > autoDayMax()) { out.skipped = "plafond du jour atteint"; break; }
+      await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object('autoTries', ${r.tries + 1}::int, 'autoAt', now()) WHERE id = ${r.id}::uuid AND status = 'pending'`;
+      out.tried++;
+      const d = await dispatchPayout(q, r.id, r.operator, r.phone, r.amount);
+      if (d.status === "sent") out.sent++;
+      await new Promise((ok) => setTimeout(ok, 400));
+    }
+  } catch (e) { console.error("AUTO_SWEEP", e.message); }
+  finally { sweeping = false; }
+  return out;
+}
+const sweepTimer = setInterval(sweepPending, 60000); if (sweepTimer.unref) sweepTimer.unref();
+
 router.refundOne = refundOne;
+router.sweepPending = sweepPending;
 module.exports = router;

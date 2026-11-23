@@ -34,10 +34,19 @@ router.get("/", async (req, res) => {
     }).sort((a, b) => a.channel.localeCompare(b.channel));
     const money = await safe(async () => (await q`SELECT count(*)::int AS clients, coalesce(sum(balance),0)::float AS soldes FROM wallets`)[0], { clients: 0, soldes: 0 });
     const fp = require("../providers/fedapay");
+    const auto = await safe(async () => {
+      const a = (await q`SELECT count(*) FILTER (WHERE status = 'pending')::int AS waiting,
+          count(*) FILTER (WHERE status = 'pending' AND metadata->>'autoParked' = 'true')::int AS parked,
+          count(*) FILTER (WHERE status = 'pending' AND metadata->'payout'->>'result' IN ('unavailable','refused') AND coalesce(metadata->>'autoParked','') <> 'true')::int AS retrying,
+          coalesce(sum(amount) FILTER (WHERE metadata->'payout'->>'result' = 'sent' AND created_at > now() - interval '24 hours'), 0)::float AS sent24h
+        FROM transactions WHERE type = 'withdrawal' AND created_at > now() - interval '3 days'`)[0];
+      return { on: process.env.AUTO_PAYOUT === "on", approvalXof: Number(process.env.APPROVAL_XOF) || 200000, dayCapXof: Number(process.env.AUTO_PAYOUT_DAY_MAX_XOF) || 1000000, retryMax: Number(process.env.AUTO_RETRY_MAX) || 3, ...a };
+    }, null);
     const alerts = [];
+    if (auto && auto.on && auto.parked > 0) alerts.push(`${auto.parked} retrait(s) automatique(s) abandonné(s) après plusieurs essais : à traiter à la main.`);
     channels.filter((c) => c.level === "bad").forEach((c) => alerts.push(`${c.channel} : ${c.note}`));
     if (!fp.ready()) alerts.push("FedaPay n'est pas configuré (clés absentes).");
-    res.json({ generatedAt: new Date().toISOString(), status: alerts.length ? "ATTENTION" : "OK", alerts, channels, clients: money, fedapay: { ready: fp.ready(), env: fp.env(), autoPayout: process.env.AUTO_PAYOUT === "on" } });
+    res.json({ generatedAt: new Date().toISOString(), status: alerts.length ? "ATTENTION" : "OK", alerts, channels, clients: money, auto, fedapay: { ready: fp.ready(), env: fp.env(), autoPayout: process.env.AUTO_PAYOUT === "on" } });
   } catch (e) { console.error("PULSE", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 module.exports = router;
