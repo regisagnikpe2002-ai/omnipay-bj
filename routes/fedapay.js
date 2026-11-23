@@ -53,8 +53,9 @@ router.get("/admin/check", adminOnly, async (req, res) => {
         if (r.status !== 200) out.detail = String((r.data && (r.data.message || JSON.stringify(r.data))) || "").slice(0, 160);
       } catch (e) { out.keyCheck = "FedaPay injoignable : " + String(e.message).slice(0, 60); }
     } else out.keyCheck = "clé absente";
-    try { const c = new AbortController(), to = setTimeout(() => c.abort(), 6000); const ip = await (await fetch("https://api.ipify.org?format=json", { signal: c.signal })).json(); clearTimeout(to); out.outboundIp = ip.ip; }
+    try { const c = new AbortController(), to = setTimeout(() => c.abort(), 6000); const ip = await (await require("../lib/egress.js").egressFetch("https://api.ipify.org?format=json", { signal: c.signal })).json(); clearTimeout(to); out.outboundIp = ip.ip; }
     catch (_) { out.outboundIp = "non lisible"; }
+    out.viaFixedProxy = require("../lib/egress.js").enabled();
     out.ipNote = "Les retraits FedaPay exigent que l'adresse IP de sortie soit autorisée dans le tableau de bord FedaPay (« Adresses IP autorisées »). Sur Render, l'adresse peut varier : autorisez les plages Outbound du service.";
     res.json(out);
   } catch (e) { console.error("FEDAPAY_CHECK", e.message); res.status(500).json({ error: "Erreur." }); }

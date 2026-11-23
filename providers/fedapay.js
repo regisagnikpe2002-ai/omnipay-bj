@@ -28,7 +28,7 @@ async function ensure() {
 async function call(method, path, body) {
   const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 20000);
   try {
-    const r = await fetch(base() + path, { method, signal: ctl.signal, headers: { authorization: "Bearer " + key(), "content-type": "application/json", accept: "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    const r = await (String(path).startsWith("/payouts") ? require("../lib/egress.js").egressFetch : fetch)(base() + path, { method, signal: ctl.signal, headers: { authorization: "Bearer " + key(), "content-type": "application/json", accept: "application/json" }, body: body ? JSON.stringify(body) : undefined });
     let d = null; try { d = await r.json(); } catch (_) {}
     return { status: r.status, data: d };
   } finally { clearTimeout(to); }
