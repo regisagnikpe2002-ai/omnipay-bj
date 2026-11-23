@@ -69,6 +69,9 @@ router.get("/operators", requireAuth, async (req, res) => {
     try { for (const r of await q`SELECT operator, phone FROM user_operators WHERE user_id = ${uid}::uuid ORDER BY is_default DESC, created_at`) if (!phones[r.operator]) phones[r.operator] = r.phone; } catch (_) { /* table absente */ }
     try { for (const r of await q`SELECT provider, detail, status FROM linked_accounts WHERE user_id = ${uid}::uuid AND kind = 'mobile' AND status IN ('pending','verified')`) {
       const p = String(r.provider || "").toLowerCase(); if (!phones[p]) phones[p] = r.detail; if (state[p] !== "verified") state[p] = r.status; } } catch (_) { /* table absente */ }
+    const decl = {};
+    try { await q`CREATE TABLE IF NOT EXISTS user_declared_balances (user_id uuid NOT NULL, operator varchar(12) NOT NULL, amount numeric NOT NULL, declared_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (user_id, operator))`;
+      for (const r of await q`SELECT operator, amount::float AS amount, declared_at FROM user_declared_balances WHERE user_id = ${uid}::uuid`) decl[r.operator] = r; } catch (_) { /* indicatif seulement */ }
     const mask = (p) => { const d = String(p || "").replace(/\D/g, ""); return d.length >= 4 ? "••••" + d.slice(-4) : null; };
     let tin = 0, tout = 0;
     const operators = OPS.map(([op, label]) => {
@@ -76,10 +79,23 @@ router.get("/operators", requireAuth, async (req, res) => {
       for (const r of rows) if (r.op === op) { if (r.type === "deposit") i += r.amount; else o += r.amount; if (!last || new Date(r.last_at) > new Date(last)) last = r.last_at; }
       tin += i; tout += o;
       const linked = state[op] || (phones[op] ? "pending" : "none");
-      return { operator: op, label, linked, phone: mask(phones[op]), in: Math.round(i), out: Math.round(o), net: Math.round(i - o), lastAt: last };
+      return { operator: op, label, linked, phone: mask(phones[op]), in: Math.round(i), out: Math.round(o), net: Math.round(i - o), lastAt: last, declared: decl[op] ? Math.round(decl[op].amount) : null, declaredAt: decl[op] ? decl[op].declared_at : null };
     });
     res.json({ operators, totals: { in: Math.round(tin), out: Math.round(tout), net: Math.round(tin - tout) } });
   } catch (e) { console.error("FLOWS_OPS", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// Solde que le CLIENT déclare avoir sur son compte Mobile Money : purement indicatif, non vérifiable par OMNIPAY, jamais utilisé pour créditer ou débiter.
+router.post("/declared", requireAuth, async (req, res) => {
+  try {
+    const op = String((req.body || {}).operator || "").toLowerCase(), amount = Number((req.body || {}).amount);
+    if (!OPS.some((o) => o[0] === op)) return res.status(400).json({ error: "Opérateur invalide." });
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) return res.status(400).json({ error: "Montant invalide." });
+    const q = sql();
+    await q`CREATE TABLE IF NOT EXISTS user_declared_balances (user_id uuid NOT NULL, operator varchar(12) NOT NULL, amount numeric NOT NULL, declared_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (user_id, operator))`;
+    await q`INSERT INTO user_declared_balances (user_id, operator, amount) VALUES (${req.user.userId}::uuid, ${op}, ${Math.round(amount)}) ON CONFLICT (user_id, operator) DO UPDATE SET amount = EXCLUDED.amount, declared_at = now()`;
+    res.json({ ok: true, message: "Solde déclaré enregistré (indicatif)." });
+  } catch (e) { console.error("FLOWS_DECL", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 
 module.exports = router;

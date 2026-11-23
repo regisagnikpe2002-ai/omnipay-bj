@@ -127,6 +127,7 @@ mount("/api/v1", "./routes/coreApi", "API OMNIPAY v1 (clés API)");
 mount("/api/notify", "./routes/notify", "Notifications");
 mount("/api/business", "./routes/business", "Business");
 mount("/api/flows", "./routes/flows", "Entrées/sorties");
+mount("/api/pulse", "./routes/pulse", "Vérification dépôts/retraits");
 mount("/api/omniwallet", "./routes/omniwallet", "OMNIWALLET");
 mount("/api/otp", "./routes/otp", "OTP e-mail + SMS");
 mount("/api/reserve", "./routes/reserve", "Fonds de réserve");
