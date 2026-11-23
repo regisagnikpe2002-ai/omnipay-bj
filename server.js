@@ -129,6 +129,7 @@ mount("/api/business", "./routes/business", "Business");
 mount("/api/flows", "./routes/flows", "Entrées/sorties");
 mount("/api/pulse", "./routes/pulse", "Vérification dépôts/retraits");
 mount("/api/termcode", "./routes/termcode", "Codes cash (dépôt/retrait espèces)");
+mount("/api/company", "./routes/company", "Espace entreprise");
 mount("/api/omniwallet", "./routes/omniwallet", "OMNIWALLET");
 mount("/api/otp", "./routes/otp", "OTP e-mail + SMS");
 mount("/api/reserve", "./routes/reserve", "Fonds de réserve");
