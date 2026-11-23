@@ -761,6 +761,11 @@ curl -X POST https://www.omnipay-bj.com/api/v1/payment-requests \
     <div id="tm_st" class="tx" style="display:none"></div>
     <div id="tm_msg" class="msg"></div>
     <button class="pri" id="tm_go" onclick="termGo()">Envoyer la demande</button>
+    <h2 style="margin-top:14px">Codes cash (espèces)</h2>
+    <p class="sub" style="font-size:13px"><b>Retrait cash</b> : créez un code, donnez-le au commerçant qui vous remet les espèces. <b>Dépôt cash</b> : le commerçant crée le code après avoir reçu vos espèces, vous le saisissez ici. Le montant est bloqué à la création, rendu si le code expire (15 min) ou est annulé.</p>
+    <div class="row"><input id="tc_am" placeholder="Montant (FCFA)" inputmode="numeric" autocomplete="off"><button class="pri" style="width:auto;margin:0;padding:0 16px" onclick="tcCreate()">Créer un code</button></div>
+    <div class="row" style="margin-top:8px"><input id="tc_cd" placeholder="Code à 6 chiffres reçu" inputmode="numeric" maxlength="6" autocomplete="off"><button class="pri" style="width:auto;margin:0;padding:0 16px" onclick="tcRedeem()">Valider le code</button></div>
+    <div id="tc_msg" class="msg"></div><div id="tc_list"></div>
     <h2 style="margin-top:14px">Dernières ventes</h2><div id="tm_list"></div>
     <button class="sec" onclick="show('dash')">← Retour</button>
   </section>
@@ -3754,7 +3759,7 @@ async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,1
 /* ===== Terminal OMNIPRO ===== */
 let TM={t:null};
 const TM_ST={pending:'⏳ En attente de validation sur le téléphone',completed:'✅ Payé',failed:'❌ Refusé ou expiré'};
-async function openTerm(){show('term');$('tm_msg').className='msg';$('tm_st').style.display='none';await termList()}
+async function openTerm(){show('term');$('tm_msg').className='msg';$('tc_msg').className='msg';$('tm_st').style.display='none';await termList();await tcList()}
 async function termList(){try{const d=await api('/api/fedapay/deposit/terminal/list');
   $('tm_list').innerHTML=d.sales.length?d.sales.map(x=>`<div class="tx"><div><b>${fmt(x.amount)}</b> · ${escH(String(x.op||'').toUpperCase())} ${escH(x.phone)}<small>${escH(x.note||'')}${x.note?' · ':''}${new Date(x.created_at).toLocaleString('fr-FR')} · ${escH(TM_ST[x.status]||x.status)}</small></div></div>`).join(''):'<p class="sub">Aucune vente pour le moment.</p>'}catch(e){}}
 async function termGo(){const am=parseInt($('tm_am').value.replace(/\s/g,''),10),ph=$('tm_ph').value.trim();
@@ -3765,6 +3770,13 @@ async function termGo(){const am=parseInt($('tm_am').value.replace(/\s/g,''),10)
       if(s.status!=='pending'||n>45){clearInterval(TM.t);$('tm_go').disabled=false;if(s.status==='pending')st.textContent='⏳ Toujours en attente : le client n\'a pas encore validé. Vérifiez plus tard dans « Dernières ventes ».';termList()}}catch(e){}},4000)
   }catch(e){msg('tm_msg',e.message);$('tm_go').disabled=false}}
 
+const TC_ST={open:'Ouvert',redeemed:'Utilisé ✔',cancelled:'Annulé (remboursé)',expired:'Expiré (remboursé)'};
+async function tcList(){try{const d=await api('/api/termcode/mine');
+  $('tc_list').innerHTML=d.mine.length?d.mine.map(x=>`<div class="tx"><div><b>${fmt(x.amount)}</b> · ${escH(TC_ST[x.status]||x.status)}${x.code?`<small style="font-size:26px;font-weight:800;letter-spacing:4px">${escH(x.code)}</small>`:''}<small>${new Date(x.created_at).toLocaleString('fr-FR')}</small></div>${x.status==='open'?`<button class="sec" style="width:auto;margin:0;padding:6px 12px" data-tc="${escH(x.id)}">Annuler</button>`:''}</div>`).join(''):'';
+  $('tc_list').onclick=async e=>{const b=e.target.closest('button[data-tc]');if(!b)return;try{const r=await api('/api/termcode/'+b.dataset.tc+'/cancel',{body:{}});msg('tc_msg',r.message,!!r.ok);await tcList()}catch(x){msg('tc_msg',x.message)}}}catch(e){}}
+async function tcCreate(){const am=parseInt($('tc_am').value.replace(/\s/g,''),10);if(!(am>0))return msg('tc_msg','Montant invalide.');
+  try{const r=await api('/api/termcode/create',{body:{amount:am}});msg('tc_msg',r.message,true);$('tc_am').value='';await tcList()}catch(e){msg('tc_msg',e.message)}}
+async function tcRedeem(){try{const r=await api('/api/termcode/redeem',{body:{code:$('tc_cd').value}});msg('tc_msg',r.message,true);$('tc_cd').value='';await tcList()}catch(e){msg('tc_msg',e.message)}}
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
 
