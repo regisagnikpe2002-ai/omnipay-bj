@@ -251,15 +251,27 @@ body.lg #demo{display:block}
 .lgp p{margin:0;font-size:13px;line-height:1.35;color:#DCE6FA;max-width:300px;position:relative;z-index:1}.lgp .ft{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;position:relative;z-index:1}.lgp .ft span{font-size:11px;font-weight:700;border:1px solid #2B4A86;border-radius:999px;padding:3px 9px;color:#fff}
 .lgp .dt{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:7px;z-index:3}.lgp .dt button{width:9px;height:9px;min-width:0;padding:0;margin:0;border-radius:50%;border:0;background:#4A6196;opacity:1}.lgp .dt button[aria-current="true"]{background:#34E8B0;width:22px;border-radius:6px}
 @media (prefers-reduced-motion:reduce){.lgp .sl{transition:none}}
+
+/* ===== Thème OLYMPE : bleu ciel et blanc (variante du thème clair) ===== */
+:root[data-skin=olympe]{--bg:#f4faff;--card:#ffffff;--card2:#eaf5ff;--line:#c7e2fa;--txt:#0b2545;--mut:#4d6a8a;--mint:#2b9bf4;--mint2:#1573d4;--warn:#a86a00;--err:#c93a3a}
+:root[data-skin=olympe] body{background:linear-gradient(180deg,#bfe3ff 0,#e6f4ff 260px,#ffffff 620px) fixed}
+:root[data-skin=olympe] .card{border-color:#c7e2fa;box-shadow:0 8px 26px rgba(21,115,212,.10)}
+:root[data-skin=olympe] .pri{background:linear-gradient(135deg,#46b1ff,#1573d4);color:#fff}
+:root[data-skin=olympe] #hero .dom{background:#e3f2ff;border-color:#b9dcfa;color:#1573d4}
+:root[data-skin=olympe] input:focus,:root[data-skin=olympe] select:focus{outline-color:#2b9bf4}
+:root[data-skin=olympe] .msg.ok,:root[data-skin=olympe] .badge{background:#e3f2ff;color:#1573d4;border-color:#b9dcfa}
+.pt{margin:14px 0 4px}.pt h3{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0 0 8px;text-align:center}
+.pt .ptr{display:flex;flex-wrap:nowrap;gap:10px 8px;justify-content:center}
+.pt .pti{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mut);font-weight:600;min-width:0;flex:1 1 0}
 </style>
 <button id="olfab" class="hide" aria-label="OLATOUNDE, assistante OMNIPAY. Touchez pour discuter, glissez pour déplacer."><img src="/olatounde-avatar.svg" alt="OLATOUNDE" onerror="this.style.display='none'"><i class="olon"></i></button><div id="olhint" class="hide">Glissez-moi où vous voulez sur l'écran. Touchez-moi pour discuter.</div>
 <script>
 /* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
 (function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
- function eff(){if(mode==='light'||mode==='dark')return mode;var h=new Date().getHours();return h>=6&&h<18?'light':'dark'}
- function apply(){var t=eff();document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#f2f5fb':'#070b14');
-  var b=document.getElementById('thm');if(b){b.textContent=mode==='auto'?'🌗':(t==='light'?'☀️':'🌙');b.title='Thème : '+(mode==='auto'?'automatique (jour/nuit)':t==='light'?'clair':'sombre')}}
- window.toggleTheme=function(){mode=mode==='auto'?'light':mode==='light'?'dark':'auto';try{localStorage.setItem(K,mode)}catch(e){}apply();
+ function eff(){if(mode==='olympe')return 'light';if(mode==='light'||mode==='dark')return mode;var h=new Date().getHours();return h>=6&&h<18?'light':'dark'}
+ function apply(){var t=eff();document.documentElement.setAttribute('data-theme',t);if(mode==='olympe')document.documentElement.setAttribute('data-skin','olympe');else document.documentElement.removeAttribute('data-skin');var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',mode==='olympe'?'#bfe3ff':t==='light'?'#f2f5fb':'#070b14');
+  var b=document.getElementById('thm');if(b){b.textContent=mode==='auto'?'🌗':mode==='olympe'?'🏛️':(t==='light'?'☀️':'🌙');b.title='Thème : '+(mode==='auto'?'automatique (jour/nuit)':mode==='olympe'?'Olympe (bleu ciel et blanc)':t==='light'?'clair':'sombre')}}
+ window.toggleTheme=function(){mode=mode==='auto'?'light':mode==='light'?'dark':mode==='dark'?'olympe':'auto';try{localStorage.setItem(K,mode)}catch(e){}apply();
   var b=document.getElementById('thm');if(b)alert(b.title)};
  apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
 </script>
@@ -301,6 +313,7 @@ body.lg #demo{display:block}
 <div id="wl"><h2>Bienvenue sur <em>OMNIPAY</em></h2><p>Consultez votre solde, envoyez et recevez de l'argent, rechargez et payez en toute simplicité.</p><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span><div><b>Transferts instantanés</b><small>Entre clients OMNIPAY, sans frais cachés</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><b>Mobile Money &amp; crypto</b><small>MTN, Moov, Celtiis, USDT</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Sécurité renforcée</b><small>Code PIN, vérification et suivi de vos opérations</small></div></div></div>
   <!-- CONNEXION -->
   <section id="login" class="card">
+    <div class="pt" data-pt></div>
     <div class="lgp" id="lgp" role="region" aria-label="Présentation OMNIPAY">
       <div class="br">OMNI<b>PAY</b></div>
       <div class="sl on"><span class="kk">Application de paiement</span><h2>Votre argent,<br>partout au <em>Bénin.</em></h2><p>Déposez, retirez et payez avec MTN, Moov et Celtiis.</p><div class="ft"><span>Dépôt</span><span>Retrait</span><span>Paiement</span></div></div>
@@ -349,6 +362,7 @@ body.lg #demo{display:block}
   <section id="dash" class="hide">
     <div class="dtop"><div class="lgo"><img src="/omnipay-shield.svg" alt="OMNIPAY" width="38" height="42"><div><b>OMNIPAY</b><small>HOLDING</small></div></div><div class="ic"><button class="olb" onclick="openOlat()" aria-label="OLATOUNDE, assistante OMNIPAY" title="OLATOUNDE"><img src="/olatounde-avatar.svg" alt="" width="40" height="40" onerror="this.outerHTML='💬'"><span class="olon"></span></button><button onclick="openNt()" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot" id="bdot" style="display:none"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
     <div class="dsheet"></div>
+    <div class="pt" data-pt></div>
     <div class="gr"><h1 id="gr_h">Bonjour</h1><small>OMNIPAY <i>›</i> <b>Tableau de bord</b></small></div>
     <div class="card hide" id="gate_b" style="margin:0 0 16px;border:1px solid var(--mint)"><b>🔓 Activez votre compte OMNIPAY</b><p class="sub" style="margin:6px 0 10px" id="gate_t"></p><button onclick="openDep()" style="margin:0">Faire mon premier dépôt</button></div>
 
@@ -3992,11 +4006,17 @@ function pisAlias(){var a=aliasOf();return a||'Indisponible (reconnectez-vous)'}
 function openPis(){show('pis');$('pis_a').textContent=pisAlias();$('pis_bb').textContent='Voir mon solde';$('pis_o').className='msg';pisTab('send');pisHist()}
 function pisTab(t){$('pis_send').classList.toggle('hide',t!=='send');$('pis_recv').classList.toggle('hide',t!=='recv')}
 /* ===== OMNIGIFT : vente de cartes cadeaux (validation humaine) ===== */
-var GF_COL={apple:'#1d1d1f',steam:'#1b2838','google-play':'#0f9d58',playstation:'#003791',xbox:'#107c10',razer:'#0a8f2e',roblox:'#c4281c',amazon:'#ff9900',paysafecard:'#0033a0','one4all':'#222',netflix:'#b20710',spotify:'#1db954',airbnb:'#ff385c',nintendo:'#e60012',zalando:'#ff6900',twitch:'#9146ff',primark:'#0da6d6',flixbus:'#73d700','foot-locker':'#222'};
+var GF_COL={mtn:'#c99a00',moov:'#0a5db8',celtiis:'#d4600a','pi-spi':'#0b6b4f',coingate:'#1f4fd8',apple:'#1d1d1f',steam:'#1b2838','google-play':'#0f9d58',playstation:'#003791',xbox:'#107c10',razer:'#0a8f2e',roblox:'#c4281c',amazon:'#ff9900',paysafecard:'#0033a0','one4all':'#222',netflix:'#b20710',spotify:'#1db954',airbnb:'#ff385c',nintendo:'#e60012',zalando:'#ff6900',twitch:'#9146ff',primark:'#0da6d6',flixbus:'#73d700','foot-locker':'#222'};
 function giftSlug(b){return String(b||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
 /* Pastille de carte : si un fichier officiel /logos/<carte>.png existe (fourni par OMNIPAY), il est affiché ; sinon des initiales neutres. */
 function giftLogo(b,sz,mr){sz=sz||44;mr=mr==null?12:mr;var sl=giftSlug(b),ini=escH(String(b||'?').replace(/[^A-Za-z0-9 ]/g,'').split(' ').map(function(w){return w[0]||''}).join('').slice(0,2).toUpperCase()),col=GF_COL[sl]||'#556';
   return '<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:'+sz+'px;height:'+sz+'px;border-radius:12px;background:'+col+';color:#fff;font-weight:700;font-size:'+Math.round(sz/3)+'px;flex:none;overflow:hidden;margin-right:'+mr+'px;box-shadow:0 1px 3px rgba(0,0,0,.25)">'+ini+'<img src="/api/omnigift/logo/'+sl+'" alt="" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'/logos/'+sl+'.png\'}else{this.remove()}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:5px;box-sizing:border-box"></span>'}
+
+/* Prestataires : logos fournis par OMNIPAY (OMNICHECK) ; sinon pastille d'initiales neutre. */
+var PT_LIST=['MTN','Moov','Celtiis','PI-SPI','CoinGate'];
+function partnersInit(){var h='<h3>Nos prestataires de paiement</h3><div class="ptr">'+PT_LIST.map(function(b){return '<div class="pti">'+giftLogo(b,44,0)+'<span>'+escH(b)+'</span></div>'}).join('')+'</div>';
+ document.querySelectorAll('[data-pt]').forEach(function(e){e.innerHTML=h})}
+document.addEventListener('DOMContentLoaded',partnersInit);
 var GF_SEL=null,GF_RATES=[];
 function giftTab(t){$('gf_sell').classList.toggle('hide',t!=='sell');$('gf_buy').classList.toggle('hide',t!=='buy')}
 function giftBack(){GF_SEL=null;$('gf_form').classList.add('hide');$('gf_list').classList.remove('hide')}
