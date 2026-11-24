@@ -243,6 +243,14 @@ body.lg #demo{display:block}
 .otb{display:inline-block;font-size:11px;font-weight:700;color:#0f7a54;background:rgba(52,232,176,.16);border:1px solid #1fbf86;border-radius:99px;padding:2px 8px;margin-left:6px}
 .otf label{margin-top:8px}.otf .row{gap:8px}
 #olfab{position:fixed;z-index:45;width:58px;height:58px;border-radius:50%;padding:0;border:2px solid #34e8b0;background:#0b1426;box-shadow:0 8px 22px rgba(0,0,0,.35);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;margin:0}#olfab.hide{display:none}#olfab:active{cursor:grabbing}#olfab img{width:100%;height:100%;border-radius:50%;object-fit:cover;pointer-events:none}#olfab .olon{position:absolute;right:0;bottom:0;width:13px;height:13px;border-radius:50%;background:#2ee59d;border:2px solid #0b1426}#olhint{position:fixed;z-index:46;max-width:190px;background:#143a8a;color:#fff;font-size:12px;padding:8px 10px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.3)}#olhint.hide{display:none}
+.lgp{position:relative;overflow:hidden;border-radius:20px;margin:0 0 16px;background:#0A1B3D;color:#fff;min-height:250px;box-shadow:0 12px 30px rgba(10,27,61,.35)}
+.lgp:before,.lgp:after{content:"";position:absolute;border-radius:50%;pointer-events:none}.lgp:before{right:-110px;top:-120px;width:300px;height:300px;border:2px solid #1FB98A;opacity:.4}.lgp:after{right:-60px;top:-70px;width:200px;height:200px;background:#123A7A;opacity:.9}
+.lgp .sl{position:absolute;inset:0;padding:18px 18px 34px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;opacity:0;transition:opacity .6s;pointer-events:none}.lgp .sl.on{opacity:1;pointer-events:auto}
+.lgp .br{position:absolute;left:18px;top:16px;z-index:2;font-weight:800;font-size:15px;letter-spacing:2px}.lgp .br b{color:#34E8B0}
+.lgp .kk{position:relative;z-index:1;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#34E8B0;font-weight:700}.lgp h2{margin:0;font-size:25px;line-height:1.06;font-weight:800;letter-spacing:-.5px;color:#fff;position:relative;z-index:1}.lgp h2 em{font-style:normal;color:#34E8B0}
+.lgp p{margin:0;font-size:13px;line-height:1.35;color:#DCE6FA;max-width:300px;position:relative;z-index:1}.lgp .ft{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;position:relative;z-index:1}.lgp .ft span{font-size:11px;font-weight:700;border:1px solid #2B4A86;border-radius:999px;padding:3px 9px;color:#fff}
+.lgp .dt{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:7px;z-index:3}.lgp .dt button{width:9px;height:9px;min-width:0;padding:0;margin:0;border-radius:50%;border:0;background:#4A6196;opacity:1}.lgp .dt button[aria-current="true"]{background:#34E8B0;width:22px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){.lgp .sl{transition:none}}
 </style>
 <button id="olfab" class="hide" aria-label="OLATOUNDE, assistante OMNIPAY. Touchez pour discuter, glissez pour déplacer."><img src="/olatounde-avatar.svg" alt="OLATOUNDE" onerror="this.style.display='none'"><i class="olon"></i></button><div id="olhint" class="hide">Glissez-moi où vous voulez sur l'écran. Touchez-moi pour discuter.</div>
 <script>
@@ -293,6 +301,13 @@ body.lg #demo{display:block}
 <div id="wl"><h2>Bienvenue sur <em>OMNIPAY</em></h2><p>Consultez votre solde, envoyez et recevez de l'argent, rechargez et payez en toute simplicité.</p><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span><div><b>Transferts instantanés</b><small>Entre clients OMNIPAY, sans frais cachés</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><b>Mobile Money &amp; crypto</b><small>MTN, Moov, Celtiis, USDT</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Sécurité renforcée</b><small>Code PIN, vérification et suivi de vos opérations</small></div></div></div>
   <!-- CONNEXION -->
   <section id="login" class="card">
+    <div class="lgp" id="lgp" role="region" aria-label="Présentation OMNIPAY">
+      <div class="br">OMNI<b>PAY</b></div>
+      <div class="sl on"><span class="kk">Application de paiement</span><h2>Votre argent,<br>partout au <em>Bénin.</em></h2><p>Déposez, retirez et payez avec MTN, Moov et Celtiis.</p><div class="ft"><span>Dépôt</span><span>Retrait</span><span>Paiement</span></div></div>
+      <div class="sl"><span class="kk">Cartes cadeaux et crypto</span><h2>Achetez, vendez,<br><em>suivez le marché.</em></h2><p>Cartes cadeaux, vente de crypto et cours en direct dans la même application.</p><div class="ft"><span>Cartes cadeaux</span><span>Crypto</span><span>Marchés</span></div></div>
+      <div class="sl"><span class="kk">Pour les commerçants</span><h2>Encaissez vos clients<br><em>en un instant.</em></h2><p>Terminal d'encaissement, codes cash et espace entreprise.</p><div class="ft"><span>Terminal</span><span>Codes cash</span><span>Entreprise</span></div></div>
+      <div class="dt" id="lgp_d"><button type="button" aria-label="Affiche 1" aria-current="true"></button><button type="button" aria-label="Affiche 2"></button><button type="button" aria-label="Affiche 3"></button></div>
+    </div>
     <h1>Connexion</h1><p class="sub">Accédez à votre espace financier.</p>
     <label>Email ou téléphone</label><input id="l_id" autocomplete="username" placeholder="E-mail ou numéro de téléphone">
     <label>Mot de passe</label><input id="l_pw" type="password" autocomplete="current-password">
@@ -3856,6 +3871,13 @@ async function coSend(){const v=k=>$('co_'+k).value.trim();
   if(!$('co_ok').checked)return msg('co_msg2','Cochez la case pour certifier les informations.');
   try{const r=await api('/api/company',{body:{legalName:v('ln'),tradeName:v('tn'),legalForm:v('lf'),rccm:v('rc'),ifu:v('if'),activity:v('ac'),address:v('ad'),city:v('ci'),phone:v('ph'),email:v('em'),repName:v('rn'),repRole:v('rr'),certify:$('co_ok').checked}});
     await openCo();msg('co_msg',r.message,true)}catch(e){msg('co_msg2',e.message)}}
+/* ===== Affiche de la page de connexion ===== */
+(function(){var box=document.getElementById('lgp');if(!box)return;var sl=box.querySelectorAll('.sl'),dt=box.querySelectorAll('.dt button'),k=0,t=null,calm=false;
+ try{calm=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+ function go(n){k=(n+sl.length)%sl.length;sl.forEach(function(e,i){e.classList.toggle('on',i===k)});dt.forEach(function(e,i){e.setAttribute('aria-current',i===k?'true':'false')})}
+ dt.forEach(function(b,i){b.addEventListener('click',function(){go(i);start()})});
+ function start(){if(t)clearInterval(t);if(calm)return;t=setInterval(function(){var l=document.getElementById('login');if(l&&!l.classList.contains('hide')&&!document.hidden)go(k+1)},5000)}
+ start()})();
 /* ===== Carte OMNIPAY ===== */
 function olAdd(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:10px 14px;border-radius:16px;max-width:88%;font-size:14px;line-height:1.45;white-space:pre-wrap;'+(me?'align-self:flex-end;background:var(--g1,#0f9d6e);color:#fff':'align-self:flex-start;background:rgba(127,140,160,.18)');$('ol_log').appendChild(d);$('ol_log').scrollTop=1e6}
 
