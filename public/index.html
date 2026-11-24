@@ -405,6 +405,7 @@ body.lg #demo{display:block}
       <button class="tile" onclick="openIO('out')"><span>⬆️</span>Retirer</button>
       <button class="tile" onclick="openLnk()"><span>🔗</span>Relier un compte</button>
       <button class="tile" onclick="openTerm()"><span>🧾</span>Terminal OMNIPRO</button>
+      <button class="tile" onclick="openSubs()"><span>📺</span>Abonnements TV</button>
       <button class="tile" onclick="openCo()"><span>🏢</span>Mon entreprise</button>
       <button class="tile" onclick="openPis()"><span>⇄</span>Envoyer PI-SPI</button>
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
@@ -559,6 +560,21 @@ body.lg #demo{display:block}
     <button class="opt" onclick="openBank()"><i>🏦</i><span><b>Virement bancaire (IBAN · SEPA · SWIFT)</b><small>Europe, Asie et reste du monde : depuis votre banque</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="subs" class="card hide">
+    <h1>Abonnements TV</h1><p class="sub">Payez votre abonnement Canal+ avec votre solde OMNIPAY. Le montant est débité tout de suite ; notre équipe active l'abonnement. Si elle ne peut pas, vous êtes remboursé.</p>
+    <div id="sb_box" class="hide">
+      <label>Formule</label><select id="sb_p" onchange="sbCalc()"></select>
+      <p class="sub" id="sb_s" style="margin-top:8px"></p>
+      <label>Numéro de décodeur ou de carte</label><input id="sb_d" inputmode="numeric" placeholder="Numéro inscrit sur votre décodeur" maxlength="20" autocomplete="off">
+      <label>Votre téléphone (facultatif)</label><input id="sb_t" type="tel" inputmode="tel" placeholder="01 XX XX XX XX">
+      <button class="pri" id="sb_go" onclick="sbOrder()">Payer l'abonnement</button>
+    </div>
+    <div id="sb_off" class="hide"><p class="sub">Les formules seront disponibles très bientôt.</p></div>
+    <div id="sb_msg" class="msg"></div>
+    <h2 style="margin-top:18px">Mes abonnements</h2><div id="sb_l"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3298,7 +3314,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs','co'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0);if(window.olFab)olFab(id)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs','co','subs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0);if(window.olFab)olFab(id)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -4017,6 +4033,20 @@ var PT_LIST=['MTN','Moov','Celtiis','PI-SPI','CoinGate'];
 function partnersInit(){var h='<h3>Nos prestataires de paiement</h3><div class="ptr">'+PT_LIST.map(function(b){return '<div class="pti">'+giftLogo(b,44,0)+'<span>'+escH(b)+'</span></div>'}).join('')+'</div>';
  document.querySelectorAll('[data-pt]').forEach(function(e){e.innerHTML=h})}
 document.addEventListener('DOMContentLoaded',partnersInit);
+
+/* Abonnements TV (Canal+) */
+var SB=[];
+function sbFmt(n){return fmt0(n)+' FCFA'}
+async function openSubs(){show('subs');$('sb_msg').className='msg';var d=null;try{d=await api('/api/subs/plans')}catch(e){}
+ SB=(d&&d.plans)||[];var ok=SB.length>0;$('sb_box').classList.toggle('hide',!ok);$('sb_off').classList.toggle('hide',ok);
+ $('sb_p').innerHTML=SB.map(function(p){return '<option value="'+escH(p.id)+'">'+escH((p.provider==='canal'?'Canal+ · ':'')+p.name)+' — '+sbFmt(p.price)+(p.months>1?' ('+p.months+' mois)':'')+'</option>'}).join('');sbCalc();sbList()}
+function sbCalc(){var p=SB.filter(function(x){return x.id===$('sb_p').value})[0];$('sb_s').textContent=p?'À payer : '+sbFmt(p.price)+(p.months>1?' pour '+p.months+' mois':' pour 1 mois')+'.':''}
+async function sbOrder(){var b=$('sb_go');if(b.disabled)return;var p=$('sb_p').value,d=$('sb_d').value.replace(/\s/g,''),t=$('sb_t').value.trim();
+ if(d.length<6)return msg('sb_msg','Indiquez le numéro de votre décodeur (au moins 6 caractères).');
+ b.disabled=true;try{var r=await api('/api/subs/order',{body:{planId:p,decoder:d,phone:t}});msg('sb_msg',r.message||'Commande enregistrée.',true);$('sb_d').value='';sbList();try{refresh()}catch(e){}}catch(e){msg('sb_msg',e.message)}finally{b.disabled=false}}
+async function sbList(){var el=$('sb_l'),d=null;try{d=await api('/api/subs/mine')}catch(e){}var o=(d&&d.orders)||[];
+ el.innerHTML=o.length?o.map(function(x){var st=x.status==='done'?['Activé','var(--mint)']:x.status==='refused'?['Remboursé','var(--err)']:['En cours','var(--warn)'];
+  return '<div class="tx" style="display:block"><b>'+escH(x.plan_name)+'</b> · '+sbFmt(x.amount)+'<small style="display:block;color:var(--mut)">Décodeur '+escH(x.decoder)+' · '+new Date(x.created_at).toLocaleDateString('fr-FR')+' · <b style="color:'+st[1]+'">'+st[0]+'</b>'+(x.note?' · '+escH(x.note):'')+'</small></div>'}).join(''):'<p class="sub">Aucun abonnement pour le moment.</p>'}
 var GF_SEL=null,GF_RATES=[];
 function giftTab(t){$('gf_sell').classList.toggle('hide',t!=='sell');$('gf_buy').classList.toggle('hide',t!=='buy')}
 function giftBack(){GF_SEL=null;$('gf_form').classList.add('hide');$('gf_list').classList.remove('hide')}
