@@ -260,9 +260,14 @@ body.lg #demo{display:block}
 :root[data-skin=olympe] #hero .dom{background:#e3f2ff;border-color:#b9dcfa;color:#1573d4}
 :root[data-skin=olympe] input:focus,:root[data-skin=olympe] select:focus{outline-color:#2b9bf4}
 :root[data-skin=olympe] .msg.ok,:root[data-skin=olympe] .badge{background:#e3f2ff;color:#1573d4;border-color:#b9dcfa}
+body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}
 .pt{margin:14px 0 4px}.pt h3{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0 0 8px;text-align:center}
 .pt .ptr{display:flex;flex-wrap:nowrap;gap:10px 8px;justify-content:center}
 .pt .pti{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mut);font-weight:600;min-width:0;flex:1 1 0}
+.idchip{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--txt);font:inherit;font-size:13px;cursor:pointer;max-width:100%}
+.idchip span{color:var(--mut);font-size:11px;letter-spacing:1.2px;font-weight:700}
+.idchip b{font-size:15px;letter-spacing:.5px}
+.idchip em{font-style:normal;color:var(--mint);font-weight:700;margin-left:auto;font-size:12px}
 </style>
 <button id="olfab" class="hide" aria-label="OLATOUNDE, assistante OMNIPAY. Touchez pour discuter, glissez pour déplacer."><img src="/olatounde-avatar.svg" alt="OLATOUNDE" onerror="this.style.display='none'"><i class="olon"></i></button><div id="olhint" class="hide">Glissez-moi où vous voulez sur l'écran. Touchez-moi pour discuter.</div>
 <script>
@@ -363,6 +368,7 @@ body.lg #demo{display:block}
     <div class="dtop"><div class="lgo"><img src="/omnipay-shield.svg" alt="OMNIPAY" width="38" height="42"><div><b>OMNIPAY</b><small>HOLDING</small></div></div><div class="ic"><button class="olb" onclick="openOlat()" aria-label="OLATOUNDE, assistante OMNIPAY" title="OLATOUNDE"><img src="/olatounde-avatar.svg" alt="" width="40" height="40" onerror="this.outerHTML='💬'"><span class="olon"></span></button><button onclick="openNt()" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot" id="bdot" style="display:none"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
     <div class="dsheet"></div>
     <div class="gr"><h1 id="gr_h">Bonjour</h1><small>OMNIPAY <i>›</i> <b>Tableau de bord</b></small></div>
+    <button type="button" class="idchip" id="idchip" onclick="chipCopy()" aria-label="Copier mon identifiant OMNIPAY"><span>ID OMNIPAY</span><b id="idchip_v">…</b><em id="idchip_c">Copier</em></button>
     <div class="card hide" id="gate_b" style="margin:0 0 16px;border:1px solid var(--mint)"><b>🔓 Activez votre compte OMNIPAY</b><p class="sub" style="margin:6px 0 10px" id="gate_t"></p><button onclick="openDep()" style="margin:0">Faire mon premier dépôt</button></div>
 
     <div class="tk" id="tk"><div id="tk_i"></div></div>
@@ -3752,7 +3758,8 @@ async function loadNet(){var box=$('net_list');if(!box)return;
  if($('net_p')&&(NET.k==='crypto'||NET.k==='gift'))netPick(NET.k)}
 /* ===== Identifiant OMNIPAY + reçus ===== */
 const refOf=id=>'OMP-R'+String(id||'').replace(/-/g,'').slice(0,10).toUpperCase();
-async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}}
+async function loadId(){try{const d=await api('/api/id/me');$('id_v').value=d.code}catch(e){$('id_v').value='Indisponible'}var c=$('idchip_v');if(c)c.textContent=/^OM\d+/.test($('id_v').value)?$('id_v').value:'—'}
+function chipCopy(){var v=$('id_v').value,e=$('idchip_c');if(!/^OM\d+/.test(v))return;var ok=function(){e.textContent='Copié ✓';setTimeout(function(){e.textContent='Copier'},1800)};(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(ok).catch(function(){var t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();try{document.execCommand('copy');ok()}catch(x){}t.remove()})}
 function copyId(){const v=$('id_v').value;if(!/^OM\d+/.test(v))return;(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>msg('id_msg','Identifiant copié.',true)).catch(()=>{$('id_v').select();msg('id_msg','Copiez l\'identifiant ci-dessus.',true)})}
 async function openRc(){show('rc');$('rc_msg').className='msg';try{const d=await api('/api/receipts');
   $('rc_list').innerHTML=d.receipts.length?d.receipts.map(r=>`<div class="tx" style="cursor:pointer" onclick="openReceipt('${r.ref}')"><div>${escH(r.label)}<small>${new Date(r.date).toLocaleString('fr-FR')} · ${escH(r.ref)}</small></div><b>${fmt(r.amount)}</b></div>`).join(''):'<p class="sub">Aucune opération.</p>'}catch(e){msg('rc_msg',e.message)}}
