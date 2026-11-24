@@ -76,8 +76,13 @@ router.post("/", requireAuth, async (req, res) => {
     const r = await fp.collect({ ref, operator: provider, phone, amount, name });
     if (r.id) await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ fedaId: r.id })}::jsonb WHERE provider_ref = ${ref} AND provider = 'fedapay'`;
     if (r.status === "refused" || r.status === "unavailable") {
-      await q`UPDATE transactions SET status = 'failed', metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ fedapayReason: String(r.detail || "").slice(0, 80) })}::jsonb WHERE provider_ref = ${ref} AND provider = 'fedapay' AND status = 'pending'`;
-      return res.status(400).json({ error: "La demande a été refusée (numéro, montant ou service indisponible)." });
+      await q`UPDATE transactions SET status = 'failed', metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ fedapayReason: String(r.detail || "").slice(0, 160) })}::jsonb WHERE provider_ref = ${ref} AND provider = 'fedapay' AND status = 'pending'`;
+      const why = String(r.detail || "");
+      const msg = /mode test|non configuré/i.test(why) ? "Le dépôt Mobile Money est momentanément indisponible. Réessayez dans quelques minutes."
+        : /Numéro invalide/i.test(why) ? "Numéro invalide pour cet opérateur."
+        : "La demande a été refusée (numéro, montant ou service indisponible).";
+      console.error("FEDAPAY_DEPOSIT_REFUSED", provider, why.slice(0, 160)); // jamais de clé ni de numéro dans ce message
+      return res.status(400).json({ error: msg });
     }
     if (r.status === "sent") return res.status(201).json({ reference: ref, status: "pending", message: "Validez le paiement sur votre téléphone (code secret Mobile Money)." });
     res.status(202).json({ reference: ref, status: "pending", message: "Demande en cours. Votre solde sera crédité dès la confirmation." });

@@ -3,7 +3,7 @@
 // le routeur choisit le canal en coulisses (FedaPay, PawaPay… ordre PAYMENTS_DEPOSIT_RAILS, défaut « fedapay,pawapay ») et crédite le ledger OMNIPAY.
 // GET  /methods          → canal de dépôt disponible, montants min/max, numéros enregistrés, état du verrou « premier dépôt »
 // GET  /gate             → { required, unlocked, min }
-// POST /deposit          { amount, phone, provider: mtn|moov } → { reference, message }
+// POST /deposit          { amount, phone, provider: mtn|moov|celtiis } → { reference, message }
 // GET  /deposit/:ref     → { status: pending|completed|failed } ; à la réussite, le numéro est enregistré pour les retraits du client
 // Les retraits restent sur /wallet/withdraw (avec code de confirmation) : ils ne passent pas par ce routeur, pour ne jamais contourner la garde OTP.
 const express = require("express");
@@ -32,7 +32,7 @@ router.get("/gate", requireAuth, async (req, res) => {
 router.get("/methods", requireAuth, async (req, res) => {
   try {
     await ensureOps(); const rail = pick(), ops = await sql()`SELECT id, operator, phone, is_default FROM user_operators WHERE user_id = ${req.user.userId}::uuid ORDER BY is_default DESC, created_at`.catch(() => []);
-    res.json({ deposit: { enabled: Boolean(rail), providers: ["mtn", "moov"], ...limits() }, saved: ops.map((o) => ({ id: o.id, operator: o.operator, phone: o.phone, isDefault: o.is_default })), gate: await gate.status(String(req.user.userId)) });
+    res.json({ deposit: { enabled: Boolean(rail), providers: ["mtn", "moov", "celtiis"], ...limits() }, saved: ops.map((o) => ({ id: o.id, operator: o.operator, phone: o.phone, isDefault: o.is_default })), gate: await gate.status(String(req.user.userId)) });
   } catch (e) { console.error("PAY_METHODS", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 

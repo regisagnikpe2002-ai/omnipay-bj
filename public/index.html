@@ -585,10 +585,10 @@ body.lg #demo{display:block}
         <label>Numéro MTN</label><input id="mm_ph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><label>Montant (FCFA)</label><input id="mm_am" type="number" min="500" value="5000">
         <button class="pri" id="mm_btn" onclick="momoDeposit('wallet')">Payer avec MTN MoMo</button><div id="mm_msg" class="msg"></div></div>
       <div id="pp_box" class="hide" style="border:1px solid var(--mint);border-radius:14px;padding:12px;margin-top:14px">
-        <h2 style="margin:0 0 4px">Dépôt automatique Mobile Money</h2><p class="sub" style="margin-bottom:8px">MTN ou Moov : vous validez sur votre téléphone avec votre code secret, votre solde est crédité automatiquement.</p>
-        <label>Opérateur</label><select id="pp_op"><option value="mtn">MTN MoMo</option><option value="moov">Moov Money</option></select>
+        <h2 style="margin:0 0 4px">Dépôt automatique Mobile Money</h2><p class="sub" style="margin-bottom:8px">MTN, Moov ou Celtiis : vous validez sur votre téléphone avec votre code secret, votre solde est crédité automatiquement.</p>
+        <label>Choisissez votre opérateur</label><input type="hidden" id="pp_op" value="mtn"><div id="pp_ops" style="display:flex;gap:8px;margin:6px 0 10px"></div>
         <label>Numéro</label><input id="pp_ph" type="tel" inputmode="tel" placeholder="01 XX XX XX XX"><label>Montant (FCFA)</label><input id="pp_am" type="number" min="100" value="5000">
-        <button class="pri" id="pp_btn" onclick="ppDeposit()">Payer par Mobile Money</button><div id="pp_msg" class="msg"></div></div>
+        <button class="pri" id="pp_btn" onclick="ppDeposit()">Payer avec MTN MoMo</button><div id="pp_msg" class="msg"></div></div>
       <h2 style="margin-top:16px">Comptes OMNIPAY</h2>
       <div id="m_accs"><p class="sub">Chargement…</p></div>
       <h2 style="margin-top:16px">J'ai envoyé mon paiement</h2>
@@ -3772,7 +3772,7 @@ async function loadSav(){try{savList=await opsFetch()}catch(e){savList=[]}
 function savPick(){const v=$('io_sav').value;$('io_accw').classList.toggle('hide',!!v);$('io_ch').style.display=v?'none':'';$('io_ch').previousElementSibling.style.display=v?'none':''}
 
 /* ===== MTN MoMo : dépôt automatique ===== */
-async function momoInit(){try{const d=await api('/api/momo/status');const f=$('mm_box').dataset.f||'';$('mm_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'))}catch(e){$('mm_box').classList.add('hide')}}
+async function momoInit(){try{const d=await api('/api/momo/status');const f=$('mm_box').dataset.f||'';$('mm_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo')||!$('pp_box').classList.contains('hide'))}catch(e){$('mm_box').classList.add('hide')}}
 let mmBusy=false;
 async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',mid=isF?'oc_msg':'mm_msg';
   const am=parseInt($(isF?'oc_fl':'mm_am').value,10),ph=($(isF?'oc_mmph':'mm_ph').value||'').trim();
@@ -3786,7 +3786,10 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
 
 /* ===== PawaPay : dépôt automatique MTN / Moov ===== */
 let ppMin=100;
-let PPB='/api/payments';async function ppInit(){try{const m=await api('/api/payments/methods');const d=m.deposit||{};ppMin=d.min||100;const f=$('mm_box').dataset.f||'';$('pp_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'));$('pp_am').min=ppMin;gateShow(m.gate)}catch(e){$('pp_box').classList.add('hide')}}
+let PPB='/api/payments';async function ppInit(){try{const m=await api('/api/payments/methods');const d=m.deposit||{};ppMin=d.min||100;const f=$('mm_box').dataset.f||'';$('pp_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'));if(!$('pp_box').classList.contains('hide')){$('mm_box').classList.add('hide');ppOps()}$('pp_am').min=ppMin;gateShow(m.gate)}catch(e){$('pp_box').classList.add('hide')}}
+const PP_OPS=[['mtn','MTN','MTN MoMo'],['moov','Moov','Moov Money'],['celtiis','Celtiis','Celtiis Cash']];
+function ppPick(k){$('pp_op').value=k;var o=PP_OPS.filter(function(x){return x[0]===k})[0];$('pp_btn').textContent='Payer avec '+o[2];ppOps()}
+function ppOps(){var k=$('pp_op').value;$('pp_ops').innerHTML=PP_OPS.map(function(o){var on=o[0]===k;return '<button type="button" onclick="ppPick(\''+o[0]+'\')" aria-pressed="'+on+'" style="flex:1;margin:0;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:14px;border:2px solid '+(on?'var(--mint)':'var(--line)')+';background:'+(on?'rgba(31,185,138,.12)':'var(--card2)')+';color:var(--txt);font-weight:700;font-size:12px">'+giftLogo(o[1],40,0)+o[2]+'</button>'}).join('')}
 let ppBusy=false;
 async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,10),ph=($('pp_ph').value||'').trim(),op=$('pp_op').value;
   if(!(am>=ppMin))return msg('pp_msg','Montant minimum : '+ppMin+' FCFA.');if(ph.replace(/\D/g,'').length<8)return msg('pp_msg','Numéro invalide.');
