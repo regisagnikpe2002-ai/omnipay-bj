@@ -9,6 +9,36 @@ const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(
 router.use((req, res, next) => (isAdmin(req) ? next() : res.status(403).json({ error: "Accès refusé." })));
 const safe = async (fn, fb) => { try { return await fn(); } catch (e) { return fb; } };
 
+// Diagnostic d'encaissement : rejoue les 3 étapes FedaPay (création, jeton, envoi sur le téléphone) et dit LAQUELLE est refusée et pourquoi.
+// Crée une transaction FedaPay de 100 F (non liée à un solde) ; aucune clé ni donnée secrète n'est renvoyée.
+router.post("/diag-collect", express.json(), async (req, res) => {
+  const fp = require("../providers/fedapay.js");
+  const steps = []; const out = (ok, extra) => res.json({ ok, env: fp.env(), steps, ...extra });
+  try {
+    if (!fp.ready()) return out(false, { hint: "FedaPay n'est pas configuré (clé manquante sur Render)." });
+    const op = ["mtn", "moov", "celtiis"].includes(String(req.body && req.body.operator).toLowerCase()) ? String(req.body.operator).toLowerCase() : "mtn";
+    let d = String((req.body && req.body.phone) || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); const num = d.startsWith("229") ? d.slice(3) : d.replace(/^0+(?=\d{8})/, "");
+    if (num.length < 8) return out(false, { hint: "Numéro invalide." });
+    const amount = Math.min(500, Math.max(100, Math.floor(Number(req.body && req.body.amount)) || 100));
+    const brief = (r) => { const dd = r.data || {}; return String(dd.message || (dd.errors && JSON.stringify(dd.errors)) || dd.error || "").slice(0, 200); };
+    const c = await fp.call("POST", "/transactions", { description: "Test OMNIPAY", amount, currency: { iso: "XOF" }, merchant_reference: "diag-" + Date.now(),
+      customer: { firstname: "Test", lastname: "OMNIPAY", phone_number: { number: num, country: "bj" } } });
+    steps.push({ step: "1. Création de la transaction", http: c.status, message: brief(c) });
+    if (c.status >= 400) return out(false, { hint: c.status === 401 ? "Clé refusée par FedaPay (mauvaise clé ou mauvais mode live/test)." : c.status === 403 ? "FedaPay refuse ce compte ou cette adresse IP." : "FedaPay refuse la création (voir message)." });
+    const dd = c.data || {}; const t = dd["v1/transaction"] || dd.transaction || (Array.isArray(dd["v1/transactions"]) ? dd["v1/transactions"][0] : null) || dd; const id = t && t.id != null ? String(t.id) : null;
+    if (!id) return out(false, { hint: "Réponse FedaPay sans identifiant de transaction." });
+    const k = await fp.call("POST", "/transactions/" + encodeURIComponent(id) + "/token");
+    const token = k.data && (k.data.token || ((k.data["v1/token"] || {}).token));
+    steps.push({ step: "2. Jeton de paiement", http: k.status, message: token ? "ok" : brief(k) });
+    if (k.status >= 400 || !token) return out(false, { hint: "FedaPay a créé la transaction mais refuse le jeton." });
+    const mode = fp.collectMode(op);
+    const s2 = await fp.call("POST", "/transactions/" + encodeURIComponent(mode), { token, phone_number: { number: num, country: "bj" } });
+    steps.push({ step: "3. Envoi sur le téléphone (" + mode + ")", http: s2.status, message: brief(s2) || (s2.status < 300 ? "ok" : "") });
+    if (s2.status >= 400) return out(false, { hint: s2.status === 403 || s2.status === 401 ? "L'encaissement direct par API n'est pas autorisé sur ce compte : demandez son activation à FedaPay." : "FedaPay refuse l'envoi : vérifiez le numéro, l'opérateur choisi et le mode (" + mode + ")." });
+    out(true, { hint: "Demande envoyée : validez sur le téléphone avec votre code secret (100 F)." });
+  } catch (e) { steps.push({ step: "Erreur technique", http: 0, message: String(e.message).slice(0, 120) }); out(false, { hint: "FedaPay injoignable depuis le serveur." }); }
+});
+
 router.get("/", async (req, res) => {
   try {
     const q = sql();
