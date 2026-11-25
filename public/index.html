@@ -369,6 +369,7 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}
     <div class="dsheet"></div>
     <div class="gr"><h1 id="gr_h">Bonjour</h1><small>OMNIPAY <i>›</i> <b>Tableau de bord</b></small></div>
     <button type="button" class="idchip" id="idchip" onclick="chipCopy()" aria-label="Copier mon identifiant OMNIPAY"><span>ID OMNIPAY</span><b id="idchip_v">…</b><em id="idchip_c">Copier</em></button>
+    <div id="p2p_c" class="card hide" style="margin:0 0 14px"></div>
     <div class="card hide" id="gate_b" style="margin:0 0 16px;border:1px solid var(--mint)"><b>🔓 Activez votre compte OMNIPAY</b><p class="sub" style="margin:6px 0 10px" id="gate_t"></p><button onclick="openDep()" style="margin:0">Faire mon premier dépôt</button></div>
 
     <div class="tk" id="tk"><div id="tk_i"></div></div>
@@ -3402,7 +3403,7 @@ async function refresh(){
 async function enter(){
   try{await refresh()}catch(e){return msg('l_msg',e.message)}
   const u=S.user||{};$('who').textContent=[u.firstName,u.lastName].filter(Boolean).join(' ')||u.name||u.fullName||u.username||u.email||u.phone||'Mon compte OMNIPAY';pfApply();
-  show('dash');loadId();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();gateLoad();photoLoad();try{djLoad()}catch(e){}try{ntPoll();clearInterval(NT.timer);NT.timer=setInterval(ntPoll,60000)}catch(e){}try{pwaGo()}catch(e){}try{bpReturn()}catch(e){}
+  show('dash');loadId();p2pLoad();loadNet();applyPendingTo();applyPendingPay();ppReturn();hcLoad();gateLoad();photoLoad();try{djLoad()}catch(e){}try{ntPoll();clearInterval(NT.timer);NT.timer=setInterval(ntPoll,60000)}catch(e){}try{pwaGo()}catch(e){}try{bpReturn()}catch(e){}
 }
 function logout(silent){S.token='';S.user=null;S.wallet=null;S.txs=[];LS.del('omnipayAccessToken');LS.del('refreshToken');LS.del('omnipayUser');show('login');if(silent)msg('l_msg','Session expirée. Reconnectez-vous.')}
 const LABEL={bundle:'Recharge / forfait',deposit:'Dépôt',withdrawal:'Retrait',commission:'Commission',transfer_in:'Transfert reçu',transfer_out:'Transfert envoyé',refund:'Remboursement'};
@@ -4054,6 +4055,17 @@ async function sbOrder(){var b=$('sb_go');if(b.disabled)return;var p=$('sb_p').v
 async function sbList(){var el=$('sb_l'),d=null;try{d=await api('/api/subs/mine')}catch(e){}var o=(d&&d.orders)||[];
  el.innerHTML=o.length?o.map(function(x){var st=x.status==='done'?['Activé','var(--mint)']:x.status==='refused'?['Remboursé','var(--err)']:['En cours','var(--warn)'];
   return '<div class="tx" style="display:block"><b>'+escH(x.plan_name)+'</b> · '+sbFmt(x.amount)+'<small style="display:block;color:var(--mut)">Décodeur '+escH(x.decoder)+' · '+new Date(x.created_at).toLocaleDateString('fr-FR')+' · <b style="color:'+st[1]+'">'+st[0]+'</b>'+(x.note?' · '+escH(x.note):'')+'</small></div>'}).join(''):'<p class="sub">Aucun abonnement pour le moment.</p>'}
+
+/* Retraits P2P : le client confirme la réception de l'argent envoyé par un marchand */
+async function p2pLoad(){var box=$('p2p_c');if(!box)return;var d=null;try{d=await api('/api/orders/mine')}catch(e){}
+ var o=(d&&d.orders)||[];if(!o.length){box.classList.add('hide');box.innerHTML='';return}
+ box.classList.remove('hide');
+ box.innerHTML='<b>Mes retraits en cours</b>'+o.map(function(x){var op=String(x.operator||'').toUpperCase(),m=fmt0(x.amount)+' FCFA',h;
+  if(x.status==='executed')h='<p class="sub" style="margin:6px 0 8px">Un marchand a envoyé <b>'+m+'</b> sur votre numéro '+escH(x.phone)+' ('+escH(op)+'). Vérifiez votre téléphone : l\'avez-vous reçu ?</p>'+(d.confirm?'<div class="row"><button class="pri" onclick="p2pAns(\''+x.id+'\',true)">Oui, reçu</button><button class="sec" onclick="p2pAns(\''+x.id+'\',false)">Non, pas reçu</button></div>':'');
+  else if(x.status==='disputed')h='<p class="sub" style="margin:6px 0 0">'+m+' : signalé, vérification en cours. Votre argent est protégé.</p>';
+  else h='<p class="sub" style="margin:6px 0 0">'+m+' vers '+escH(x.phone)+' ('+escH(op)+') : '+(x.status==='taken'?'un marchand vous paie en ce moment.':'en attente d\'un marchand.')+'</p>';
+  return '<div style="margin-top:8px">'+h+'</div>'}).join('')+'<div id="p2p_m" class="msg"></div>'}
+async function p2pAns(id,yes){try{var r=await api('/api/orders/mine/'+id+(yes?'/confirm':'/dispute'),{body:yes?{}:{reason:'Argent non reçu'}});msg('p2p_m',r.message,true);setTimeout(function(){p2pLoad();try{refresh()}catch(e){}},900)}catch(e){msg('p2p_m',e.message)}}
 var GF_SEL=null,GF_RATES=[];
 function giftTab(t){$('gf_sell').classList.toggle('hide',t!=='sell');$('gf_buy').classList.toggle('hide',t!=='buy')}
 function giftBack(){GF_SEL=null;$('gf_form').classList.add('hide');$('gf_list').classList.remove('hide')}

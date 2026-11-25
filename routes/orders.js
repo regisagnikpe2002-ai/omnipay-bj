@@ -17,6 +17,13 @@ const num = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 
 const adminLimit = () => num(process.env.ORDER_ADMIN_XOF, 200000);
 const takeMinutes = () => num(process.env.ORDER_TAKE_MINUTES, 30);
 const maxTaken = () => Math.floor(num(process.env.ORDER_MAX_TAKEN, 3));
+// ----- P2P : retrait client pris en charge par un marchand, sous séquestre (le solde du client est déjà réservé) -----
+//   Offre publiée automatiquement (P2P=on) quand un retrait Mobile Money reste « en attente » plus de P2P_DELAY_MIN minutes (le temps laissé à l'envoi automatique) ;
+//   le marchand paie sur son propre Mobile Money et saisit la référence ; le CLIENT confirme la réception (P2P_CONFIRM=on) ; alors le retrait est clôturé et le marchand est crédité.
+//   « Je n'ai pas reçu » = litige tranché par l'administrateur. Sans réponse du client après P2P_AUTOCONFIRM_HOURS, la clôture est automatique (jamais pour un ordre à valider par l'admin).
+const flag = (n, d) => !["off", "false", "0", "no"].includes(String(process.env[n] || d).toLowerCase());
+const p2pOn = () => flag("P2P", "on"), confirmOn = () => flag("P2P_CONFIRM", "on"), creditOn = () => flag("P2P_CREDIT_MERCHANT", "on");
+const p2pDelay = () => num(process.env.P2P_DELAY_MIN, 3), p2pMax = () => num(process.env.P2P_MAX_XOF, 50000), autoHours = () => num(process.env.P2P_AUTOCONFIRM_HOURS, 48);
 const clean = (v, n) => String(v == null ? "" : v).trim().slice(0, n);
 const last8 = (p) => String(p || "").replace(/\D/g, "").slice(-8);
 
@@ -68,6 +75,57 @@ async function settle(orderId, txId, reference, who, operator) {
   return rows.length ? { ok: true } : { ok: false, error: "Retrait introuvable ou déjà traité." };
 }
 
+// Crédite le marchand du montant payé au client (une seule fois par ordre : clé d'idempotence + appelé seulement après la prise du verrou « validated »).
+async function creditMerchant(orderId, merchantId, amount) {
+  if (!creditOn() || !merchantId) return false;
+  const key = "p2p-pay-" + orderId;
+  const r = await sql()`WITH chk AS (SELECT 1 FROM transactions WHERE idempotency_key = ${key}),
+    w AS (UPDATE wallets SET balance = balance + ${amount}, updated_at = now() WHERE user_id = ${merchantId}::uuid AND NOT EXISTS (SELECT 1 FROM chk) RETURNING id, balance),
+    t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
+      SELECT w.id, 'transfer_in', ${amount}, w.balance, 'completed', 'p2p', ${String(orderId)}, ${key}, jsonb_build_object('p2p', 'merchant_payout') FROM w ON CONFLICT DO NOTHING RETURNING id)
+    SELECT id FROM t`;
+  return r.length > 0;
+}
+
+// Clôture d'un ordre exécuté : verrou unique, retrait « completed », marchand crédité. who = qui valide (client, admin, système).
+async function finalize(orderId, who) {
+  const q = sql();
+  const c = await q`UPDATE payment_orders SET status = 'validated', validated_by = ${who}, validated_at = now() WHERE id = ${orderId}::uuid AND status IN ('executed','disputed') RETURNING id, tx_id, operator, executed_ref, taken_by, amount::float AS amount`;
+  if (!c.length) return { ok: false, error: "Ordre déjà traité ou introuvable." };
+  const s = await settle(c[0].id, c[0].tx_id, c[0].executed_ref, who, c[0].operator);
+  if (!s.ok) { await q`UPDATE payment_orders SET status = 'disputed', validated_by = NULL, validated_at = NULL, reject_reason = ${clean(s.error, 200)} WHERE id = ${c[0].id}::uuid`; await event(c[0].id, "système", "disputed", s.error); return { ok: false, error: s.error }; }
+  const paid = await creditMerchant(c[0].id, c[0].taken_by, c[0].amount);
+  await event(c[0].id, who, "validated", "Retrait clôturé" + (paid ? " · marchand crédité" : ""));
+  return { ok: true, merchantCredited: paid };
+}
+
+// Publication automatique des offres P2P + clôture automatique des ordres jamais contestés.
+async function p2pSweep() {
+  if (!p2pOn()) return { published: 0, autoClosed: 0 };
+  await ensure(); await expireStale();
+  const q = sql();
+  const pend = await q`SELECT t.id, t.provider AS operator, t.provider_ref AS phone, t.amount::float AS amount, w.user_id AS requester
+    FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+    WHERE t.type = 'withdrawal' AND t.status = 'pending' AND t.provider IN ('mtn','moov','celtiis') AND t.amount <= ${p2pMax()}
+      AND t.created_at < now() - make_interval(mins => ${p2pDelay()}::int)
+      AND NOT EXISTS (SELECT 1 FROM payment_orders o WHERE o.tx_id = t.id AND o.status IN ('drafted','taken','executed','disputed'))
+    ORDER BY t.created_at LIMIT 30`;
+  let published = 0;
+  for (const t of pend) {
+    const checks = { coverageOk: true, routeFound: true, notes: ["offre P2P publiée automatiquement"], needsAdmin: t.amount >= adminLimit(), draftedBy: "P2P" };
+    const o = await q`INSERT INTO payment_orders (tx_id, requester_id, operator, phone, amount, route, checks, needs_admin)
+      VALUES (${t.id}::uuid, ${t.requester}::uuid, ${String(t.operator)}, ${t.phone}, ${t.amount}, ${JSON.stringify({ code: "P2P", label: "Marchand OMNIPAY (P2P)" })}::jsonb, ${JSON.stringify(checks)}::jsonb, ${t.amount >= adminLimit()})
+      ON CONFLICT DO NOTHING RETURNING id`;
+    if (o.length) { published++; await event(o[0].id, "P2P", "drafted", "offre publiée aux marchands"); }
+  }
+  let autoClosed = 0;
+  const due = await q`SELECT id FROM payment_orders WHERE status = 'executed' AND needs_admin = false AND executed_at < now() - make_interval(hours => ${autoHours()}::int) LIMIT 20`;
+  for (const d of due) { const r = await finalize(d.id, "système (délai écoulé)"); if (r.ok) autoClosed++; }
+  return { published, autoClosed };
+}
+let p2pTimer = null;
+if (!p2pTimer && process.env.DATABASE_URL && process.env.NODE_ENV !== "test") { p2pTimer = setInterval(() => { p2pSweep().catch((e) => console.error("P2P_SWEEP", e.message)); }, 60000); if (p2pTimer.unref) p2pTimer.unref(); }
+
 // ===================== ADMIN =====================
 // Rédaction : l'IA (moteur de fonds) prépare un ordre pour chaque retrait en attente qui n'en a pas.
 router.post("/admin/draft", adminOnly, async (req, res) => {
@@ -118,12 +176,9 @@ router.post("/admin/:id/validate", adminOnly, async (req, res) => {
   try {
     if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
     await ensure();
-    const claim = await sql()`UPDATE payment_orders SET status = 'validated', validated_by = 'admin', validated_at = now() WHERE id = ${req.params.id}::uuid AND status = 'executed' RETURNING id, tx_id, operator, executed_ref`;
-    if (!claim.length) return res.status(409).json({ error: "Ordre introuvable ou pas à l'état « exécuté »." });
-    const s = await settle(claim[0].id, claim[0].tx_id, claim[0].executed_ref, "admin+marchand", claim[0].operator);
-    if (!s.ok) { await sql()`UPDATE payment_orders SET status = 'executed', validated_by = NULL, validated_at = NULL WHERE id = ${claim[0].id}::uuid`; return res.status(409).json({ error: s.error }); }
-    await event(claim[0].id, "admin", "validated", "Retrait clôturé");
-    res.json({ message: "Ordre validé : retrait clôturé." });
+    const f = await finalize(req.params.id, "admin");
+    if (!f.ok) return res.status(409).json({ error: f.error });
+    res.json({ message: "Ordre validé : retrait clôturé" + (f.merchantCredited ? " et marchand crédité." : ".") });
   } catch (e) { fail(res, "ORDERS_VALIDATE", e); }
 });
 
@@ -142,6 +197,59 @@ router.post("/admin/:id/reject", adminOnly, async (req, res) => {
     await event(o.id, "admin", "rejected", reason);
     res.json({ message: "Ordre rejeté : le retrait est revenu en attente." });
   } catch (e) { fail(res, "ORDERS_REJECT", e); }
+});
+
+
+// Litige : l'administrateur tranche. « paid » = le client a bien reçu (retrait clôturé, marchand crédité) ; « unpaid » = non reçu (ordre clos, retrait remis « en attente » pour être remboursé ou repayé).
+router.post("/admin/:id/resolve", adminOnly, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    await ensure();
+    const outcome = String(req.body?.outcome || "");
+    if (outcome === "paid") { const f = await finalize(req.params.id, "admin (litige)"); return f.ok ? res.json({ message: "Litige clos : paiement reconnu, retrait clôturé" + (f.merchantCredited ? " et marchand crédité." : ".") }) : res.status(409).json({ error: f.error }); }
+    if (outcome === "unpaid") {
+      const q = sql();
+      const o = await q`UPDATE payment_orders SET status = 'rejected', reject_reason = 'non reçu (litige tranché)' WHERE id = ${req.params.id}::uuid AND status = 'disputed' RETURNING id, tx_id`;
+      if (!o.length) return res.status(409).json({ error: "Ordre introuvable ou pas en litige." });
+      await q`UPDATE transactions SET status = 'pending' WHERE id = ${o[0].tx_id}::uuid AND type = 'withdrawal' AND status = 'processing'`;
+      await event(o[0].id, "admin", "rejected", "litige : non reçu");
+      return res.json({ message: "Litige clos : le retrait est revenu « en attente » (remboursez-le ou refaites-le payer)." });
+    }
+    res.status(400).json({ error: "Choisissez « paid » ou « unpaid »." });
+  } catch (e) { fail(res, "ORDERS_RESOLVE", e); }
+});
+
+// ===================== CLIENT (confirmation de réception) =====================
+router.get("/mine", requireAuth, async (req, res) => {
+  try {
+    await ensure();
+    const r = await sql()`SELECT o.id, o.operator, o.phone, o.amount::float AS amount, o.status, o.needs_admin, o.created_at, o.executed_at, a.name AS merchant
+      FROM payment_orders o LEFT JOIN omnicash_agents a ON a.user_id = o.taken_by
+      WHERE o.requester_id = ${req.user.userId}::uuid AND o.status IN ('drafted','taken','executed','disputed') ORDER BY o.created_at DESC LIMIT 10`;
+    res.json({ confirm: confirmOn(), orders: r.map((o) => ({ id: o.id, operator: o.operator, phone: "••••" + String(o.phone || "").slice(-4), amount: o.amount, status: o.status, needsAdmin: o.needs_admin, merchant: maskName(o.merchant), createdAt: o.created_at, executedAt: o.executed_at })) });
+  } catch (e) { if (/omnicash_agents/.test(e.message)) return res.json({ confirm: confirmOn(), orders: [] }); fail(res, "ORDERS_MINE", e); }
+});
+router.post("/mine/:id/confirm", requireAuth, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    await ensure();
+    const o = (await sql()`SELECT id, needs_admin FROM payment_orders WHERE id = ${req.params.id}::uuid AND requester_id = ${req.user.userId}::uuid AND status = 'executed'`)[0];
+    if (!o) return res.status(404).json({ error: "Aucun paiement à confirmer." });
+    if (o.needs_admin) { await event(o.id, "client", "client_confirmed", "réception confirmée, validation admin requise"); return res.json({ message: "Merci. Montant élevé : l'administrateur finalise la clôture." }); }
+    const f = await finalize(o.id, "client");
+    f.ok ? res.json({ message: "Merci ! Retrait confirmé." }) : res.status(409).json({ error: f.error });
+  } catch (e) { fail(res, "ORDERS_CONFIRM", e); }
+});
+router.post("/mine/:id/dispute", requireAuth, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    await ensure();
+    const reason = clean(req.body?.reason, 160) || "le client dit ne rien avoir reçu";
+    const o = await sql()`UPDATE payment_orders SET status = 'disputed', reject_reason = ${reason} WHERE id = ${req.params.id}::uuid AND requester_id = ${req.user.userId}::uuid AND status = 'executed' RETURNING id`;
+    if (!o.length) return res.status(404).json({ error: "Aucun paiement à contester." });
+    await event(o[0].id, "client", "disputed", reason);
+    res.json({ message: "Signalé. Nous vérifions avec le marchand et revenons vers vous." });
+  } catch (e) { fail(res, "ORDERS_DISPUTE", e); }
 });
 
 // ===================== MARCHAND =====================
@@ -228,13 +336,13 @@ router.post("/:id/execute", requireAuth, needMerchant, async (req, res) => {
     if (!o.length) return res.status(409).json({ error: "Ordre introuvable, expiré ou non pris par vous." });
     await event(o[0].id, "marchand:" + req.merchant.name, "executed", "référence " + reference);
     if (o[0].needs_admin || o[0].amount >= adminLimit()) return res.json({ status: "executed", message: "Exécution enregistrée. Montant élevé : en attente de validation de l'administrateur." });
-    const claim = await q`UPDATE payment_orders SET status = 'validated', validated_by = 'marchand', validated_at = now() WHERE id = ${o[0].id}::uuid AND status = 'executed' RETURNING id`;
-    const s = claim.length ? await settle(o[0].id, o[0].tx_id, reference, "marchand:" + req.merchant.name, o[0].operator) : { ok: false, error: "Ordre déjà traité." };
-    if (!s.ok) { await q`UPDATE payment_orders SET status = 'disputed', reject_reason = ${clean(s.error, 200)} WHERE id = ${o[0].id}::uuid`; await event(o[0].id, "système", "disputed", s.error); return res.status(409).json({ error: s.error + " L'ordre est en litige : l'administrateur va vérifier." }); }
-    await event(o[0].id, "marchand:" + req.merchant.name, "validated", "Retrait clôturé (sous le seuil)");
-    res.json({ status: "validated", message: "Paiement confirmé : le retrait du client est clôturé." });
+    if (confirmOn()) return res.json({ status: "executed", message: "Paiement enregistré. Le client doit confirmer la réception : vous serez crédité dès sa confirmation (ou automatiquement après " + autoHours() + " h sans contestation)." });
+    const f = await finalize(o[0].id, "marchand:" + req.merchant.name);
+    if (!f.ok) return res.status(409).json({ error: f.error + " L'ordre est en litige : l'administrateur va vérifier." });
+    res.json({ status: "validated", message: "Paiement confirmé : le retrait du client est clôturé" + (f.merchantCredited ? " et votre compte est crédité." : ".") });
   } catch (e) { fail(res, "ORDERS_EXECUTE", e); }
 });
 
 module.exports = router;
 module.exports._expireStale = expireStale;
+module.exports._p2pSweep = p2pSweep;
