@@ -14,6 +14,18 @@ const COMMISSION = 50;
 const MIN = 500;
 const MAX = Number(process.env.MANUAL_MAX_XOF || 500000);
 const MAX_OPEN = 3;
+const envNum = (k, d) => { const n = Number(process.env[k]); return Number.isFinite(n) && n >= 0 ? n : d; };
+// Retrait international par virement bancaire : frais = max(minimum, pourcentage) ; tout se règle dans Render, rien n'est écrit en dur.
+const bankOut = () => ({ pct: envNum("BANK_OUT_FEE_PCT", 2), feeMin: envNum("BANK_OUT_FEE_MIN", 2000), min: Math.max(envNum("BANK_OUT_MIN_XOF", 20000), MIN) });
+const bankOutFee = (amount) => { const o = bankOut(); return Math.max(o.feeMin, Math.ceil(amount * o.pct / 100)); };
+function ibanOk(v) {
+  const s = String(v || "").replace(/\s+/g, "").toUpperCase();
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(s)) return false;
+  const r = (s.slice(4) + s.slice(0, 4)).replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+  let m = 0; for (const ch of r) m = (m * 10 + Number(ch)) % 97;
+  return m === 1;
+}
+const bicOk = (v) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(String(v || "").replace(/\s+/g, "").toUpperCase());
 let ready = false;
 
 async function ensureTables() {
@@ -34,6 +46,7 @@ async function ensureTables() {
   await q`ALTER TABLE manual_payouts ADD COLUMN IF NOT EXISTS payment_channel varchar(20)`;
   await q`ALTER TABLE manual_payouts ADD COLUMN IF NOT EXISTS payment_ref varchar(160)`;
   await q`ALTER TABLE manual_payouts ADD COLUMN IF NOT EXISTS paid_at timestamptz`;
+  await q`ALTER TABLE manual_payouts ADD COLUMN IF NOT EXISTS fee_xof numeric(18,2)`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS manual_payouts_payment_ref_uniq ON manual_payouts (lower(payment_ref)) WHERE payment_ref IS NOT NULL`;
   ready = true;
 }
@@ -79,6 +92,7 @@ router.get("/bank", requireAuth, async (req, res) => {
     holder: clean(b.holder, 80), iban, bic: clean(b.bic, 20).toUpperCase(), bank: clean(b.bank, 80), address: clean(b.address, 160), currency: clean(b.currency || "XOF", 5),
     reference: omId || refOf(req.user.userId),
     feePct: num(process.env.BANK_FEE_PCT, 2), feeMin: num(process.env.BANK_FEE_MIN, 100), eurXof: 655.957,
+    out: { feePct: bankOut().pct, feeMin: bankOut().feeMin, min: bankOut().min, max: MAX },
   });
 });
 
@@ -114,25 +128,36 @@ router.post("/deposit", requireAuth, async (req, res) => {
 router.post("/payout", requireAuth, async (req, res) => {
   try {
     const amount = Math.round(Number(req.body?.amount));
-    const destination = clean(req.body?.destination, 200);
+    let destination = clean(req.body?.destination, 200);
     const method = clean(req.body?.method || "autre", 30);
-    if (!Number.isFinite(amount) || amount < MIN || amount > MAX) return res.status(400).json({ error: `Montant : entre ${MIN} et ${MAX} FCFA.` });
+    let fee = COMMISSION, lo = MIN;
+    if (method === "virement") {
+      const bk = req.body?.bank || {};
+      const name = clean(bk.name, 70), iban = String(bk.iban || "").replace(/\s+/g, "").toUpperCase(), bic = String(bk.bic || "").replace(/\s+/g, "").toUpperCase(), bank = clean(bk.bank, 60);
+      if (name.length < 3) return res.status(400).json({ error: "Indiquez le nom du titulaire du compte, comme sur la banque." });
+      if (!ibanOk(iban)) return res.status(400).json({ error: "IBAN invalide. Vérifiez-le caractère par caractère." });
+      if (!bicOk(bic)) return res.status(400).json({ error: "Code BIC / SWIFT invalide (8 ou 11 caractères)." });
+      destination = `${name} | ${iban} | ${bic}` + (bank ? ` | ${bank}` : "");
+      if (destination.length > 200) return res.status(400).json({ error: "Informations trop longues." });
+      lo = bankOut().min; fee = bankOutFee(amount);
+    }
+    if (!Number.isFinite(amount) || amount < lo || amount > MAX) return res.status(400).json({ error: `Montant : entre ${lo} et ${MAX} FCFA.` });
     if (destination.length < 5) return res.status(400).json({ error: "Indiquez la destination (numéro Mobile Money, adresse ou compte)." });
     await ensureTables();
     const q = sql();
     const [open] = await q`SELECT count(*)::int AS n FROM manual_payouts WHERE user_id = ${req.user.userId} AND status = 'pending'`;
     if (open.n >= MAX_OPEN) return res.status(429).json({ error: "Vous avez déjà des retraits en attente." });
-    const total = amount + COMMISSION;
+    const total = amount + fee;
     const key = "mp-" + crypto.randomUUID();
     // Débit immédiat (réservation) + demande + ligne d'historique, en UNE seule instruction atomique.
     const rows = await q`
       WITH w AS (UPDATE wallets SET balance = balance - ${total} WHERE user_id = ${req.user.userId} AND balance >= ${total} RETURNING id, balance),
-      p AS (INSERT INTO manual_payouts (user_id, reference, method, destination, amount_xof)
-            SELECT ${req.user.userId}, ${refOf(req.user.userId)}, ${method}, ${destination}, ${amount} FROM w RETURNING id),
+      p AS (INSERT INTO manual_payouts (user_id, reference, method, destination, amount_xof, fee_xof)
+            SELECT ${req.user.userId}, ${refOf(req.user.userId)}, ${method}, ${destination}, ${amount}, ${fee} FROM w RETURNING id),
       t AS (INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key)
             SELECT w.id, 'withdrawal', ${amount}, w.balance, 'pending', 'manual', p.id::text, ${key} FROM w, p RETURNING id)
       SELECT p.id, w.balance FROM p, w`;
-    if (!rows.length) return res.status(400).json({ error: `Solde insuffisant (montant + ${COMMISSION} FCFA de commission).` });
+    if (!rows.length) return res.status(400).json({ error: `Solde insuffisant (montant + ${fee} FCFA de frais).` });
     res.status(201).json({ id: rows[0].id, newBalance: Number(rows[0].balance), message: "Demande de retrait enregistrée. Elle sera exécutée après validation." });
   } catch (e) { console.error("MANUAL_PAYOUT", e.message); res.status(500).json({ error: "Impossible d'enregistrer le retrait." }); }
 });
@@ -216,7 +241,7 @@ router.post("/admin/payout/:id/paid", adminOnly, async (req, res) => {
               AND x.payment_ref IS NOT NULL
               AND lower(x.payment_ref) = lower(${paymentRef})
           )
-        RETURNING user_id
+        RETURNING user_id, fee_xof
       ),
       t AS (
         UPDATE transactions
@@ -237,7 +262,7 @@ router.post("/admin/payout/:id/paid", adminOnly, async (req, res) => {
       ),
       c AS (
         INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, idempotency_key)
-        SELECT wallet_id, 'commission', ${COMMISSION}, balance_after, 'completed', 'internal', ${"mpc-" + req.params.id}
+        SELECT wallet_id, 'commission', COALESCE((SELECT fee_xof FROM p), ${COMMISSION}), balance_after, 'completed', 'internal', ${"mpc-" + req.params.id}
         FROM t RETURNING id
       )
       SELECT id FROM c
@@ -263,8 +288,8 @@ router.post("/admin/payout/:id/reject", adminOnly, async (req, res) => {
     await ensureTables();
     const rows = await sql()`
       WITH p AS (UPDATE manual_payouts SET status = 'rejected', decided_at = now(), decided_note = ${clean(req.body?.note, 300) || null}
-                 WHERE id = ${req.params.id} AND status = 'pending' RETURNING user_id, amount_xof),
-      w AS (UPDATE wallets SET balance = balance + (p.amount_xof + ${COMMISSION}) FROM p WHERE wallets.user_id = p.user_id RETURNING wallets.balance),
+                 WHERE id = ${req.params.id} AND status = 'pending' RETURNING user_id, amount_xof, fee_xof),
+      w AS (UPDATE wallets SET balance = balance + (p.amount_xof + COALESCE(p.fee_xof, ${COMMISSION})) FROM p WHERE wallets.user_id = p.user_id RETURNING wallets.balance),
       t AS (UPDATE transactions SET status = 'failed' WHERE provider = 'manual' AND provider_ref = ${req.params.id} AND type = 'withdrawal' AND EXISTS (SELECT 1 FROM p) RETURNING id)
       SELECT balance FROM w`;
     if (!rows.length) return res.status(409).json({ error: "Demande introuvable ou déjà traitée." });

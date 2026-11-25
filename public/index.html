@@ -419,6 +419,7 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#
       <button class="tile" onclick="openLnk()"><span>🔗</span>Relier un compte</button>
       <button class="tile" onclick="openTerm()"><span>🧾</span>Terminal OMNIPRO</button>
       <button class="tile" onclick="openSubs()"><span>📺</span>Abonnements TV</button>
+      <button class="tile" onclick="openIntl()"><span>🌍</span>International</button>
       <button class="tile" onclick="openCo()"><span>🏢</span>Mon entreprise</button>
       <button class="tile" onclick="openPis()"><span>⇄</span>Envoyer PI-SPI</button>
       <button class="tile" onclick="openAlias()"><span>🆔</span>Mon alias</button>
@@ -573,6 +574,37 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#
     <button class="opt" onclick="openBank()"><i>🏦</i><span><b>Virement bancaire (IBAN · SEPA · SWIFT)</b><small>Europe, Asie et reste du monde : depuis votre banque</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="intl" class="card hide">
+    <h1>International</h1><p class="sub">Déposez ou retirez de l'argent hors Mobile Money : virement bancaire (SEPA / SWIFT) ou crypto. Les frais et le taux sont affichés avant de valider.</p>
+    <div class="row"><button class="sec" id="in_td" onclick="intlTab('d')" style="margin-top:0">Déposer</button><button class="sec" id="in_tr" onclick="intlTab('r')" style="margin-top:0">Retirer</button></div>
+    <div id="in_dep">
+      <button class="opt" onclick="openBank()"><i>🏦</i><span><b>Virement bancaire (SEPA · SWIFT)</b><small>Depuis votre banque, avec votre référence. Délai : 2 à 5 jours ouvrés.</small></span></button>
+      <button class="opt" onclick="openEx().then(function(){exTab('d')})"><i>🪙</i><span><b>Crypto (USDT, USDC, BTC…)</b><small>Envoi sur une adresse OMNIPAY, crédité après vérification.</small></span></button>
+    </div>
+    <div id="in_wd" class="hide">
+      <div class="row"><button class="sec" id="in_wb" onclick="intlOut('b')" style="margin-top:0">Vers une banque</button><button class="sec" id="in_wc" onclick="intlOut('c')" style="margin-top:0">Vers un wallet crypto</button></div>
+      <div id="in_fb" class="hide">
+        <label>Titulaire du compte (comme sur la banque)</label><input id="in_bn" autocomplete="name">
+        <label>IBAN</label><input id="in_bi" autocapitalize="characters" spellcheck="false" style="letter-spacing:.5px">
+        <label>BIC / SWIFT</label><input id="in_bb" autocapitalize="characters" spellcheck="false">
+        <label>Banque (facultatif)</label><input id="in_bk">
+        <label>Montant à retirer (FCFA)</label><input id="in_ba" type="number" inputmode="numeric" min="1" oninput="intlSim()">
+        <p class="sub" id="in_bs"></p>
+        <button class="pri" onclick="intlBank()">Demander le virement</button>
+      </div>
+      <div id="in_fc" class="hide">
+        <label>Monnaie</label><select id="in_ca" onchange="intlCSim()"></select>
+        <label>Réseau</label><select id="in_cn"></select>
+        <label>Adresse du wallet (vérifiez-la : une erreur fait perdre les fonds)</label><input id="in_cd" autocapitalize="off" spellcheck="false">
+        <label>Montant à convertir (FCFA)</label><input id="in_cm" type="number" inputmode="numeric" min="1" oninput="intlCSim()">
+        <p class="sub" id="in_cs"></p>
+        <button class="pri" onclick="intlCrypto()">Convertir et envoyer</button>
+      </div>
+    </div>
+    <div id="in_msg" class="msg"></div>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3327,7 +3359,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs','co','subs'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0);if(window.olFab)olFab(id)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs','co','subs','intl'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0);if(window.olFab)olFab(id)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -4047,6 +4079,27 @@ var PT_LIST=['MTN','Moov','Celtiis','PI-SPI','CoinGate','PaysafeCard','PCS','Tra
 function partnersInit(){var h='<h3>Nos prestataires de paiement</h3><div class="ptr">'+PT_LIST.map(function(b){return '<div class="pti">'+giftLogo(b,44,0)+'<span>'+escH(b)+'</span></div>'}).join('')+'</div>';
  document.querySelectorAll('[data-pt]').forEach(function(e){e.innerHTML=h})}
 document.addEventListener('DOMContentLoaded',partnersInit);
+
+
+/* International : dépôts et retraits par virement (SEPA/SWIFT) ou crypto. S'appuie sur /api/manual et /api/exchange. */
+var INB=null,INX=null;
+function intlTab(t){$('in_td').style.opacity=t==='d'?1:.55;$('in_tr').style.opacity=t==='r'?1:.55;$('in_dep').classList.toggle('hide',t!=='d');$('in_wd').classList.toggle('hide',t!=='r');$('in_msg').className='msg';if(t==='r')intlOut(INT_OUT||'b')}
+var INT_OUT='b';
+async function openIntl(){show('intl');intlTab('d');try{INB=await api('/api/manual/bank')}catch(e){INB=null}try{INX=await api('/api/exchange/info')}catch(e){INX=null}}
+function intlOut(k){INT_OUT=k;$('in_wb').style.opacity=k==='b'?1:.55;$('in_wc').style.opacity=k==='c'?1:.55;$('in_fb').classList.toggle('hide',k!=='b');$('in_fc').classList.toggle('hide',k!=='c');$('in_msg').className='msg';
+ if(k==='c'){var as=((INX&&INX.assets)||[]).filter(function(a){return a.buy});$('in_ca').innerHTML=as.map(function(a){return '<option value="'+escH(a.asset)+'">'+escH(a.asset)+'</option>'}).join('');intlCSim()}else intlSim()}
+function intlSim(){var o=INB&&INB.out,a=Number($('in_ba').value),e=$('in_bs');if(!o){e.textContent='';return}
+ if(!(a>0)){e.textContent='Minimum '+fmt0(o.min)+' FCFA. Frais : '+o.feePct+' % (minimum '+fmt0(o.feeMin)+' FCFA). Délai : 2 à 5 jours ouvrés.';return}
+ var fee=Math.max(o.feeMin,Math.ceil(a*o.feePct/100));e.textContent='Frais : '+fmt0(fee)+' FCFA · total débité : '+fmt0(a+fee)+' FCFA · vous recevez ≈ '+(a/(INB.eurXof||655.957)).toFixed(2)+' EUR (hors frais de votre banque).'}
+async function intlBank(){var b=$('in_bn').value.trim();var r;try{r=await api('/api/manual/payout',{body:{amount:Math.round(Number($('in_ba').value)),method:'virement',bank:{name:b,iban:$('in_bi').value,bic:$('in_bb').value,bank:$('in_bk').value}}});msg('in_msg',r.message||'Demande enregistrée.',true);$('in_bi').value='';$('in_ba').value='';intlSim();try{refresh()}catch(e){}}catch(e){msg('in_msg',e.message)}}
+function intlCAsset(){return ((INX&&INX.assets)||[]).filter(function(a){return a.asset===$('in_ca').value})[0]}
+function intlCSim(){var a=intlCAsset();if(!a){$('in_cs').textContent='Service crypto indisponible pour le moment.';return}
+ $('in_cn').innerHTML=a.networks.map(function(n){return '<option>'+escH(n)+'</option>'}).join('');var m=Number($('in_cm').value);
+ $('in_cs').textContent=m>0?'Taux : 1 '+a.asset+' = '+fmt0(a.buy)+' FCFA · vous recevez ≈ '+(m/a.buy).toFixed(a.decimals>4?4:a.decimals)+' '+a.asset+' (frais du réseau en plus).':'Taux : 1 '+a.asset+' = '+fmt0(a.buy)+' FCFA.'}
+async function intlCrypto(){var a=intlCAsset();if(!a)return msg('in_msg','Service crypto indisponible.');var m=Math.round(Number($('in_cm').value));if(!(m>0))return msg('in_msg','Indiquez le montant en FCFA.');
+ var buy;try{buy=await api('/api/exchange/buy',{body:{asset:a.asset,amountXof:m,expectedRate:a.buy}})}catch(e){return msg('in_msg',e.message)}
+ try{await api('/api/exchange/withdraw',{body:{asset:a.asset,network:$('in_cn').value,qty:buy.order.qty,address:$('in_cd').value.trim()}});msg('in_msg','Conversion faite : l\'envoi vers votre wallet est en cours de traitement.',true);$('in_cd').value='';$('in_cm').value='';try{refresh()}catch(e){}}
+ catch(e){msg('in_msg','Conversion faite, mais l\'envoi est refusé : '+e.message+' Vos '+a.asset+' sont gardés dans votre portefeuille crypto (menu Échange).')}}
 
 /* Abonnements TV (Canal+) */
 var SB=[];

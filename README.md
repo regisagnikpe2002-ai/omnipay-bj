@@ -77,3 +77,8 @@ Plateforme de paiement : Node/Express + Postgres (Neon), déployée sur Render. 
 | `/api/pay` | Demandes de paiement par QR/lien (usage unique, expiration) | `routes/payRequests.js` |
 | `/api/web3` | Web3 | `routes/web3.js` |
 | `/api` | Binance | `routes/binance.js` |
+
+## Réglages Render utiles (international)
+- `OMNIPAY_BANK` : coordonnées bancaires de réception (JSON) pour les dépôts par virement.
+- `BANK_OUT_FEE_PCT` (défaut 2), `BANK_OUT_FEE_MIN` (défaut 2000 F), `BANK_OUT_MIN_XOF` (défaut 20000 F) : frais et minimum des retraits par virement.
+- `EX_BUY_MARGIN_PCT` / `EX_SELL_MARGIN_PCT` : marge OMNICHANGE (crypto).
