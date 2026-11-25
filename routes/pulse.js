@@ -31,10 +31,9 @@ router.post("/diag-collect", express.json(), async (req, res) => {
     const token = k.data && (k.data.token || ((k.data["v1/token"] || {}).token));
     steps.push({ step: "2. Jeton de paiement", http: k.status, message: token ? "ok" : brief(k) });
     if (k.status >= 400 || !token) return out(false, { hint: "FedaPay a créé la transaction mais refuse le jeton." });
-    const mode = fp.collectMode(op);
-    const s2 = await fp.call("POST", "/transactions/" + encodeURIComponent(mode), { token, phone_number: { number: num, country: "bj" } });
-    steps.push({ step: "3. Envoi sur le téléphone (" + mode + ")", http: s2.status, message: brief(s2) || (s2.status < 300 ? "ok" : "") });
-    if (s2.status >= 400) return out(false, { hint: s2.status === 403 || s2.status === 401 ? "L'encaissement direct par API n'est pas autorisé sur ce compte : demandez son activation à FedaPay." : "FedaPay refuse l'envoi : vérifiez le numéro, l'opérateur choisi et le mode (" + mode + ")." });
+    const sn = await fp.sendNow(op, token, num), s2 = sn.res;
+    steps.push({ step: "3. Envoi sur le téléphone", http: s2.status, message: "modes essayés : " + sn.tried.map((x) => x.mode + " → " + x.http).join(" ; ") + (brief(s2) ? " · " + brief(s2) : "") });
+    if (s2.status >= 400) return out(false, { hint: s2.status === 404 ? "Aucun mode d'encaissement connu n'est accepté par FedaPay pour cet opérateur : donnez-moi la liste ci-dessus, ou lisez le bon mode dans la doc FedaPay et réglez FEDAPAY_COLLECT_MODE_" + op.toUpperCase() + " sur Render." : s2.status === 403 || s2.status === 401 ? "L'encaissement direct par API n'est pas autorisé sur ce compte : demandez son activation à FedaPay." : "FedaPay refuse l'envoi : vérifiez le numéro et l'opérateur choisi." });
     out(true, { hint: "Demande envoyée : validez sur le téléphone avec votre code secret (100 F)." });
   } catch (e) { steps.push({ step: "Erreur technique", http: 0, message: String(e.message).slice(0, 120) }); out(false, { hint: "FedaPay injoignable depuis le serveur." }); }
 });

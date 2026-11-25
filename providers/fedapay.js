@@ -77,7 +77,21 @@ async function status(payoutId) {
 
 // ---- ENCAISSEMENT (dépôts clients) : transaction -> jeton -> demande de paiement sur le téléphone du client (code secret) ----
 // Modes d'encaissement chez FedaPay : FEDAPAY_COLLECT_MODE_MTN (défaut « mtn_open »), FEDAPAY_COLLECT_MODE_MOOV (défaut « moov »), FEDAPAY_COLLECT_MODE_CELTIIS (défaut « sbin »). À valider d'abord en sandbox (500 F).
-const collectMode = (op) => process.env["FEDAPAY_COLLECT_MODE_" + String(op || "").toUpperCase()] || BJ_MODES[String(op || "").toLowerCase()] || "mtn_open";
+// Valeurs de « mode » pour l'encaissement : la doc FedaPay cite mtn_benin/moov_benin (guide collectes) ET mtn/moov (référence API) ; l'ancien « mtn_open » renvoyait 404.
+// Réglage Render prioritaire : FEDAPAY_COLLECT_MODE_MTN / _MOOV / _CELTIIS. Sinon on essaie la liste dans l'ordre, SEULEMENT si FedaPay répond 404 (mode inconnu) : jamais de double envoi.
+const COLLECT_MODES = { mtn: ["mtn_benin", "mtn", "mtn_open"], moov: ["moov_benin", "moov"], celtiis: ["celtiis_bj", "sbin", "celtiis_benin", "celtiis"] };
+const goodMode = {};
+const collectModes = (op) => { const k = String(op || "").toLowerCase(), env = process.env["FEDAPAY_COLLECT_MODE_" + k.toUpperCase()]; const l = [...(env ? [env] : []), ...(goodMode[k] ? [goodMode[k]] : []), ...(COLLECT_MODES[k] || ["mtn_benin"])]; return [...new Set(l)]; };
+const collectMode = (op) => collectModes(op)[0];
+// Envoie la demande sur le téléphone ; essaie les modes tant que FedaPay répond 404. -> { res, mode, tried:[{mode,http}] }
+async function sendNow(op, token, num) {
+  const tried = []; let res = null, mode = null;
+  for (const m of collectModes(op)) {
+    res = await call("POST", "/transactions/" + encodeURIComponent(m), { token, phone_number: { number: num, country: "bj" } }); mode = m; tried.push({ mode: m, http: res.status });
+    if (res.status !== 404) { if (res.status < 300) goodMode[String(op || "").toLowerCase()] = m; break; }
+  }
+  return { res, mode, tried };
+}
 const one = (d, k) => { if (!d) return null; const w = d["v1/" + k] || d[k] || (Array.isArray(d["v1/" + k + "s"]) ? d["v1/" + k + "s"][0] : null) || (Array.isArray(d) ? d[0] : null); return w || d; };
 // -> { status:'sent'|'refused'|'uncertain'|'unavailable', detail, id }
 async function collect({ ref, operator, phone, amount, name }) {
@@ -94,7 +108,8 @@ async function collect({ ref, operator, phone, amount, name }) {
     const k = await call("POST", "/transactions/" + encodeURIComponent(id) + "/token");
     const token = k.data && (k.data.token || (one(k.data, "token") || {}).token);
     if (k.status >= 400 || !token) return { status: "uncertain", id, detail: "FedaPay : jeton non obtenu (" + k.status + ")." };
-    const s = await call("POST", "/transactions/" + encodeURIComponent(collectMode(operator)), { token, phone_number: { number: num, country: "bj" } });
+    const sn = await sendNow(operator, token, num), s = sn.res;
+    if (s.status === 404) return { status: "refused", id, detail: "FedaPay : demande refusée : Not Found (modes essayés : " + sn.tried.map((x) => x.mode).join(", ") + ")" };
     if (s.status >= 400 && s.status < 500) return { status: "refused", id, detail: "FedaPay : demande refusée : " + errText(s.data) };
     if (s.status >= 500) return { status: "uncertain", id, detail: "FedaPay : envoi incertain." };
     return { status: "sent", id, detail: "FedaPay accepté" };
@@ -109,4 +124,4 @@ async function collectStatus(id) {
   const st = s === "approved" || s === "transferred" ? "completed" : s === "declined" || s === "canceled" || s === "cancelled" || s === "refunded" ? "failed" : "pending";
   return { found: true, status: st, amount: Number(t.amount), currency: t.currency && (t.currency.iso || t.currency), reference: t.merchant_reference == null ? null : String(t.merchant_reference), raw: s };
 }
-module.exports = { collect, collectStatus, collectMode, modeFor, call, payout, status, ready, env, ensure, cap, _mapStatus: mapStatus, _first: first };
+module.exports = { collect, collectStatus, collectMode, collectModes, sendNow, modeFor, call, payout, status, ready, env, ensure, cap, _mapStatus: mapStatus, _first: first };
