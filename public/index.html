@@ -260,10 +260,10 @@ body.lg #demo{display:block}
 :root[data-skin=olympe] #hero .dom{background:#e3f2ff;border-color:#b9dcfa;color:#1573d4}
 :root[data-skin=olympe] input:focus,:root[data-skin=olympe] select:focus{outline-color:#2b9bf4}
 :root[data-skin=olympe] .msg.ok,:root[data-skin=olympe] .badge{background:#e3f2ff;color:#1573d4;border-color:#b9dcfa}
-body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}
+body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#p2p_c{order:4;grid-column:1/-1;column-span:all;margin:14px 0 0!important}
 .pt{margin:14px 0 4px}.pt h3{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0 0 8px;text-align:center}
-.pt .ptr{display:flex;flex-wrap:nowrap;gap:10px 8px;justify-content:center}
-.pt .pti{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mut);font-weight:600;min-width:0;flex:1 1 0}
+.pt .ptr{display:flex;flex-wrap:wrap;gap:12px 8px;justify-content:center}
+.pt .pti{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mut);font-weight:600;min-width:0;flex:0 0 calc(25% - 8px)}
 .idchip{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--txt);font:inherit;font-size:13px;cursor:pointer;max-width:100%}
 .idchip span{color:var(--mut);font-size:11px;letter-spacing:1.2px;font-weight:700}
 .idchip b{font-size:15px;letter-spacing:.5px}
@@ -292,7 +292,7 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}
 <button onclick="navProfile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg><em>Profil</em></button>
 </nav>
 <aside id="sb" aria-label="Menu">
-<div class="sbl"><img src="/omnipay-shield.svg" alt="" width="34" height="38"><div><b>OMNIPAY</b><small>HOLDING</small></div></div>
+<div class="sbl"><img src="/omnipay-logo.png" alt="OMNIPAY" style="height:34px;width:auto;display:block;border-radius:0"></div>
 <button data-n="dash" onclick="show('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg> Tableau de bord</button>
 <button onclick="openOw()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg> Portefeuille</button>
 <button onclick="show('xfer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg> Envoyer</button>
@@ -310,10 +310,10 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}
 
 <div id="splash"><span>WWW.OMNIPAY-BJ.COM</span></div>
 <div class="wrap">
-  <div id="hero"><img class="lg1" src="/logo.svg" alt="OMNIPAY" width="84" height="84">
+  <div id="hero"><img class="lg1" src="/omnipay-logo.png" alt="OMNIPAY" style="width:auto;height:60px;background:#071332;padding:10px 14px;border-radius:16px">
     <a class="dom" href="https://www.omnipay-bj.com" rel="noopener">🔒 <span>https://</span><b>www.omnipay-bj.com</b></a>
     <div id="nl" class="hide" style="margin-top:14px"></div></div>
-  <div class="brand"><img src="/logo.svg" alt="OMNIPAY" width="64" height="64" style="border-radius:16px;display:block;box-shadow:0 0 0 2px var(--mint),0 6px 22px rgba(0,214,143,.45)"><div><b>OMNIPAY</b><small>Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
+  <div class="brand"><div><img src="/omnipay-logo.png" alt="OMNIPAY" style="height:44px;width:auto;display:block;background:#071332;padding:8px 12px;border-radius:14px"><small style="margin-top:6px">Votre quotidien financier tout-en-un</small></div><button id="thm" class="thm" onclick="toggleTheme()" aria-label="Changer le thème">🌗</button></div>
 
 <div id="wl"><h2>Bienvenue sur <em>OMNIPAY</em></h2><p>Consultez votre solde, envoyez et recevez de l'argent, rechargez et payez en toute simplicité.</p><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span><div><b>Transferts instantanés</b><small>Entre clients OMNIPAY, sans frais cachés</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><div><b>Mobile Money &amp; crypto</b><small>MTN, Moov, Celtiis, USDT</small></div></div><div class="ft"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Sécurité renforcée</b><small>Code PIN, vérification et suivi de vos opérations</small></div></div></div>
   <!-- CONNEXION -->
@@ -365,7 +365,7 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}
 
   <!-- TABLEAU DE BORD -->
   <section id="dash" class="hide">
-    <div class="dtop"><div class="lgo"><img src="/omnipay-shield.svg" alt="OMNIPAY" width="38" height="42"><div><b>OMNIPAY</b><small>HOLDING</small></div></div><div class="ic"><button class="olb" onclick="openOlat()" aria-label="OLATOUNDE, assistante OMNIPAY" title="OLATOUNDE"><img src="/olatounde-avatar.svg" alt="" width="40" height="40" onerror="this.outerHTML='💬'"><span class="olon"></span></button><button onclick="openNt()" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot" id="bdot" style="display:none"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
+    <div class="dtop"><div class="lgo"><img src="/omnipay-logo.png" alt="OMNIPAY" style="height:42px;width:auto;display:block;border-radius:0"></div><div class="ic"><button class="olb" onclick="openOlat()" aria-label="OLATOUNDE, assistante OMNIPAY" title="OLATOUNDE"><img src="/olatounde-avatar.svg" alt="" width="40" height="40" onerror="this.outerHTML='💬'"><span class="olon"></span></button><button onclick="openNt()" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 01-3.4 0"/></svg><span class="dot" id="bdot" style="display:none"></span></button><button onclick="toggleTheme()" aria-label="Thème clair ou sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></button><button onclick="openPrefs()" aria-label="Mon profil et mes options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></div></div>
     <div class="dsheet"></div>
     <div class="gr"><h1 id="gr_h">Bonjour</h1><small>OMNIPAY <i>›</i> <b>Tableau de bord</b></small></div>
     <button type="button" class="idchip" id="idchip" onclick="chipCopy()" aria-label="Copier mon identifiant OMNIPAY"><span>ID OMNIPAY</span><b id="idchip_v">…</b><em id="idchip_c">Copier</em></button>
@@ -4037,7 +4037,7 @@ function giftLogo(b,sz,mr){sz=sz||44;mr=mr==null?12:mr;var sl=giftSlug(b),ini=es
   return '<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:'+sz+'px;height:'+sz+'px;border-radius:12px;background:'+col+';color:#fff;font-weight:700;font-size:'+Math.round(sz/3)+'px;flex:none;overflow:hidden;margin-right:'+mr+'px;box-shadow:0 1px 3px rgba(0,0,0,.25)">'+ini+'<img src="/api/omnigift/logo/'+sl+'" alt="" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'/logos/'+sl+'.png\'}else{this.remove()}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:5px;box-sizing:border-box"></span>'}
 
 /* Prestataires : logos fournis par OMNIPAY (OMNICHECK) ; sinon pastille d'initiales neutre. */
-var PT_LIST=['MTN','Moov','Celtiis','PI-SPI','CoinGate'];
+var PT_LIST=['MTN','Moov','Celtiis','PI-SPI','CoinGate','PaysafeCard','PCS','Transcash'];
 function partnersInit(){var h='<h3>Nos prestataires de paiement</h3><div class="ptr">'+PT_LIST.map(function(b){return '<div class="pti">'+giftLogo(b,44,0)+'<span>'+escH(b)+'</span></div>'}).join('')+'</div>';
  document.querySelectorAll('[data-pt]').forEach(function(e){e.innerHTML=h})}
 document.addEventListener('DOMContentLoaded',partnersInit);

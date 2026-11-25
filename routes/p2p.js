@@ -50,4 +50,40 @@ router.get("/verify/:orderNumber", async (req, res) => {
   } catch (e) { fail(res, e, "P2P_VERIFY"); }
 });
 
+// Solde réel du compte Binance (LECTURE SEULE) : portefeuille Spot + Funding. Même clé que ci-dessus : activer « Lecture » seulement, jamais « Retrait ».
+async function signed(method, path, params) {
+  const key = (process.env.BINANCE_P2P_API_KEY || "").trim(), secret = (process.env.BINANCE_P2P_API_SECRET || "").trim();
+  if (!key || !secret) throw Object.assign(new Error("Clés Binance absentes."), { code: "NOKEY" });
+  const qs = new URLSearchParams({ ...params, recvWindow: "10000", timestamp: String(Date.now()) });
+  const sig = crypto.createHmac("sha256", secret).update(qs.toString()).digest("hex");
+  const url = `${base()}${path}?${qs.toString()}&signature=${sig}`;
+  const r = await axios.request({ method, url, headers: { "X-MBX-APIKEY": key }, timeout: 20000 });
+  return r.data;
+}
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+async function balances() {
+  const out = { spot: [], funding: [], errors: [] };
+  try {
+    const d = await signed("GET", "/api/v3/account", { omitZeroBalances: "true" });
+    out.spot = (d.balances || []).map((b) => ({ asset: b.asset, free: num(b.free), locked: num(b.locked) })).filter((b) => b.free + b.locked > 0);
+  } catch (e) { if (e.code === "NOKEY") throw e; out.errors.push("Spot : " + (e.response?.data?.msg || e.message)); }
+  try {
+    const d = await signed("POST", "/sapi/v1/asset/get-funding-asset", {});
+    out.funding = (Array.isArray(d) ? d : []).map((b) => ({ asset: b.asset, free: num(b.free), locked: num(b.locked) + num(b.freeze) })).filter((b) => b.free + b.locked > 0);
+  } catch (e) { out.errors.push("Funding : " + (e.response?.data?.msg || e.message)); }
+  const sum = (arr, a) => arr.filter((b) => b.asset === a).reduce((t, b) => t + b.free + b.locked, 0);
+  out.usdt = { spot: sum(out.spot, "USDT"), funding: sum(out.funding, "USDT") };
+  out.usdt.total = out.usdt.spot + out.usdt.funding;
+  out.at = new Date().toISOString();
+  return out;
+}
+router.get("/balance", async (req, res) => {
+  try {
+    const b = await balances();
+    if (b.errors.length === 2) return res.status(502).json({ error: "Binance a refusé la lecture du solde (clé en lecture activée ? IP de Render autorisée ?).", details: b.errors });
+    res.json(b);
+  } catch (e) { fail(res, e, "BINANCE_BALANCE"); }
+});
+
 module.exports = router;
+module.exports._balances = balances;
