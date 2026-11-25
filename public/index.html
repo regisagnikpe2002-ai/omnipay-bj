@@ -263,7 +263,7 @@ body.lg #demo{display:block}
 body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#p2p_c{order:4;grid-column:1/-1;column-span:all;margin:14px 0 0!important}
 .pt{margin:14px 0 4px}.pt h3{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0 0 8px;text-align:center}
 .pt .ptr{display:flex;flex-wrap:wrap;gap:12px 8px;justify-content:center}
-.pt .pti{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mut);font-weight:600;min-width:0;flex:0 0 calc(25% - 8px)}
+.pt .pti img{padding:3px!important}.pt .pti{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mut);font-weight:600;min-width:0;flex:0 0 calc(25% - 8px)}
 .idchip{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--txt);font:inherit;font-size:13px;cursor:pointer;max-width:100%}
 .idchip span{color:var(--mut);font-size:11px;letter-spacing:1.2px;font-weight:700}
 .idchip b{font-size:15px;letter-spacing:.5px}
@@ -4076,7 +4076,7 @@ function giftLogo(b,sz,mr){sz=sz||44;mr=mr==null?12:mr;var sl=giftSlug(b),ini=es
 
 /* Prestataires : logos fournis par OMNIPAY (OMNICHECK) ; sinon pastille d'initiales neutre. */
 var PT_LIST=['MTN','Moov','Celtiis','PI-SPI','CoinGate','PaysafeCard','PCS','Transcash'];
-function partnersInit(){var h='<h3>Nos prestataires de paiement</h3><div class="ptr">'+PT_LIST.map(function(b){return '<div class="pti">'+giftLogo(b,44,0)+'<span>'+escH(b)+'</span></div>'}).join('')+'</div>';
+function partnersInit(){var h='<h3>Nos prestataires de paiement</h3><div class="ptr">'+PT_LIST.map(function(b){var wide=/^(PaysafeCard|PCS|Transcash)$/.test(b);return '<div class="pti">'+(wide?giftLogo(b,44,0).replace('width:44px','width:72px'):giftLogo(b,44,0))+'<span>'+escH(b)+'</span></div>'}).join('')+'</div>';
  document.querySelectorAll('[data-pt]').forEach(function(e){e.innerHTML=h})}
 document.addEventListener('DOMContentLoaded',partnersInit);
 
