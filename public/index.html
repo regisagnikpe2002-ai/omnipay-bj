@@ -271,13 +271,19 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#
 </style>
 <button id="olfab" class="hide" aria-label="OLATOUNDE, assistante OMNIPAY. Touchez pour discuter, glissez pour déplacer."><img src="/olatounde-avatar.svg" alt="OLATOUNDE" onerror="this.style.display='none'"><i class="olon"></i></button><div id="olhint" class="hide">Glissez-moi où vous voulez sur l'écran. Touchez-moi pour discuter.</div>
 <script>
-/* Thème automatique : 6 h–18 h = blanc, sinon sombre. Bascule : auto → clair → sombre (mémorisé sur cet appareil). */
+/* Thème automatique : 6 h–18 h = blanc, sinon sombre. Choix : clair, sombre, Olympe ou automatique (mémorisé sur cet appareil). */
 (function(){var K='omTheme',mode='auto';try{mode=localStorage.getItem(K)||'auto'}catch(e){}
  function eff(){if(mode==='olympe')return 'light';if(mode==='light'||mode==='dark')return mode;var h=new Date().getHours();return h>=6&&h<18?'light':'dark'}
  function apply(){var t=eff();document.documentElement.setAttribute('data-theme',t);if(mode==='olympe')document.documentElement.setAttribute('data-skin','olympe');else document.documentElement.removeAttribute('data-skin');var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',mode==='olympe'?'#bfe3ff':t==='light'?'#f2f5fb':'#070b14');
   var b=document.getElementById('thm');if(b){b.textContent=mode==='auto'?'🌗':mode==='olympe'?'🏛️':(t==='light'?'☀️':'🌙');b.title='Thème : '+(mode==='auto'?'automatique (jour/nuit)':mode==='olympe'?'Olympe (bleu ciel et blanc)':t==='light'?'clair':'sombre')}}
- window.toggleTheme=function(){mode=mode==='auto'?'light':mode==='light'?'dark':mode==='dark'?'olympe':'auto';try{localStorage.setItem(K,mode)}catch(e){}apply();
-  var b=document.getElementById('thm');if(b)alert(b.title)};
+ window.setTheme=function(m){mode=m;try{localStorage.setItem(K,mode)}catch(e){}apply();var o=document.getElementById('thmsheet');if(o)o.remove()};
+ window.toggleTheme=function(){var o=document.getElementById('thmsheet');if(o){o.remove();return}
+  var L=[['light','☀️','Clair','Fond blanc'],['dark','🌙','Sombre','Fond nuit'],['olympe','🏛️','Olympe','Bleu ciel et blanc'],['auto','🌗','Automatique','Clair le jour, sombre la nuit']];
+  o=document.createElement('div');o.id='thmsheet';o.setAttribute('role','dialog');o.setAttribute('aria-label','Choisir le thème');
+  o.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(5,12,30,.55);display:flex;align-items:flex-end;justify-content:center';
+  o.onclick=function(e){if(e.target===o)o.remove()};
+  o.innerHTML='<div style="width:100%;max-width:440px;background:'+(document.documentElement.getAttribute('data-theme')==='dark'?'#0f1a33':'#ffffff')+';color:'+(document.documentElement.getAttribute('data-theme')==='dark'?'#eaf0ff':'#0b1b33')+';border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.3)"><b style="font-size:17px;display:block;margin-bottom:12px">Thème</b>'+L.map(function(x){var on=x[0]===mode;return '<button type="button" onclick="setTheme(\''+x[0]+'\')" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:0 0 8px;padding:12px 14px;border-radius:14px;border:2px solid '+(on?'var(--mint,#1fb98a)':'var(--line,#d9e3f0)')+';background:'+(on?'rgba(31,185,138,.12)':'transparent')+';color:inherit;font:inherit;cursor:pointer"><span style="font-size:22px">'+x[1]+'</span><span style="flex:1"><b style="display:block;font-size:15px">'+x[2]+'</b><small style="opacity:.7">'+x[3]+'</small></span>'+(on?'<b style="color:var(--mint,#1fb98a)">✓</b>':'')+'</button>'}).join('')+'</div>';
+  document.body.appendChild(o)};
  apply();document.addEventListener('DOMContentLoaded',apply);setInterval(apply,300000)})();
 </script>
 
