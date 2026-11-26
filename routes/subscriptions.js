@@ -45,10 +45,14 @@ router.post("/order", requireAuth, async (req, res) => {
     await ensure();
     const uid = req.user.userId, b = req.body || {};
     if (!UUID.test(String(b.planId || ""))) return res.status(400).json({ error: "Choisissez une formule." });
-    const decoder = clean(b.decoder, 20).replace(/[^0-9A-Za-z-]/g, "");
-    if (decoder.length < 6) return res.status(400).json({ error: "Numéro de décodeur ou de carte invalide (au moins 6 caractères)." });
-    const phone = clean(b.phone, 20).replace(/[^\d+]/g, "");
     const q = sql();
+    const pl = await q`SELECT provider FROM sub_plans WHERE id = ${b.planId}::uuid AND active`;
+    const isVpn = pl.length && pl[0].provider === "vpn";
+    // VPN : l'identifiant est l'adresse e-mail où livrer les accès ; TV : numéro de décodeur ou de carte.
+    const decoder = isVpn ? clean(b.decoder, 80).toLowerCase().replace(/[^0-9a-z@._+-]/g, "") : clean(b.decoder, 20).replace(/[^0-9A-Za-z-]/g, "");
+    if (isVpn && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(decoder)) return res.status(400).json({ error: "Adresse e-mail invalide : c'est là que vos accès VPN seront envoyés." });
+    if (!isVpn && decoder.length < 6) return res.status(400).json({ error: "Numéro de décodeur ou de carte invalide (au moins 6 caractères)." });
+    const phone = clean(b.phone, 20).replace(/[^\d+]/g, "");
     const open = await q`SELECT count(*)::int AS n FROM sub_orders WHERE user_id = ${uid}::uuid AND status = 'pending'`;
     if (open[0].n >= MAX_PENDING) return res.status(429).json({ error: "Vous avez déjà des abonnements en cours de traitement. Patientez." });
     const r = await q`WITH p AS (SELECT id, provider, name, price_xof, months FROM sub_plans WHERE id = ${b.planId}::uuid AND active),
@@ -69,7 +73,7 @@ router.post("/order", requireAuth, async (req, res) => {
 router.get("/mine", requireAuth, async (req, res) => {
   try {
     await ensure();
-    const r = await sql()`SELECT id, provider, plan_name, months, amount::float AS amount, decoder, status, note, created_at, decided_at FROM sub_orders WHERE user_id = ${req.user.userId}::uuid ORDER BY created_at DESC LIMIT 30`;
+    const r = await sql()`SELECT id, provider, plan_name, months, amount::float AS amount, decoder, status, note, CASE WHEN status = 'done' AND provider = 'vpn' THEN ref END AS ref, created_at, decided_at FROM sub_orders WHERE user_id = ${req.user.userId}::uuid ORDER BY created_at DESC LIMIT 30`;
     res.json({ orders: r });
   } catch (e) { console.error("SUBS_MINE", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
@@ -93,7 +97,7 @@ router.post("/admin/orders/:id/done", adminOnly, async (req, res) => {
   try {
     await ensure();
     if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
-    const r = await sql()`UPDATE sub_orders SET status = 'done', ref = ${clean(req.body && req.body.ref, 80) || null}, decided_at = now() WHERE id = ${req.params.id}::uuid AND status = 'pending' RETURNING id`;
+    const r = await sql()`UPDATE sub_orders SET status = 'done', ref = ${clean(req.body && req.body.ref, 200) || null}, decided_at = now() WHERE id = ${req.params.id}::uuid AND status = 'pending' RETURNING id`;
     if (!r.length) return res.status(409).json({ error: "Commande introuvable ou déjà traitée." });
     res.json({ ok: true });
   } catch (e) { console.error("SUBS_DONE", e.message); res.status(500).json({ error: "Erreur serveur." }); }

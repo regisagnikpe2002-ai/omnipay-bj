@@ -4136,14 +4136,14 @@ var SB=[];
 function sbFmt(n){return fmt0(n)+' FCFA'}
 async function openSubs(){show('subs');$('sb_msg').className='msg';var d=null;try{d=await api('/api/subs/plans')}catch(e){}
  SB=(d&&d.plans)||[];var ok=SB.length>0;$('sb_box').classList.toggle('hide',!ok);$('sb_off').classList.toggle('hide',ok);
- $('sb_p').innerHTML=SB.map(function(p){return '<option value="'+escH(p.id)+'">'+escH((p.provider==='canal'?'Canal+ · ':'')+p.name)+' — '+sbFmt(p.price)+(p.months>1?' ('+p.months+' mois)':'')+'</option>'}).join('');sbCalc();sbList()}
-function sbCalc(){var p=SB.filter(function(x){return x.id===$('sb_p').value})[0];$('sb_s').textContent=p?'À payer : '+sbFmt(p.price)+(p.months>1?' pour '+p.months+' mois':' pour 1 mois')+'.':''}
-async function sbOrder(){var b=$('sb_go');if(b.disabled)return;var p=$('sb_p').value,d=$('sb_d').value.replace(/\s/g,''),t=$('sb_t').value.trim();
- if(d.length<6)return msg('sb_msg','Indiquez le numéro de votre décodeur (au moins 6 caractères).');
+ $('sb_p').innerHTML=SB.map(function(p){return '<option value="'+escH(p.id)+'">'+escH((p.provider==='canal'?'Canal+ · ':p.provider==='vpn'?'VPN · ':'')+p.name)+' — '+sbFmt(p.price)+(p.months>1?' ('+p.months+' mois)':'')+'</option>'}).join('');sbCalc();sbList()}
+function sbCalc(){var p=SB.filter(function(x){return x.id===$('sb_p').value})[0];var v=p&&p.provider==='vpn';var l=$('sb_d').previousElementSibling;if(l)l.textContent=v?'Votre adresse e-mail (vos accès VPN y seront envoyés)':'Numéro de décodeur ou de carte';$('sb_d').placeholder=v?'vous@exemple.com':'Numéro inscrit sur votre décodeur';$('sb_d').maxLength=v?80:20;$('sb_d').inputMode=v?'email':'numeric';$('sb_s').textContent=p?'À payer : '+sbFmt(p.price)+(p.months>1?' pour '+p.months+' mois':' pour 1 mois')+'.':''}
+async function sbOrder(){var b=$('sb_go');if(b.disabled)return;var p=$('sb_p').value,d=$('sb_d').value.replace(/\s/g,''),t=$('sb_t').value.trim();var pv=SB.filter(function(x){return x.id===p})[0];
+ if(pv&&pv.provider==='vpn'){if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(d))return msg('sb_msg','Indiquez une adresse e-mail valide.')}else if(d.length<6)return msg('sb_msg','Indiquez le numéro de votre décodeur (au moins 6 caractères).');
  b.disabled=true;try{var r=await api('/api/subs/order',{body:{planId:p,decoder:d,phone:t}});msg('sb_msg',r.message||'Commande enregistrée.',true);$('sb_d').value='';sbList();try{refresh()}catch(e){}}catch(e){msg('sb_msg',e.message)}finally{b.disabled=false}}
 async function sbList(){var el=$('sb_l'),d=null;try{d=await api('/api/subs/mine')}catch(e){}var o=(d&&d.orders)||[];
  el.innerHTML=o.length?o.map(function(x){var st=x.status==='done'?['Activé','var(--mint)']:x.status==='refused'?['Remboursé','var(--err)']:['En cours','var(--warn)'];
-  return '<div class="tx" style="display:block"><b>'+escH(x.plan_name)+'</b> · '+sbFmt(x.amount)+'<small style="display:block;color:var(--mut)">Décodeur '+escH(x.decoder)+' · '+new Date(x.created_at).toLocaleDateString('fr-FR')+' · <b style="color:'+st[1]+'">'+st[0]+'</b>'+(x.note?' · '+escH(x.note):'')+'</small></div>'}).join(''):'<p class="sub">Aucun abonnement pour le moment.</p>'}
+  return '<div class="tx" style="display:block"><b>'+escH(x.plan_name)+'</b> · '+sbFmt(x.amount)+'<small style="display:block;color:var(--mut)">'+(x.provider==='vpn'?'E-mail ':'Décodeur ')+escH(x.decoder)+' · '+new Date(x.created_at).toLocaleDateString('fr-FR')+' · <b style="color:'+st[1]+'">'+st[0]+'</b>'+(x.note?' · '+escH(x.note):'')+'</small>'+(x.ref&&x.provider==='vpn'?'<div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--card2);font-size:13px;word-break:break-all"><b>Vos accès VPN :</b> '+escH(x.ref)+'</div>':'')+'</div>'}).join(''):'<p class="sub">Aucun abonnement pour le moment.</p>'}
 
 /* Retraits P2P : le client confirme la réception de l'argent envoyé par un marchand */
 async function p2pLoad(){var box=$('p2p_c');if(!box)return;var d=null;try{d=await api('/api/orders/mine')}catch(e){}
