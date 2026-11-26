@@ -1,7 +1,7 @@
 /* OMNIPAY — service worker.
    Règle d'or : aucune donnée financière n'est jamais mise en cache. Seules les pages et images statiques le sont.
    Toute requête vers l'API (auth, wallet, api/*) va toujours au réseau. */
-const VERSION = "omnipay-v60";
+const VERSION = "omnipay-v61";
 const SHELL = ["/", "/offline.html", "/manifest.json", "/logo.svg", "/omnipay-shield.svg", "/omnipay-logo.png", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];
 const NEVER = /^\/(auth|wallet|api|admin|healthz|2fa|webhook|pay|transfer)/i;
 
