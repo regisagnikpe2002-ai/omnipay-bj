@@ -47,6 +47,8 @@ router.post("/webhook", async (req, res) => {
     const q = sql();
     await q`INSERT INTO feexpay_events (verified, event, body, headers, delivery_id) VALUES (${ok}, ${ev || null}, ${raw.slice(0, 20000)}, ${JSON.stringify(keepHeaders(req.headers))}::jsonb, ${did}) ON CONFLICT DO NOTHING`;
     await q`DELETE FROM feexpay_events WHERE id <= (SELECT max(id) FROM feexpay_events) - ${KEEP}`;
+    // Crédit : uniquement si la signature est valide (jamais sur un événement non signé).
+    if (ok) { try { const r = await require("./feexpayCashin").settleFromWebhook(req.body); if (!r.done) console.log("FEEXPAY_HOOK_SKIP", r.why); } catch (e) { console.error("FEEXPAY_SETTLE", e.message); } }
   } catch (e) { console.error("FEEXPAY_WEBHOOK", e.message); }
   res.status(200).json({ ok: true }); // toujours 2xx : FeexPay réessaie sinon
 });
