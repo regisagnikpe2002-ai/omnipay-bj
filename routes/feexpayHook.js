@@ -14,25 +14,26 @@ const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(
 const KEEP = 500;
 let ready = null;
 function ensure() {
-  if (!ready) ready = sql()`CREATE TABLE IF NOT EXISTS feexpay_events (id bigserial PRIMARY KEY, received_at timestamptz NOT NULL DEFAULT now(),
-    verified boolean NOT NULL DEFAULT false, event text, body text, headers jsonb)`.catch((e) => { ready = null; throw e; });
+  if (!ready) ready = (async () => {
+    const q = sql();
+    await q`CREATE TABLE IF NOT EXISTS feexpay_events (id bigserial PRIMARY KEY, received_at timestamptz NOT NULL DEFAULT now(),
+      verified boolean NOT NULL DEFAULT false, event text, body text, headers jsonb, delivery_id text)`;
+    await q`ALTER TABLE feexpay_events ADD COLUMN IF NOT EXISTS delivery_id text`;
+    await q`CREATE UNIQUE INDEX IF NOT EXISTS feexpay_events_delivery ON feexpay_events (delivery_id) WHERE delivery_id IS NOT NULL`;
+  })().catch((e) => { ready = null; throw e; });
   return ready;
 }
 const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
-// Signature : HMAC-SHA256 du corps brut avec le secret, en hexadécimal ou en base64, éventuellement précédée de « sha256= » ou « v1= ».
-function verify(raw, headers) {
+// Signature FeexPay (documentée dans leur tableau de bord) : HMAC-SHA256 en hexadécimal de « timestamp.delivery_id.corps_brut »,
+// comparée à x-feexpay-signature (une ou plusieurs valeurs séparées par des virgules, préfixe « v1= » possible).
+// Refusée si l'heure signée s'écarte de plus de 300 s (anti-rejeu). x-feexpay-delivery-id sert à ignorer les doublons.
+function verify(raw, headers, nowMs = Date.now()) {
   const secret = String(process.env.FEEXPAY_WEBHOOK_SECRET || "").trim();
-  if (!secret || !raw) return false;
-  const mac = crypto.createHmac("sha256", secret).update(raw).digest();
-  const cands = [mac.toString("hex"), mac.toString("base64")];
-  for (const [k, v] of Object.entries(headers)) {
-    if (!/sig|hmac|signature/i.test(k)) continue;
-    for (const part of String(v).split(",")) {
-      const val = part.trim().replace(/^(sha256=|v1=)/i, "");
-      if (cands.some((c) => safeEq(val, c))) return true;
-    }
-  }
-  return false;
+  const ts = headers["x-feexpay-timestamp"], id = headers["x-feexpay-delivery-id"];
+  if (!secret || !raw || !ts || !id) return false;
+  if (!Number.isFinite(Number(ts)) || Math.abs(nowMs / 1000 - Number(ts)) > 300) return false;
+  const expected = crypto.createHmac("sha256", secret).update(`${ts}.${id}.`).update(raw).digest("hex");
+  return String(headers["x-feexpay-signature"] || "").split(",").some((e) => safeEq(e.trim().replace(/^v1=/, ""), expected));
 }
 const keepHeaders = (h) => { const o = {}; for (const [k, v] of Object.entries(h)) if (/^(content-type|user-agent)$/i.test(k) || /sig|hmac|signature|webhook|feexpay|event|timestamp/i.test(k)) o[k] = String(v).slice(0, 300); return o; };
 
@@ -41,9 +42,10 @@ router.post("/webhook", async (req, res) => {
     await ensure();
     const raw = typeof req.rawBody === "string" ? req.rawBody : JSON.stringify(req.body || {});
     const ok = verify(raw, req.headers);
-    const ev = req.body && typeof req.body === "object" ? String(req.body.event || req.body.type || req.body.status || "").slice(0, 80) : "";
+    const ev = String(req.headers["x-feexpay-event"] || (req.body && typeof req.body === "object" ? req.body.event || req.body.type || req.body.status : "") || "").slice(0, 80);
+    const did = String(req.headers["x-feexpay-delivery-id"] || "").slice(0, 120) || null;
     const q = sql();
-    await q`INSERT INTO feexpay_events (verified, event, body, headers) VALUES (${ok}, ${ev || null}, ${raw.slice(0, 20000)}, ${JSON.stringify(keepHeaders(req.headers))}::jsonb)`;
+    await q`INSERT INTO feexpay_events (verified, event, body, headers, delivery_id) VALUES (${ok}, ${ev || null}, ${raw.slice(0, 20000)}, ${JSON.stringify(keepHeaders(req.headers))}::jsonb, ${did}) ON CONFLICT DO NOTHING`;
     await q`DELETE FROM feexpay_events WHERE id <= (SELECT max(id) FROM feexpay_events) - ${KEEP}`;
   } catch (e) { console.error("FEEXPAY_WEBHOOK", e.message); }
   res.status(200).json({ ok: true }); // toujours 2xx : FeexPay réessaie sinon
