@@ -389,7 +389,7 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#
     <div id="pf" class="card hide" style="margin-bottom:16px"></div>
     <div class="card" id="apc"><div class="aph"><b>Aperçu</b><small>7 derniers jours</small></div><div id="ap_c"></div><div class="apl"><span><i style="background:#2563eb"></i>Dépôts <b id="ap_in">0 FCFA</b></span><span><i style="background:#ef4444"></i>Dépenses <b id="ap_out">0 FCFA</b></span></div></div>
     <div id="cpt"><h2>Comptes &amp; portefeuilles</h2><div class="cg">
-      <button class="ca" onclick="openHist()"><span class="ci" style="background:#16a34a">F</span><b>FCFA</b><em id="cp_f">0 FCFA</em><small id="cp_fn">Compte principal</small></button>
+      <button class="ca" onclick="openWal()"><span class="ci" style="background:#16a34a">F</span><b>FCFA</b><em id="cp_f">0 FCFA</em><small id="cp_fn">Compte principal</small></button>
       <button class="ca" onclick="openOw()"><span class="ci" style="background:#26a17b">₮</span><b>USDT</b><em>Adresse à votre nom</em><small>OMNIWALLET · dépôt et retrait</small></button>
       <button class="ca" onclick="openCard()"><span class="ci" style="background:#2563eb">▭</span><b>Cartes virtuelles</b><em>Achats en ligne</em><small>Alimentées depuis votre solde</small></button>
       <button class="ca" onclick="openApi()"><span class="ci" style="background:#7c3aed">⌘</span><b>Clés API</b><em>Pour votre site</em><small>Solde, historique, paiements</small></button>
@@ -580,6 +580,16 @@ body.inapp #dash>.pt{order:3;grid-column:1/-1;column-span:all}body.inapp #dash>#
     <button class="opt" onclick="openBank()"><i>🏦</i><span><b>Virement bancaire (IBAN · SEPA · SWIFT)</b><small>Europe, Asie et reste du monde : depuis votre banque</small></span></button>
     <button class="opt" onclick="openMan('pispi')"><i>🔗</i><span><b>PI-SPI / QR</b><small>Scannez le QR depuis votre banque ou Mobile Money</small></span></button>
     <button class="opt" onclick="openMan('crypto')"><i>🪙</i><span><b>Crypto (USDT)</b><small>Envoi sur votre adresse OMNIPAY</small></span></button>
+    <button class="lnk" onclick="show('dash')">← Retour</button>
+  </section>
+
+  <section id="wal" class="card hide">
+    <h1>Mon portefeuille</h1><p class="sub">Un seul solde OMNIPAY, alimenté et vidé par l'opérateur de votre choix.</p>
+    <div class="wtot"><small>Solde total</small><b id="w_bal">0 FCFA</b><span id="w_id"></span><button type="button" onclick="openWal()" aria-label="Actualiser">⟳</button></div>
+    <div class="wg" id="w_ops"></div>
+    <div class="wrx"><b>Reçues · 24 dernières heures</b><div class="wrr"><div><small>Total</small><strong id="w_in">0 FCFA</strong></div><div><small>Transactions réussies</small><strong id="w_n">0</strong></div></div><div id="w_list"></div></div>
+    <div id="w_msg" class="msg"></div>
+    <button class="sec" onclick="openRc()">🧾 Tous mes reçus</button>
     <button class="lnk" onclick="show('dash')">← Retour</button>
   </section>
 
@@ -3379,7 +3389,7 @@ const $=id=>document.getElementById(id);
 const LS={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const S={token:LS.get('omnipayAccessToken'),user:(function(){try{return JSON.parse(LS.get('omnipayUser')||'null')}catch(e){return null}})(),wallet:null,txs:[],challengeId:'',vToken:'',vEmail:''};
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(Number(n)||0))+' FCFA';
-function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs','co','subs','intl','prof'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0);if(window.olFab)olFab(id)}
+function show(id){if(id!=='mk'&&MKT){clearInterval(MKT);MKT=null}if(id!=='vn'&&VNT){clearInterval(VNT);VNT=null}['login','reg','dash','mk','chl','xfer','io','aff','fp','qr','cry','card','olat','lnk','cashs','payq','dep','oc','help','pis','gift','man','ops','rc','rcd','hist','fcf','vn','sim','api','ot','ex','nt','bz','bp','ow','cw','vcs','co','subs','intl','prof','wal'].forEach(s=>$(s).classList.toggle('hide',s!==id));document.body.classList.toggle('lg',id==='login'||id==='reg'||id==='fp');document.body.classList.toggle('inapp',id!=='login'&&id!=='reg'&&id!=='fp');document.querySelectorAll('#bn button[data-n],#sb button[data-n]').forEach(function(b){b.classList.toggle('on',b.dataset.n===id)});window.scrollTo(0,0);if(window.olFab)olFab(id)}
 function msg(id,t,ok){const e=$(id);e.className='msg '+(ok?'ok':'er');e.textContent=t}
 function toast(t){alert(t)}
 function step(n){['r1','r2','r3'].forEach((r,i)=>$(r).classList.toggle('hide',i+1!==n));['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i<n))}
@@ -3701,6 +3711,20 @@ function bankSim(){if(!BK)return;const a=Number(($('bk_a')||{}).value),c=$('bk_c
  const xof=c==='EUR'?a*BK.eurXof:a;const fee=Math.max(BK.feeMin,Math.round(xof*BK.feePct/100));const net=Math.max(0,Math.round(xof)-fee);
  $('bk_s').textContent='≈ '+Math.round(xof).toLocaleString('fr-FR')+' FCFA reçus · commission OMNIPAY '+fee.toLocaleString('fr-FR')+' FCFA ('+BK.feePct+' %, min. '+BK.feeMin+' F) · crédité ≈ '+net.toLocaleString('fr-FR')+' FCFA. Les frais de votre banque ne sont pas inclus.'}
 
+/* ===== Portefeuille : un solde, une carte par opérateur ===== */
+const WOPS=[['mtn','MTN','/logos/mtn.png'],['moov','Moov','/logos/moov.png'],['celtiis','Celtiis','/logos/celtiis.png']];
+function walGo(m,op){openIO(m==='in'?'pd':'out');try{$('io_ch').value=op}catch(e){}}
+async function openWal(){show('wal');$('w_msg').className='msg';
+  $('w_bal').textContent=($('bal')||{}).textContent||'0 FCFA';var c=$('idchip_v');$('w_id').textContent=c&&/^OM\d+/.test(c.textContent)?'ID : '+c.textContent:'';
+  $('w_ops').innerHTML=WOPS.map(function(o){return '<div class="wop"><div class="wh"><img src="'+o[2]+'" alt="'+o[1]+'"><b>'+o[1]+'</b></div><div class="wb"><button onclick="walGo(\'in\',\''+o[0]+'\')">Dépôt</button><button class="sec" onclick="walGo(\'out\',\''+o[0]+'\')">Retrait</button></div></div>'}).join('')
+   +'<div class="wop"><div class="wh"><span class="wi">▭</span><b>Carte</b></div><div class="wb"><button onclick="openCard()">Ouvrir</button></div></div>'
+   +'<div class="wop"><div class="wh"><span class="wi">🌍</span><b>International</b></div><div class="wb"><button onclick="openIntl()">Dépôt</button><button class="sec" onclick="openIntl();intlTab(\'r\')">Retrait</button></div></div>';
+  try{await refresh()}catch(e){}$('w_bal').textContent=($('bal')||{}).textContent||'0 FCFA';
+  try{const d=await api('/api/receipts'),lim=Date.now()-864e5,IN={deposit:1,transfer_in:1,refund:1};
+    const L=d.receipts.filter(function(r){return new Date(r.date).getTime()>=lim});
+    const ok=L.filter(function(r){return r.status==='completed'&&IN[r.type]});
+    $('w_in').textContent=fmt(ok.reduce(function(t,r){return t+Number(r.amount)},0));$('w_n').textContent=L.filter(function(r){return r.status==='completed'}).length;
+    $('w_list').innerHTML=L.length?L.slice(0,8).map(function(r){return '<div class="tx" style="cursor:pointer" onclick="openReceipt(\''+r.ref+'\')"><div>'+escH(r.label)+'<small>'+new Date(r.date).toLocaleString('fr-FR')+' · '+escH(r.ref)+'</small></div><b>'+fmt(r.amount)+'</b></div>'}).join(''):'<p class="sub">Aucune opération sur 24 h.</p>'}catch(e){msg('w_msg',e.message)}}
 function openIO(m){if(m==='in'){return openDep()}if(m==='pd')m='in';ioMode=m;$('io_msg').className='msg';
   $('io_t').textContent=m==='in'?'Dépôt Mobile Money : alimenter mon compte':'Retrait : envoyer vers mon Mobile Money';
   $('io_s').textContent=m==='in'?'Choisissez votre opérateur et entrez le numéro qui paie. Vous recevez une demande sur votre téléphone : validez avec votre code secret. Crédit automatique.':'Demande traitée sous 24 h. Commission : 50 FCFA.';
@@ -3836,7 +3860,7 @@ let rcLast=null;
 async function openReceipt(ref){try{const r=await api('/api/receipts/'+encodeURIComponent(ref));rcLast=r;
   const st={completed:'Réussie',pending:'En attente',failed:'Échouée',processing:'En cours',refunded:'Remboursée',cancelled:'Annulée'}[r.status]||r.status;
   const row=(a,b)=>b?`<div class="tx"><div>${a}</div><b style="font-weight:600">${escH(b)}</b></div>`:'';
-  $('rc_body').innerHTML=`<div style="text-align:center;margin-bottom:8px"><img src="/logo-mail.png" alt="OMNIPAY" width="64" height="64" style="border-radius:16px"></div><h1>Reçu OMNIPAY</h1><p class="sub">${escH(r.issuer)}</p>`+row('Référence',r.reference)+row('Opération',r.label)+row('Statut',st)+row('Date',new Date(r.date).toLocaleString('fr-FR'))
+  $('rc_body').innerHTML=`<div style="text-align:center;margin-bottom:8px"><img src="/omnipay-logo.png" alt="OMNIPAY" style="height:44px;width:auto;background:#0b1f4d;padding:8px 14px;border-radius:12px"></div><h1>Reçu OMNIPAY</h1><p class="sub">${escH(r.issuer)}</p>`+row('Référence',r.reference)+row('Opération',r.label)+row('Statut',st)+row('Date',new Date(r.date).toLocaleString('fr-FR'))
    +row('Montant',fmt(r.amount))+(r.fee?row('Commission',fmt(r.fee)):'')+row('Total',fmt(r.total))+row('Solde après',fmt(r.balanceAfter))
    +(r.counterparty?row('Contrepartie',r.counterparty.name+(r.counterparty.accountId?' · '+r.counterparty.accountId:'')):'')+row('Canal',r.channel)+row('Destination',r.destination)+row('Libellé',r.note)
    +'<p class="sub" style="font-size:12px;margin-top:10px">Conservez cette référence pour toute réclamation auprès d\'OMNIPAY.</p>';
@@ -4743,6 +4767,9 @@ button.pri{border-radius:14px}
 body.inapp #dash.hide,#dash.hide{display:none!important}
 .pis-c{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;border-radius:18px;padding:18px;margin:12px 0}.pis-c small{opacity:.85}.pis-a{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;margin:8px 0 12px;font-weight:700;word-break:break-all}.pis-cp{width:auto;margin:0;padding:4px 10px;background:none;border:0;color:#fff;font-size:18px}.pis-b{margin:0;background:none;border:1.5px solid #fff;color:#fff;border-radius:12px;padding:12px}
 #rcd .row.no-print button{flex:1 1 140px;min-width:0}
+#wal .wtot{position:relative;background:linear-gradient(135deg,#0b1f4d,#1d4ed8);color:#fff;border-radius:16px;padding:16px;margin:10px 0 12px}#wal .wtot small{opacity:.8;display:block}#wal .wtot b{font-size:26px;display:block;margin:6px 0}#wal .wtot span{font-size:12px;opacity:.85}#wal .wtot button{position:absolute;right:12px;top:12px;width:36px;height:36px;margin:0;padding:0;border-radius:10px;background:rgba(255,255,255,.18);color:#fff}
+#wal .wg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}#wal .wop{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}#wal .wh{display:flex;align-items:center;gap:8px}#wal .wh img{height:30px;width:auto;max-width:56px;border-radius:6px;object-fit:contain}#wal .wi{font-size:22px}#wal .wb{display:flex;gap:6px}#wal .wb button{margin:0;padding:8px 6px;font-size:13px;flex:1}
+#wal .tx b{white-space:nowrap;margin-left:8px}#wal .wrx{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}#wal .wrr{display:flex;gap:24px;margin:8px 0}#wal .wrr small{display:block;opacity:.7}#wal .wrr strong{font-size:18px}
 </style>
 <div id="pwa" role="dialog" aria-label="Installer l'application"><img src="/icon-192.png" alt=""><div class="t"><b>Installer OMNIPAY</b><span id="pwa_t">Accès direct depuis votre écran d'accueil, plein écran.</span></div><button class="pri" id="pwa_b" onclick="pwaInstall()">Installer</button><button class="x" onclick="pwaHide(true)" aria-label="Fermer">×</button></div>
 <script>
