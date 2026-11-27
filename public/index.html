@@ -3492,7 +3492,7 @@ async function doXfer(){
     msg('x_msg',(d.message||'Transfert effectué.')+(d.receiptRef?' Reçu : '+d.receiptRef:''),true);await refresh()}catch(e){msg('x_msg',e.message)}
 }
 
-/* DEPOT (pay-in via PayDunya) / RETRAIT (pay-out) */
+/* DEPOT (encaissement) / RETRAIT (paiement sortant) */
 let ioMode='in';
 const OPS=[['mtn','MTN Mobile Money'],['moov','Moov Money'],['celtiis','Celtiis Cash']];
 var MKT=null,MKS='BTCUSDT',MKI='1h',MKD=null,MKSP={};
@@ -3709,14 +3709,14 @@ function openIO(m){if(m==='in'){return openDep()}if(m==='pd')m='in';ioMode=m;$('
   $('io_accw').classList.remove('hide');$('io_savw').classList.add('hide');if(m==='out')loadSav();
   $('tIn').style.borderColor=m==='in'?'var(--mint)':'var(--line)';$('tOut').style.borderColor=m==='out'?'var(--mint)':'var(--line)';show('io')}
 async function depPoll(ref,n){if(n>24){return msg('io_msg','Toujours en attente. Votre solde sera crédité dès la confirmation de l\'opérateur.',true)}
-  try{var r=await api('/api/fedapay/deposit/'+ref);
+  try{var r=await api('/api/cashin/'+ref);
     if(r.status==='completed'){await refresh();return msg('io_msg','Dépôt reçu : votre solde est crédité.',true)}
     if(r.status==='failed')return msg('io_msg','Dépôt refusé ou annulé. Aucun montant n\'a été débité chez nous.')}catch(e){}
   setTimeout(function(){depPoll(ref,n+1)},5000)}
 async function doIO(){
   const am=parseInt($('io_am').value,10);if(!(am>0))return msg('io_msg','Montant invalide.');
   try{
-    if(ioMode==='in'){let ph=$('io_acc').value.replace(/\D/g,'');if(ph.length<8)return msg('io_msg','Entrez le numéro Mobile Money qui paie.');if(!ph.startsWith('229'))ph='229'+ph;const d=await api('/api/fedapay/deposit',{body:{amount:am,phone:ph,provider:$('io_ch').value}});msg('io_msg',d.message||'Demande envoyée.',true);if(d.reference)setTimeout(function(){depPoll(d.reference,0)},4000)}
+    if(ioMode==='in'){let ph=$('io_acc').value.replace(/\D/g,'');if(ph.length<8)return msg('io_msg','Entrez le numéro Mobile Money qui paie.');if(!ph.startsWith('229'))ph='229'+ph;const d=await api('/api/cashin',{body:{amount:am,phone:ph,provider:$('io_ch').value}});msg('io_msg',d.message||'Demande envoyée.',true);if(d.reference)setTimeout(function(){depPoll(d.reference,0)},4000)}
     else{const sv=$('io_sav').value,ph=$('io_acc').value.trim();if(!sv&&!ph)return msg('io_msg','Renseignez le numéro Mobile Money.');
       if(!confirm(`Retirer ${fmt(am)} vers ${sv?$('io_sav').selectedOptions[0].textContent:ph} ? (+50 FCFA de commission)`))return;
       const d=await api('/wallet/withdraw',{body:sv?(sv.startsWith('L:')?{amount:am,linkedId:sv.slice(2)}:{amount:am,operatorId:sv}):{amount:am,phone:ph,operator:$('io_ch').value}});msg('io_msg',d.message||'Demande enregistrée.',true);await refresh()}
@@ -3904,7 +3904,7 @@ async function momoDeposit(target){if(mmBusy)return;const isF=target==='float',m
     msg(mid,'Toujours en attente : votre solde sera crédité automatiquement dès la confirmation de MTN.',true)}catch(e){msg(mid,e.message)}mmBusy=false}
 
 
-/* ===== PawaPay : dépôt automatique MTN / Moov ===== */
+/* ===== Dépôt automatique MTN / Moov ===== */
 let ppMin=100;
 let PPB='/api/payments';async function ppInit(){try{const m=await api('/api/payments/methods');const d=m.deposit||{};ppMin=d.min||100;const f=$('mm_box').dataset.f||'';$('pp_box').classList.toggle('hide',!d.enabled||(f&&f!=='momo'));if(!$('pp_box').classList.contains('hide')){$('mm_box').classList.add('hide');ppOps()}$('pp_am').min=ppMin;gateShow(m.gate)}catch(e){$('pp_box').classList.add('hide')}}
 const PP_OPS=[['mtn','MTN','MTN MoMo'],['moov','Moov','Moov Money'],['celtiis','Celtiis','Celtiis Cash']];
@@ -3923,13 +3923,13 @@ async function ppDeposit(){if(ppBusy)return;const am=parseInt($('pp_am').value,1
 let TM={t:null};
 const TM_ST={pending:'⏳ En attente de validation sur le téléphone',completed:'✅ Payé',failed:'❌ Refusé ou expiré'};
 async function openTerm(){show('term');$('tm_msg').className='msg';$('tc_msg').className='msg';$('tm_st').style.display='none';await termList();await tcList()}
-async function termList(){try{const d=await api('/api/fedapay/deposit/terminal/list');
+async function termList(){try{const d=await api('/api/cashin/terminal/list');
   $('tm_list').innerHTML=d.sales.length?d.sales.map(x=>`<div class="tx"><div><b>${fmt(x.amount)}</b> · ${escH(String(x.op||'').toUpperCase())} ${escH(x.phone)}<small>${escH(x.note||'')}${x.note?' · ':''}${new Date(x.created_at).toLocaleString('fr-FR')} · ${escH(TM_ST[x.status]||x.status)}</small></div></div>`).join(''):'<p class="sub">Aucune vente pour le moment.</p>'}catch(e){}}
 async function termGo(){const am=parseInt($('tm_am').value.replace(/\s/g,''),10),ph=$('tm_ph').value.trim();
   if(!(am>=100))return msg('tm_msg','Montant minimum : 100 FCFA.');if(ph.replace(/\D/g,'').length<8)return msg('tm_msg','Numéro du client invalide.');
-  $('tm_go').disabled=true;try{const r=await api('/api/fedapay/deposit',{body:{amount:am,phone:ph,provider:$('tm_op').value,terminal:true,note:$('tm_nt').value}});
+  $('tm_go').disabled=true;try{const r=await api('/api/cashin',{body:{amount:am,phone:ph,provider:$('tm_op').value,terminal:true,note:$('tm_nt').value}});
     msg('tm_msg',r.message,true);const st=$('tm_st');st.style.display='block';st.textContent=TM_ST.pending;let n=0;clearInterval(TM.t);
-    TM.t=setInterval(async()=>{n++;try{const s=await api('/api/fedapay/deposit/'+r.reference);st.textContent=TM_ST[s.status]||s.status;
+    TM.t=setInterval(async()=>{n++;try{const s=await api('/api/cashin/'+r.reference);st.textContent=TM_ST[s.status]||s.status;
       if(s.status!=='pending'||n>45){clearInterval(TM.t);$('tm_go').disabled=false;if(s.status==='pending')st.textContent='⏳ Toujours en attente : le client n\'a pas encore validé. Vérifiez plus tard dans « Dernières ventes ».';termList()}}catch(e){}},4000)
   }catch(e){msg('tm_msg',e.message);$('tm_go').disabled=false}}
 

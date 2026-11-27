@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "check:providers": "node scripts/check-no-provider-leak.js"
   },
   "dependencies": {
     "@neon/config": "^1.8.3",
