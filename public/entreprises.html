@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OMNIPAY Entreprises — Intégration de paiements</title>
+<meta name="description" content="OMNIPAY relie votre entreprise à des prestataires de paiement agréés : Mobile Money et banque, une seule intégration, vos fonds restent chez des partenaires agréés.">
+<link rel="icon" href="/icon-96.png">
+<style>
+:root{--bg:#070b14;--card:#0e1628;--card2:#131d33;--line:#22304d;--txt:#f2f6fc;--mut:#9db0d3;--mint:#34e8b0;--mint2:#1fb98a;--navy:#0a1d4a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 20% -10%,#12234a 0,transparent 60%),var(--bg);color:var(--txt);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+header img{height:44px;width:auto;background:#071332;padding:6px 10px;border-radius:12px}
+.btn{display:inline-block;border-radius:14px;padding:13px 22px;font-weight:800;font-size:15px;border:1px solid var(--line);background:var(--card2);color:var(--txt)}
+.btn.pri{background:linear-gradient(135deg,var(--mint),var(--mint2));color:#04281d;border-color:transparent}
+.hero{padding:44px 0 30px;text-align:center}
+.hero h1{font-size:clamp(28px,5.4vw,48px);line-height:1.12;letter-spacing:-.5px}
+.hero h1 em{font-style:normal;color:var(--mint)}
+.hero p{color:var(--mut);max-width:640px;margin:16px auto 26px;font-size:clamp(16px,2.2vw,19px)}
+.hero .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.pill{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.4px;color:var(--mint);background:rgba(52,232,176,.10);border:1px solid rgba(52,232,176,.35);border-radius:99px;padding:6px 14px;margin-bottom:18px}
+section{padding:30px 0}
+h2{font-size:clamp(22px,3.4vw,30px);margin-bottom:8px}
+.sub{color:var(--mut);max-width:680px;margin-bottom:22px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px}
+.card b{display:block;font-size:17px;margin-bottom:6px}
+.card p{color:var(--mut);font-size:14.5px}
+.num{display:inline-flex;width:34px;height:34px;border-radius:50%;align-items:center;justify-content:center;background:rgba(52,232,176,.14);color:var(--mint);font-weight:900;margin-bottom:10px}
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;justify-content:center;margin:6px 0 16px}
+.flow div{flex:1 1 150px;max-width:230px;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:16px 10px;font-weight:700;font-size:14.5px}
+.flow div small{display:block;color:var(--mut);font-weight:400;margin-top:4px;font-size:12.5px}
+.flow .ar{flex:0 0 auto;min-width:0;max-width:none;background:none;border:0;padding:0;align-self:center;color:var(--mint);font-size:22px}
+.note{background:rgba(52,232,176,.07);border:1px solid rgba(52,232,176,.3);border-radius:18px;padding:18px 20px;color:#d6fbea}
+.note b{color:var(--mint)}
+.cta2{text-align:center;padding:40px 0}
+footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 34px;color:var(--mut);font-size:13px;text-align:center}
+@media(max-width:560px){.flow .ar{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a href="/"><img src="/omnipay-logo.png" alt="OMNIPAY"></a>
+  <a class="btn" href="/">Espace client</a>
+</header>
+
+<div class="hero">
+  <span class="pill">OMNIPAY ENTREPRISES · PHASE PILOTE</span>
+  <h1>Acceptez et envoyez des paiements<br>avec <em>une seule intégration</em></h1>
+  <p>OMNIPAY relie votre entreprise à des prestataires de paiement agréés : Mobile Money et banque. Vos fonds ne transitent pas par un compte OMNIPAY : ils sont réglés par les partenaires agréés.</p>
+  <div class="cta">
+    <a class="btn pri" href="mailto:regisagnikpe2002@gmail.com?subject=Acc%C3%A8s%20OMNIPAY%20Entreprises&body=Nom%20de%20l%27entreprise%20%3A%0AActivit%C3%A9%20%3A%0AVolume%20mensuel%20estim%C3%A9%20%3A%0ACanaux%20souhait%C3%A9s%20(MTN%2C%20Moov%2C%20Celtiis%2C%20banque)%20%3A">Demander un accès</a>
+    <a class="btn" href="https://wa.me/2290191467283" rel="noopener">Nous écrire sur WhatsApp</a>
+  </div>
+</div>
+
+<section>
+  <h2>Comment ça marche</h2>
+  <p class="sub">Une intégration unique, plusieurs prestataires. Vous gardez la relation de paiement avec vos clients, nous gérons la connexion.</p>
+  <div class="grid">
+    <div class="card"><span class="num">1</span><b>Vous ouvrez votre accès</b><p>Votre entreprise est identifiée (RCCM, IFU) et reçoit ses accès chez le prestataire agréé.</p></div>
+    <div class="card"><span class="num">2</span><b>Vous intégrez OMNIPAY</b><p>Liens de paiement, pages de paiement ou API : un seul point d'entrée pour tous les canaux.</p></div>
+    <div class="card"><span class="num">3</span><b>Vous encaissez et suivez</b><p>Les paiements sont réglés par le prestataire agréé. Vous suivez tout dans un tableau de bord avec reçus.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Ce que vous obtenez</h2>
+  <div class="grid">
+    <div class="card"><b>Une seule intégration</b><p>Mobile Money (MTN, Moov, Celtiis) et banque, selon les prestataires activés pour votre entreprise.</p></div>
+    <div class="card"><b>Liens et pages de paiement</b><p>Envoyez un lien à votre client, sans développement pour démarrer.</p></div>
+    <div class="card"><b>Tableau de bord et reçus</b><p>Statut de chaque paiement, reçus, historique et rapprochement.</p></div>
+    <div class="card"><b>Paiements sortants</b><p>Versez des fournisseurs, partenaires ou salariés, selon les prestataires et plafonds applicables.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Vos fonds, chez des partenaires agréés</h2>
+  <div class="flow">
+    <div>Votre client<small>paie en Mobile Money ou par banque</small></div><div class="ar">→</div>
+    <div>Prestataire agréé<small>encaisse et règle</small></div><div class="ar">→</div>
+    <div>Votre entreprise<small>reçoit le règlement</small></div>
+  </div>
+  <div class="note"><b>OMNIPAY est l'interface, pas la banque.</b> Nous ne détenons pas les fonds de nos clients. Nous fournissons l'intégration, le tableau de bord et le suivi, et nous percevons une commission de service. La disponibilité de chaque canal dépend de l'activation de votre entreprise chez le prestataire concerné.</div>
+</section>
+
+<section>
+  <h2>Tarifs</h2>
+  <p class="sub">Une commission de service OMNIPAY, définie avec vous selon votre volume, s'ajoute aux frais du prestataire de paiement. Le détail vous est communiqué avant toute activation.</p>
+</section>
+
+<div class="cta2">
+  <h2>Discutons de votre cas</h2>
+  <p class="sub" style="margin:8px auto 20px">Boutique en ligne, école, transport, association, marchand : dites-nous comment vos clients paient aujourd'hui.</p>
+  <a class="btn pri" href="mailto:regisagnikpe2002@gmail.com?subject=Acc%C3%A8s%20OMNIPAY%20Entreprises">Demander un accès</a>
+</div>
+
+<footer>
+  ETS OMNIPAY · Entreprise individuelle · Abomey-Calavi, Bénin · RCCM RB/ABC/26 A 142268<br>
+  Les services de paiement sont fournis par des prestataires agréés partenaires. Ouverture progressive, sur demande.
+</footer>
+</div>
+</body>
+</html>
