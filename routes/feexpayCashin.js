@@ -105,6 +105,7 @@ async function tick() {
   return out;
 }
 if (ready() && process.env.DATABASE_URL && String(process.env.FEEXPAY_WATCH || "on").toLowerCase() !== "off" && process.env.NODE_ENV !== "test") setInterval(() => { tick().catch((e) => console.error("CASHIN_WATCH", e.message)); }, 60000).unref();
+if (ready()) console.log("[CASHIN] encaissement et retraits actifs, suivi automatique toutes les 60 s"); else console.log("[CASHIN] en attente de FEEXPAY_API_KEY / FEEXPAY_SHOP_ID");
 
 router.post("/", requireAuth, async (req, res) => {
   try {

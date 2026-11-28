@@ -45,7 +45,8 @@ async function refundTx(id, note, uid) {
 }
 
 async function candidates(failedOnly, staleHours) {
-  return sql()`SELECT id, status, amount::float AS amount, provider FROM transactions WHERE type = 'withdrawal' AND coalesce(provider,'') <> ALL(${OWN}::text[])
+  return sql()`SELECT id, status, amount::float AS amount, provider FROM transactions t WHERE type = 'withdrawal' AND coalesce(provider,'') <> ALL(${OWN}::text[])
+    AND NOT EXISTS (SELECT 1 FROM transactions r WHERE r.idempotency_key = 'refund-' || t.id::text) -- déjà remboursé : on ne retente pas
     AND (status = 'failed' OR (${!failedOnly}::boolean AND status IN ('pending','processing') AND created_at < now() - make_interval(hours => ${staleHours}::int))) ORDER BY created_at LIMIT 200`;
 }
 async function autoRun(apply, staleHours) {

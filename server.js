@@ -179,7 +179,7 @@ mount("/api/keys", "./routes/keysStatus", "État des clés API (admin)");
 mount("/api/pawapay", "./routes/pawapay", "PawaPay (Mobile Money MTN et Moov)");
 mount("/api/p2p", "./routes/p2p", "Binance P2P (lecture)");
 mount("/api/cashin", "./routes/feexpayCashin", "Encaissement mobile (adresse neutre, le prestataire reste invisible)");
-mount("/api/feexpay", "./routes/feexpayHook", "FeexPay (réception des webhooks, enregistrement seul)");
+mount("/api/feexpay", "./routes/feexpayHook", "Webhooks prestataire (signature vérifiée, statut relu avant tout crédit)");
 mount("/api/omnigift", "./routes/omnigift", "OMNIGIFT (cartes cadeaux)");
 mount("/api/olatounde", "./routes/olatounde", "OLATOUNDE (assistante client)");
 mount("/api/p2pdesk", "./routes/p2pdesk", "Bureau P2P (garde-fou libération)");
