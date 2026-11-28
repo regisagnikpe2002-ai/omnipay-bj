@@ -26,6 +26,13 @@ const digits = (p) => { let d = String(p || "").replace(/\D/g, ""); if (d.starts
 
 const OK = new Set(["SUCCESSFUL", "SUCCESS", "SUCCEEDED", "COMPLETED", "PAID"]);
 const KO = new Set(["FAILED", "FAILURE", "CANCELLED", "CANCELED", "REJECTED", "EXPIRED", "DECLINED"]);
+// Prévient le site du marchand (webhook signé OMNIPAY) quand un encaissement lancé par son API est réglé ou échoue.
+async function notifyApi(txId, event) {
+  const r = await sql()`SELECT t.provider_ref AS id, t.amount::float AS amount, t.status, t.metadata, w.user_id FROM transactions t JOIN wallets w ON w.id = t.wallet_id WHERE t.id = ${txId}`;
+  if (!r.length || !r[0].metadata || !r[0].metadata.api) return;
+  await require("./business").notifyCollect(r[0].user_id, event, { id: r[0].id, amount: r[0].amount, currency: "XOF", status: r[0].status === "completed" ? "paid" : r[0].status, reference: r[0].metadata.merchantRef || null, operator: r[0].metadata.provider });
+}
+
 // Lit un événement du prestataire quel que soit son habillage ({...} ou {data:{...}}). Un statut inconnu ne crédite jamais.
 function interpret(body) {
   const b = body && typeof body === "object" ? body : {};
@@ -59,7 +66,7 @@ async function settleDeposit(row) {
   const ev = await readPayin(ref); if (!ev) return { status: "pending" };
   if (ev.reference && row.feex_ref && ev.reference !== row.feex_ref) { console.error("CASHIN_REF_MISMATCH", row.provider_ref); return { status: "pending" }; }
   if (ev.outcome === "pending") return { status: "pending" };
-  if (ev.outcome === "ko") { await q`UPDATE transactions SET status = 'failed' WHERE id = ${row.id} AND status = 'pending'`; return { status: "failed" }; }
+  if (ev.outcome === "ko") { const u = await q`UPDATE transactions SET status = 'failed' WHERE id = ${row.id} AND status = 'pending' RETURNING id`; if (u.length) notifyApi(row.id, "collect.failed").catch(() => {}); return { status: "failed" }; }
   if (!Number.isFinite(ev.amount) || ev.amount + 0.0001 < row.amount) {
     await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ amountMismatch: ev.amount })}::jsonb WHERE id = ${row.id}`;
     console.error("CASHIN_AMOUNT_MISMATCH", row.provider_ref, ev.amount); return { status: "pending" };
@@ -67,6 +74,7 @@ async function settleDeposit(row) {
   await q`WITH t AS (SELECT id, wallet_id, amount FROM transactions WHERE id = ${row.id} AND status = 'pending' FOR UPDATE),
     w AS (UPDATE wallets SET balance = balance + t.amount, updated_at = now() FROM t WHERE wallets.id = t.wallet_id RETURNING wallets.balance, t.id AS tx_id)
     UPDATE transactions SET status = 'completed', balance_after = w.balance FROM w WHERE transactions.id = w.tx_id AND transactions.status = 'pending'`;
+  notifyApi(row.id, "collect.paid").catch(() => {});
   return { status: "completed" };
 }
 
@@ -109,41 +117,46 @@ async function tick() {
 if (ready() && process.env.DATABASE_URL && String(process.env.FEEXPAY_WATCH || "on").toLowerCase() !== "off" && process.env.NODE_ENV !== "test") setInterval(() => { tick().catch((e) => console.error("CASHIN_WATCH", e.message)); }, 60000).unref();
 if (ready()) console.log("[CASHIN] encaissement et retraits actifs, suivi automatique toutes les 60 s"); else console.log("[CASHIN] en attente de FEEXPAY_API_KEY / FEEXPAY_SHOP_ID");
 
-router.post("/", requireAuth, async (req, res) => {
+// Lance un encaissement Mobile Money vers le portefeuille de userId (client connecté OU marchand par clé API). Renvoie {s: statut HTTP, body}.
+async function startDeposit(userId, b, extraMeta) {
+  if (!enabled()) return { s: 503, body: { error: "Dépôt Mobile Money indisponible pour le moment." } };
+  const amount = Math.floor(Number(b && b.amount));
+  if (!Number.isFinite(amount) || amount < MIN() || amount > MAX()) return { s: 400, body: { error: `Montant entre ${MIN()} et ${MAX()} FCFA.` } };
+  const provider = String((b && b.provider) || "").toLowerCase();
+  if (!OPS.includes(provider)) return { s: 400, body: { error: "Choisissez MTN, Moov ou Celtiis." } };
+  const phone = digits(b && b.phone);
+  if (!/^22901\d{8}$/.test(phone)) return { s: 400, body: { error: "Numéro invalide." } };
+  const q = sql();
+  const w = await q`SELECT id, balance FROM wallets WHERE user_id = ${userId}::uuid`;
+  if (!w.length) return { s: 404, body: { error: "Wallet introuvable." } };
+  const recent = await q`SELECT count(*)::int AS n FROM transactions WHERE wallet_id = ${w[0].id} AND provider = 'feexpay' AND status = 'pending' AND created_at > now() - interval '15 minutes'`;
+  if (recent[0].n >= (extraMeta && extraMeta.api ? 20 : 3)) return { s: 429, body: { error: "Trop de demandes en attente. Patientez quelques minutes." } };
+  let f = "Client", l = "OMNIPAY";
+  try { const [u] = await q`SELECT first_name, last_name FROM users WHERE id = ${userId}::uuid`; if (u) { f = String(u.first_name || f).slice(0, 40) || f; l = String(u.last_name || l).slice(0, 40) || l; } } catch (e) {}
+  const ref = crypto.randomUUID(), term = Boolean(b && b.terminal);
+  const meta = { phone, provider, ...(term ? { terminal: true, note: String((b && b.note) || "").slice(0, 80) } : {}), ...(extraMeta || {}) };
+  await q`INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
+          VALUES (${w[0].id}, 'deposit', ${amount}, ${w[0].balance}, 'pending', 'feexpay', ${ref}, ${"feexpay-" + ref}, ${JSON.stringify(meta)}::jsonb)`;
+  let r, body = null;
   try {
-    if (!enabled()) return res.status(503).json({ error: "Dépôt Mobile Money indisponible pour le moment." });
-    const amount = Math.floor(Number(req.body && req.body.amount));
-    if (!Number.isFinite(amount) || amount < MIN() || amount > MAX()) return res.status(400).json({ error: `Montant entre ${MIN()} et ${MAX()} FCFA.` });
-    const provider = String((req.body && req.body.provider) || "").toLowerCase();
-    if (!OPS.includes(provider)) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
-    const phone = digits(req.body && req.body.phone);
-    if (!/^22901\d{8}$/.test(phone)) return res.status(400).json({ error: "Numéro invalide." });
-    const q = sql();
-    const w = await q`SELECT id, balance FROM wallets WHERE user_id = ${req.user.userId}::uuid`;
-    if (!w.length) return res.status(404).json({ error: "Wallet introuvable." });
-    const recent = await q`SELECT count(*)::int AS n FROM transactions WHERE wallet_id = ${w[0].id} AND provider = 'feexpay' AND status = 'pending' AND created_at > now() - interval '15 minutes'`;
-    if (recent[0].n >= 3) return res.status(429).json({ error: "Plusieurs demandes sont déjà en attente. Validez-les sur votre téléphone ou patientez quelques minutes." });
-    let f = "Client", l = "OMNIPAY";
-    try { const [u] = await q`SELECT first_name, last_name FROM users WHERE id = ${req.user.userId}::uuid`; if (u) { f = String(u.first_name || f).slice(0, 40) || f; l = String(u.last_name || l).slice(0, 40) || l; } } catch (e) {}
-    const ref = crypto.randomUUID(), term = Boolean(req.body && req.body.terminal);
-    await q`INSERT INTO transactions (wallet_id, type, amount, balance_after, status, provider, provider_ref, idempotency_key, metadata)
-            VALUES (${w[0].id}, 'deposit', ${amount}, ${w[0].balance}, 'pending', 'feexpay', ${ref}, ${"feexpay-" + ref}, ${JSON.stringify(term ? { phone, provider, terminal: true, note: String((req.body && req.body.note) || "").slice(0, 80) } : { phone, provider })}::jsonb)`;
-    let r, body = null;
-    try {
-      const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 20000);
-      r = await fetch(`${BASE()}/api/transactions/public/requesttopay/${provider}`, { method: "POST", signal: ctl.signal,
-        headers: { Authorization: "Bearer " + process.env.FEEXPAY_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: phone, amount, shop: process.env.FEEXPAY_SHOP_ID, first_name: f, last_name: l, description: "Depot OMNIPAY", callback_info: ref }) });
-      clearTimeout(to); body = await r.json().catch(() => null);
-    } catch (e) { console.error("CASHIN_NET", e.message); }
-    if (!r || !r.ok) {
-      await q`UPDATE transactions SET status = 'failed' WHERE provider_ref = ${ref} AND provider = 'feexpay'`;
-      console.error("CASHIN_REFUSED", provider, r && r.status, JSON.stringify(body || {}).slice(0, 160)); // jamais de clé ni de numéro
-      return res.status(400).json({ error: "La demande a été refusée (numéro, montant ou service indisponible)." });
-    }
-    if (body && body.reference) await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ feexRef: String(body.reference) })}::jsonb WHERE provider_ref = ${ref} AND provider = 'feexpay'`;
-    res.status(201).json({ reference: ref, status: "pending", message: "Validez le paiement sur votre téléphone (code secret Mobile Money)." });
-  } catch (e) { console.error("CASHIN", e.message); res.status(500).json({ error: "Impossible de lancer le dépôt." }); }
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 20000);
+    r = await fetch(`${BASE()}/api/transactions/public/requesttopay/${provider}`, { method: "POST", signal: ctl.signal,
+      headers: { Authorization: "Bearer " + process.env.FEEXPAY_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumber: phone, amount, shop: process.env.FEEXPAY_SHOP_ID, first_name: f, last_name: l, description: "Depot OMNIPAY", callback_info: ref }) });
+    clearTimeout(to); body = await r.json().catch(() => null);
+  } catch (e) { console.error("CASHIN_NET", e.message); }
+  if (!r || !r.ok) {
+    await q`UPDATE transactions SET status = 'failed' WHERE provider_ref = ${ref} AND provider = 'feexpay'`;
+    console.error("CASHIN_REFUSED", provider, r && r.status, JSON.stringify(body || {}).slice(0, 160)); // jamais de clé ni de numéro
+    return { s: 400, body: { error: "La demande a été refusée (numéro, montant ou service indisponible)." } };
+  }
+  if (body && body.reference) await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({ feexRef: String(body.reference) })}::jsonb WHERE provider_ref = ${ref} AND provider = 'feexpay'`;
+  return { s: 201, body: { reference: ref, status: "pending", message: "Validez le paiement sur votre téléphone (code secret Mobile Money)." } };
+}
+
+router.post("/", requireAuth, async (req, res) => {
+  try { const r = await startDeposit(req.user.userId, req.body, null); res.status(r.s).json(r.body); }
+  catch (e) { console.error("CASHIN", e.message); res.status(500).json({ error: "Impossible de lancer le dépôt." }); }
 });
 
 router.get("/terminal/list", requireAuth, async (req, res) => {
@@ -180,4 +193,4 @@ router.get("/:ref", requireAuth, async (req, res) => {
   } catch (e) { console.error("CASHIN_POLL", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
-module.exports = router; module.exports.enabled = enabled; module.exports.settleFromWebhook = settleFromWebhook; module.exports._interpret = interpret; module.exports._tick = tick;
+module.exports = router; module.exports.enabled = enabled; module.exports.settleFromWebhook = settleFromWebhook; module.exports._interpret = interpret; module.exports._tick = tick; module.exports.startDeposit = startDeposit;

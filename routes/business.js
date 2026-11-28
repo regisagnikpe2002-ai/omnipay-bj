@@ -32,6 +32,8 @@ async function ensure() {
   await q`CREATE TABLE IF NOT EXISTS biz_payments (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), merchant_id uuid NOT NULL, key_id uuid, mode varchar(4) NOT NULL, token varchar(10) NOT NULL UNIQUE, amount integer NOT NULL, fee integer NOT NULL DEFAULT 0,
     description varchar(120), reference varchar(60), return_url varchar(300), status varchar(10) NOT NULL DEFAULT 'pending', customer_id uuid, webhook_status varchar(30),
     created_at timestamptz NOT NULL DEFAULT now(), expires_at timestamptz NOT NULL, paid_at timestamptz, refunded_at timestamptz)`;
+  await q`CREATE TABLE IF NOT EXISTS biz_payout_requests (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), merchant_id uuid NOT NULL, key_id uuid, amount integer NOT NULL, operator varchar(8) NOT NULL, phone varchar(20) NOT NULL,
+    reference varchar(60), description varchar(120), status varchar(12) NOT NULL DEFAULT 'awaiting', created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz)`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS biz_pay_ref ON biz_payments (merchant_id, mode, reference) WHERE reference IS NOT NULL`;
   await q`CREATE INDEX IF NOT EXISTS biz_pay_m ON biz_payments (merchant_id, created_at DESC)`;
   ready = true;
@@ -211,5 +213,91 @@ router.post("/checkout/:token/pay", requireAuth, async (req, res) => {
   } catch (e) { console.error("BIZ_PAYX", e.message); res.status(500).json({ error: "Erreur serveur lors du paiement." }); }
 });
 
+
+// ---------- API v1 : encaissement Mobile Money (collect) ----------
+// Réservé aux clés RÉELLES (abonnement Pro). L'argent arrive sur le solde du marchand UNIQUEMENT après confirmation de l'opérateur ; le site du marchand reçoit
+// un webhook signé « collect.paid » ou « collect.failed ». Une clé API ne peut JAMAIS retirer de l'argent seule : voir /v1/payouts (demande à confirmer dans l'application).
+async function notifyCollect(merchantId, event, data) {
+  try {
+    const [pr] = await sql()`SELECT webhook_url, webhook_secret FROM biz_profile WHERE user_id = ${merchantId}::uuid`;
+    if (!pr || !pr.webhook_url || !pr.webhook_secret) return;
+    for (let n = 1; n <= 3; n++) { const st = await deliver(pr.webhook_url, pr.webhook_secret, event, data); if (st === "ok" || String(st).startsWith("refusé")) break; await new Promise((r) => setTimeout(r, n === 1 ? 5000 : 30000)); }
+  } catch (e) { console.error("BIZ_COLLECT_HOOK", e.message); }
+}
+const liveOnly = async (req, res) => {
+  if (req.biz.mode !== "live") { res.status(403).json({ error: "Clé réelle (omp_live_…) requise : le Mobile Money ne se teste pas avec une clé de test." }); return false; }
+  if (!(await proActive(req.biz.uid))) { res.status(403).json({ error: "L'abonnement Pro est requis pour le mode réel." }); return false; }
+  return true;
+};
+router.post("/v1/collect", keyAuth, async (req, res) => {
+  try {
+    if (!(await liveOnly(req, res))) return;
+    const b = req.body || {}, ref = b.reference ? clean(b.reference, 60) : null, q = sql();
+    if (ref) {
+      const ex = await q`SELECT t.provider_ref AS id, t.amount::float AS amount, t.status FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+        WHERE w.user_id = ${req.biz.uid}::uuid AND t.provider = 'feexpay' AND t.metadata->>'merchantRef' = ${ref} LIMIT 1`;
+      if (ex.length) return res.status(200).json({ collect: { id: ex[0].id, amount: ex[0].amount, status: ex[0].status === "completed" ? "paid" : ex[0].status, reference: ref } });
+    }
+    const r = await require("./feexpayCashin").startDeposit(req.biz.uid, { amount: b.amount, phone: b.phone, provider: b.operator }, { api: true, merchantRef: ref, description: clean(b.description, 120) || null });
+    if (r.s !== 201) return res.status(r.s).json(r.body);
+    res.status(201).json({ collect: { id: r.body.reference, amount: Math.floor(Number(b.amount)), currency: "XOF", status: "pending", reference: ref, message: r.body.message } });
+  } catch (e) { console.error("BIZ_COLLECT", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.get("/v1/collect/:id", keyAuth, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    const r = await sql()`SELECT t.provider_ref AS id, t.amount::float AS amount, t.status, t.created_at, t.metadata->>'merchantRef' AS reference, t.metadata->>'provider' AS operator FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+      WHERE w.user_id = ${req.biz.uid}::uuid AND t.provider = 'feexpay' AND t.provider_ref = ${req.params.id}`;
+    if (!r.length) return res.status(404).json({ error: "Encaissement introuvable." });
+    res.json({ collect: { ...r[0], currency: "XOF", status: r[0].status === "completed" ? "paid" : r[0].status } });
+  } catch (e) { console.error("BIZ_COLLECT_GET", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// ---------- API v1 : demande de retrait (à confirmer par le marchand dans l'application) ----------
+router.post("/v1/payouts", keyAuth, async (req, res) => {
+  try {
+    if (!(await liveOnly(req, res))) return;
+    const b = req.body || {}, amount = Math.floor(Number(b.amount)), op = String(b.operator || "").toLowerCase(), ph = String(b.phone || "").replace(/[^\d+]/g, "").slice(0, 20), ref = b.reference ? clean(b.reference, 60) : null, q = sql();
+    if (!Number.isFinite(amount) || amount < 50 || amount > MAX()) return res.status(400).json({ error: `Montant entre 50 et ${MAX()} FCFA.` });
+    if (!["mtn", "moov", "celtiis"].includes(op)) return res.status(400).json({ error: "operator : mtn, moov ou celtiis." });
+    if (ph.replace(/\D/g, "").length < 8) return res.status(400).json({ error: "Numéro invalide." });
+    if (ref) { const ex = await q`SELECT id, status FROM biz_payout_requests WHERE merchant_id = ${req.biz.uid}::uuid AND reference = ${ref}`; if (ex.length) return res.status(200).json({ payout: { id: ex[0].id, status: ex[0].status, reference: ref } }); }
+    const n = await q`SELECT count(*)::int AS n FROM biz_payout_requests WHERE merchant_id = ${req.biz.uid}::uuid AND status = 'awaiting'`;
+    if (n[0].n >= 50) return res.status(429).json({ error: "Trop de demandes en attente de confirmation." });
+    const r = await q`INSERT INTO biz_payout_requests (merchant_id, key_id, amount, operator, phone, reference, description) VALUES (${req.biz.uid}::uuid, ${req.biz.keyId}, ${amount}, ${op}, ${ph}, ${ref}, ${clean(b.description, 120) || null}) RETURNING id`;
+    res.status(201).json({ payout: { id: r[0].id, amount, operator: op, status: "awaiting", reference: ref, message: "Demande reçue. Le marchand doit la confirmer dans OMNIPAY Business > Retraits." } });
+  } catch (e) { console.error("BIZ_PAYOUT", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.get("/v1/payouts/:id", keyAuth, async (req, res) => {
+  try {
+    if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Identifiant invalide." });
+    const r = await sql()`SELECT id, amount, operator, status, reference, created_at FROM biz_payout_requests WHERE id = ${req.params.id}::uuid AND merchant_id = ${req.biz.uid}::uuid`;
+    if (!r.length) return res.status(404).json({ error: "Demande introuvable." });
+    res.json({ payout: r[0] });
+  } catch (e) { console.error("BIZ_PAYOUT_GET", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// ---------- Espace marchand (session) : tableau, collectes, retraits ----------
+router.get("/collections", requireAuth, async (req, res) => {
+  try {
+    const rows = await sql()`SELECT t.provider_ref AS id, t.amount::float AS amount, t.status, t.created_at, t.metadata->>'provider' AS operator, t.metadata->>'merchantRef' AS reference,
+        CASE WHEN t.metadata->>'api' = 'true' THEN 'API' WHEN t.metadata->>'terminal' = 'true' THEN 'Terminal' ELSE 'Dépôt' END AS source
+      FROM transactions t JOIN wallets w ON w.id = t.wallet_id WHERE w.user_id = ${req.user.userId}::uuid AND t.type = 'deposit' AND t.provider IN ('feexpay','fedapay') ORDER BY t.created_at DESC LIMIT 40`;
+    res.json({ collections: rows });
+  } catch (e) { console.error("BIZ_COLLECTIONS", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.get("/payout-requests", requireAuth, async (req, res) => {
+  try { await ensure(); res.json({ requests: await sql()`SELECT id, amount, operator, phone, reference, description, status, created_at FROM biz_payout_requests WHERE merchant_id = ${req.user.userId}::uuid ORDER BY created_at DESC LIMIT 30` }); }
+  catch (e) { console.error("BIZ_PR", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.post("/payout-requests/:id/:act(done|reject)", requireAuth, async (req, res) => {
+  try {
+    await ensure(); if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Demande invalide." });
+    const r = await sql()`UPDATE biz_payout_requests SET status = ${req.params.act === "done" ? "confirmed" : "rejected"}, decided_at = now() WHERE id = ${req.params.id}::uuid AND merchant_id = ${req.user.userId}::uuid AND status = 'awaiting' RETURNING id`;
+    res.json({ ok: r.length > 0 });
+  } catch (e) { console.error("BIZ_PR2", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
 module.exports = router;
 module.exports._safeUrl = safeUrl;
+module.exports.notifyCollect = notifyCollect;
