@@ -155,6 +155,21 @@ router.get("/terminal/list", requireAuth, async (req, res) => {
   } catch (e) { console.error("CASHIN_TERMINAL", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Tableau par opérateur (24 h) : entrées (dépôts réussis) et sorties (retraits non échoués) du client connecté.
+router.get("/summary", requireAuth, async (req, res) => {
+  try {
+    const rows = await sql()`SELECT op, sum(inn)::float AS inn, sum(out)::float AS out, sum(n)::int AS n FROM (
+        SELECT t.metadata->>'provider' AS op, t.amount AS inn, 0 AS out, 1 AS n FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+          WHERE w.user_id = ${req.user.userId}::uuid AND t.type = 'deposit' AND t.status = 'completed' AND t.created_at > now() - interval '24 hours'
+        UNION ALL
+        SELECT t.provider AS op, 0, t.amount, 0 FROM transactions t JOIN wallets w ON w.id = t.wallet_id
+          WHERE w.user_id = ${req.user.userId}::uuid AND t.type = 'withdrawal' AND t.status IN ('pending','processing','completed') AND t.created_at > now() - interval '24 hours') x
+      WHERE op IN ('mtn','moov','celtiis') GROUP BY op`;
+    const o = {}; for (const r of rows) o[r.op] = { in: r.inn || 0, out: r.out || 0, n: r.n || 0 };
+    res.json({ operators: o });
+  } catch (e) { console.error("CASHIN_SUMMARY", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
 router.get("/:ref", requireAuth, async (req, res) => {
   try {
     if (!UUID.test(req.params.ref)) return res.status(400).json({ error: "Référence invalide." });
