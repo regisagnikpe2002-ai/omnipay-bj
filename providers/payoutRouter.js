@@ -102,7 +102,27 @@ async function viaPawapay({ txId, operator, phone, amount }) {
 }
 // ---- Canal FedaPay : transferts sortants uniquement (PAYOUT_ROUTE_<OPÉRATEUR>=fedapay) ----
 async function viaFedapay(args) { return require("./fedapay.js").payout(args); }
-const CHANNELS = { fedapay: viaFedapay, pawapay: viaPawapay, manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
+// ---- Canal FeexPay (PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV = feexpay) : retrait Mobile Money Bénin par API. Statut final par webhook signé (routes/feexpayCashin.js). ----
+// Variables : FEEXPAY_API_KEY, FEEXPAY_SHOP_ID ; plafond par retrait FEEXPAY_PAYOUT_MAX_XOF (défaut 50000). Celtiis : API non fournie -> traitement manuel.
+async function viaFeexpay({ txId, operator, phone, amount }) {
+  if (!process.env.FEEXPAY_API_KEY || !process.env.FEEXPAY_SHOP_ID) return { status: "unavailable", detail: "Prestataire non configuré." };
+  const net = { mtn: "MTN", moov: "MOOV" }[String(operator).toLowerCase()];
+  if (!net) return { status: "unavailable", detail: "Cet opérateur : traitement manuel." };
+  const cap = Number(process.env.FEEXPAY_PAYOUT_MAX_XOF) > 0 ? Number(process.env.FEEXPAY_PAYOUT_MAX_XOF) : 50000;
+  if (Number(amount) > cap) return { status: "unavailable", detail: `Au-dessus du plafond automatique (${cap} F) : traitement manuel.` };
+  if (Number(amount) < 50) return { status: "unavailable", detail: "Montant minimum 50 F." };
+  let d = String(phone || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); if (d.startsWith("229")) d = d.slice(3); if (d.length === 8) d = "01" + d;
+  if (!/^01\d{8}$/.test(d)) return { status: "refused", detail: "Numéro invalide." };
+  try {
+    const r = await axios.post(String(process.env.FEEXPAY_BASE || "https://api-v2.feexpay.me").replace(/\/+$/, "") + "/api/payouts/public/transfer/global",
+      { phoneNumber: "229" + d, amount: Math.floor(Number(amount)), shop: process.env.FEEXPAY_SHOP_ID, network: net, motif: "Retrait OMNIPAY", callback_info: String(txId) },
+      { headers: { Authorization: "Bearer " + process.env.FEEXPAY_API_KEY }, timeout: 20000, validateStatus: () => true });
+    if (r.status >= 200 && r.status < 300 && r.data && /^(PENDING|SUCCESSFUL)$/i.test(String(r.data.status))) return { status: "sent", detail: "accepté", ref: String(r.data.reference || txId) };
+    if (r.status >= 400 && r.status < 500) return { status: "refused", detail: "refusé (" + r.status + ")" };
+    return { status: "uncertain", detail: "réponse incertaine (" + r.status + ")" };
+  } catch (e) { return { status: "uncertain", detail: "délai dépassé ou réseau" }; }
+}
+const CHANNELS = { feexpay: viaFeexpay, fedapay: viaFedapay, pawapay: viaPawapay, manual: viaManual, paydunya: viaPaydunya, momo: viaMomo, moov: viaMoov, celtiis: viaCeltiis, pispi: viaPispi };
 const routeFor = (operator) => {
   const key =
     "PAYOUT_ROUTE_" +

@@ -19,7 +19,8 @@ const BASE = () => String(process.env.FEEXPAY_BASE || "https://api-v2.feexpay.me
 const ready = () => Boolean(process.env.FEEXPAY_API_KEY && process.env.FEEXPAY_SHOP_ID);
 const enabled = () => ready() && String(process.env.FEEXPAY_DEPOSITS || "on").toLowerCase() !== "off";
 const OPS = ["mtn", "moov", "celtiis"];
-const digits = (p) => { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); return d.startsWith("229") ? d : "229" + d.replace(/^0+/, ""); };
+// Format FeexPay (Bénin) : 229 + 10 chiffres commençant par 01 (ex. 2290166000000). Un ancien numéro à 8 chiffres reçoit le préfixe 01.
+const digits = (p) => { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); if (d.startsWith("229")) d = d.slice(3); if (d.length === 8) d = "01" + d; return "229" + d; };
 
 const OK = new Set(["SUCCESSFUL", "SUCCESS", "SUCCEEDED", "COMPLETED", "PAID"]);
 const KO = new Set(["FAILED", "FAILURE", "CANCELLED", "CANCELED", "REJECTED", "EXPIRED", "DECLINED"]);
@@ -38,9 +39,23 @@ function interpret(body) {
 router.get("/status", requireAuth, (req, res) => res.json({ enabled: enabled(), providers: OPS, min: MIN(), max: MAX() }));
 
 // Règle un dépôt à partir d'un événement DÉJÀ vérifié (signature HMAC) : référence connue + montant au moins égal à celui demandé.
+// Retrait Mobile Money envoyé par l'API : le webhook signé le clôture (SUCCESSFUL -> terminé ; FAILED -> échoué, remboursé si FEEXPAY_AUTO_REFUND=on).
+async function settlePayoutEvent(q, ev) {
+  const w = await q`SELECT id, status FROM transactions WHERE id = ${ev.mine}::uuid AND type = 'withdrawal' AND metadata->'payout'->>'route' = 'feexpay'`;
+  if (!w.length) return null;
+  if (w[0].status !== "processing") return { done: false, why: "retrait déjà réglé" };
+  if (ev.outcome === "ok") { await q`UPDATE transactions SET status = 'completed' WHERE id = ${ev.mine}::uuid AND type = 'withdrawal' AND status = 'processing'`; return { done: true, status: "completed" }; }
+  const u = await q`UPDATE transactions SET status = 'failed' WHERE id = ${ev.mine}::uuid AND type = 'withdrawal' AND status = 'processing' RETURNING id`;
+  if (u.length && ["on", "true", "1", "yes"].includes(String(process.env.FEEXPAY_AUTO_REFUND || "off").toLowerCase())) {
+    try { await require("./walletOps").refundOne(ev.mine, true, "Mobile Money : transfert échoué (remboursement automatique)"); } catch (e) { console.error("FEEXPAY_AUTOREFUND", e.message); }
+  }
+  return { done: true, status: "failed" };
+}
+
 async function settleFromWebhook(body) {
   const ev = interpret(body); if (ev.outcome === "pending") return { done: false, why: "statut " + (ev.raw || "inconnu") };
   const q = sql();
+  if (ev.mine && UUID.test(ev.mine)) { const r = await settlePayoutEvent(q, ev); if (r) return r; }
   const rows = await q`SELECT id, provider_ref, amount::float AS amount, status FROM transactions
     WHERE provider = 'feexpay' AND type = 'deposit' AND (provider_ref = ${ev.mine && UUID.test(ev.mine) ? ev.mine : "-"} OR metadata->>'feexRef' = ${ev.reference || "-"}) LIMIT 1`;
   if (!rows.length) return { done: false, why: "référence inconnue" };
@@ -64,7 +79,7 @@ router.post("/", requireAuth, async (req, res) => {
     const provider = String((req.body && req.body.provider) || "").toLowerCase();
     if (!OPS.includes(provider)) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
     const phone = digits(req.body && req.body.phone);
-    if (!/^229\d{8,10}$/.test(phone)) return res.status(400).json({ error: "Numéro invalide." });
+    if (!/^22901\d{8}$/.test(phone)) return res.status(400).json({ error: "Numéro invalide." });
     const q = sql();
     const w = await q`SELECT id, balance FROM wallets WHERE user_id = ${req.user.userId}::uuid`;
     if (!w.length) return res.status(404).json({ error: "Wallet introuvable." });
