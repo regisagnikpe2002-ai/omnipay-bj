@@ -183,6 +183,38 @@ router.get("/summary", requireAuth, async (req, res) => {
   } catch (e) { console.error("CASHIN_SUMMARY", e.message); res.status(500).json({ error: "Erreur serveur." }); }
 });
 
+// Tableau de bord des fonds (administrateur, x-admin-key) : configuration du prestataire, engagements envers les clients, flux 24 h par opérateur, anomalies.
+const isAdmin = (req) => { const k = req.headers["x-admin-key"]; return Boolean(k && process.env.ADMIN_KEY && k === process.env.ADMIN_KEY); };
+router.get("/admin/overview", async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Accès refusé." });
+  try {
+    const q = sql(), env = process.env;
+    const sec = String(env.FEEXPAY_WEBHOOK_SECRET || "").trim();
+    const config = { keySet: Boolean(env.FEEXPAY_API_KEY), testKey: isTestKey(), shopSet: Boolean(env.FEEXPAY_SHOP_ID), active: ready(), depositsOn: enabled(),
+      webhookSecret: !sec ? "absent" : /^fxp_whsec_/.test(sec) ? "ok" : "invalide (doit commencer par fxp_whsec_)", autoRefund: ["on", "true", "1", "yes"].includes(String(env.FEEXPAY_AUTO_REFUND || "off").toLowerCase()),
+      routes: { mtn: env.PAYOUT_ROUTE_MTN || null, moov: env.PAYOUT_ROUTE_MOOV || null, celtiis: env.PAYOUT_ROUTE_CELTIIS || null }, payoutMax: num("FEEXPAY_PAYOUT_MAX_XOF", 50000) };
+    const [liab] = await q`SELECT coalesce(sum(balance),0)::float AS total, count(*)::int AS wallets FROM wallets`;
+    const ops = await q`SELECT op, sum(inn)::float AS inn, sum(inn_n)::int AS inn_n, sum(out)::float AS out, sum(out_n)::int AS out_n FROM (
+        SELECT metadata->>'provider' AS op, amount AS inn, 1 AS inn_n, 0 AS out, 0 AS out_n FROM transactions WHERE type = 'deposit' AND provider = 'feexpay' AND status = 'completed' AND created_at > now() - interval '24 hours'
+        UNION ALL SELECT provider, 0, 0, amount, 1 FROM transactions WHERE type = 'withdrawal' AND provider IN ('mtn','moov','celtiis') AND metadata->'payout'->>'route' = 'feexpay' AND status IN ('processing','completed') AND created_at > now() - interval '24 hours') x
+      WHERE op IN ('mtn','moov','celtiis') GROUP BY op`;
+    const [an] = await q`SELECT
+      (SELECT count(*) FROM transactions WHERE type = 'deposit' AND provider = 'feexpay' AND status = 'pending' AND created_at < now() - interval '15 minutes' AND created_at > now() - interval '3 days')::int AS stuck_deposits,
+      (SELECT count(*) FROM transactions WHERE type = 'withdrawal' AND status = 'processing' AND metadata->'payout'->>'route' = 'feexpay' AND created_at < now() - interval '30 minutes')::int AS stuck_payouts,
+      (SELECT count(*) FROM transactions WHERE type = 'deposit' AND provider = 'feexpay' AND status = 'failed' AND created_at > now() - interval '24 hours')::int AS failed_deposits,
+      (SELECT count(*) FROM transactions WHERE type = 'withdrawal' AND status = 'failed' AND created_at > now() - interval '24 hours')::int AS failed_payouts,
+      (SELECT count(*) FROM transactions WHERE type = 'withdrawal' AND status IN ('pending') AND metadata->'payout'->>'route' IS NULL)::int AS manual_queue`;
+    const o = {}; for (const r of ops) o[r.op] = { in: r.inn || 0, inCount: r.inn_n || 0, out: r.out || 0, outCount: r.out_n || 0 };
+    const alerts = [];
+    if (!config.active) alerts.push(config.testKey ? "Clé de TEST détectée : encaissements et retraits automatiques désactivés." : "Prestataire non configuré (clé ou identifiant boutique manquant).");
+    if (config.webhookSecret !== "ok") alerts.push("FEEXPAY_WEBHOOK_SECRET : " + config.webhookSecret + ". Le filet de 60 s crédite quand même, avec retard.");
+    for (const k of ["mtn", "moov", "celtiis"]) if (config.active && config.routes[k] !== "feexpay") alerts.push("PAYOUT_ROUTE_" + k.toUpperCase() + " n'est pas « feexpay » : retraits " + k.toUpperCase() + " non automatiques.");
+    if (an.stuck_deposits) alerts.push(an.stuck_deposits + " dépôt(s) en attente depuis plus de 15 min.");
+    if (an.stuck_payouts) alerts.push(an.stuck_payouts + " retrait(s) en cours depuis plus de 30 min.");
+    res.json({ config, liabilities: liab, operators: o, anomalies: an, alerts, at: new Date().toISOString() });
+  } catch (e) { console.error("CASHIN_ADMIN", e.message); res.status(500).json({ error: "Erreur serveur." }); }
+});
+
 router.get("/:ref", requireAuth, async (req, res) => {
   try {
     if (!UUID.test(req.params.ref)) return res.status(400).json({ error: "Référence invalide." });
