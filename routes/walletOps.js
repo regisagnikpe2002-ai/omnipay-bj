@@ -85,7 +85,7 @@ async function dispatchPayout(q, txId, operator, phone, amount) {
     const router = require("../providers/payoutRouter.js");
     r = await router.payout({ txId, operator, phone, amount, callbackUrl: `${baseUrl()}/wallet/withdraw/callback?id=${txId}&sig=${sig(txId)}` });
   } catch (e) { r = { status: "uncertain", detail: String(e.response?.data?.response_text || e.message).slice(0, 160), route: "?" }; }
-  const meta = JSON.stringify({ ...(fundMeta || {}), payout: { route: r.route, result: r.status, detail: r.detail || null, at: new Date().toISOString() } });
+  const meta = JSON.stringify({ ...(fundMeta || {}), payout: { route: r.route, result: r.status, detail: r.detail || null, ref: r.ref || null, at: new Date().toISOString() } });
   if (r.status === "sent" || r.status === "uncertain") {
     // sent : en attente de confirmation ; uncertain : reste 'processing' pour vérification humaine (jamais de renvoi automatique)
     await q`UPDATE transactions SET metadata = coalesce(metadata,'{}'::jsonb) || ${meta}::jsonb WHERE id = ${txId}::uuid`;
