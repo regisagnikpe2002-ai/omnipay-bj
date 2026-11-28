@@ -16,7 +16,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const num = (n, d) => { const v = Number(process.env[n]); return Number.isFinite(v) && v > 0 ? v : d; };
 const MIN = () => num("FEEXPAY_MIN_XOF", 100), MAX = () => num("FEEXPAY_MAX_XOF", 2000000);
 const BASE = () => String(process.env.FEEXPAY_BASE || "https://api-v2.feexpay.me").replace(/\/+$/, "");
-const ready = () => Boolean(process.env.FEEXPAY_API_KEY && process.env.FEEXPAY_SHOP_ID);
+// Une clé de TEST (« testkey… ») ne déplace aucun argent réel : elle est refusée sauf essai volontaire (FEEXPAY_ALLOW_SANDBOX=on), pour ne jamais créditer de vrais soldes avec de faux paiements.
+const isTestKey = () => /^testkey/i.test(String(process.env.FEEXPAY_API_KEY || "").trim());
+const ready = () => Boolean(process.env.FEEXPAY_API_KEY && process.env.FEEXPAY_SHOP_ID) && (!isTestKey() || ["on", "true", "1", "yes"].includes(String(process.env.FEEXPAY_ALLOW_SANDBOX || "off").toLowerCase()));
 const enabled = () => ready() && String(process.env.FEEXPAY_DEPOSITS || "on").toLowerCase() !== "off";
 const OPS = ["mtn", "moov", "celtiis"];
 // Format FeexPay (Bénin) : 229 + 10 chiffres commençant par 01 (ex. 2290166000000). Un ancien numéro à 8 chiffres reçoit le préfixe 01.

@@ -106,6 +106,7 @@ async function viaFedapay(args) { return require("./fedapay.js").payout(args); }
 // Variables : FEEXPAY_API_KEY, FEEXPAY_SHOP_ID ; plafond par retrait FEEXPAY_PAYOUT_MAX_XOF (défaut 50000). MTN, Moov et Celtiis.
 async function viaFeexpay({ txId, operator, phone, amount }) {
   if (!process.env.FEEXPAY_API_KEY || !process.env.FEEXPAY_SHOP_ID) return { status: "unavailable", detail: "Prestataire non configuré." };
+  if (/^testkey/i.test(String(process.env.FEEXPAY_API_KEY).trim()) && !["on", "true", "1", "yes"].includes(String(process.env.FEEXPAY_ALLOW_SANDBOX || "off").toLowerCase())) return { status: "unavailable", detail: "Clé de test (aucun argent réel) : traitement manuel." };
   const op = String(operator).toLowerCase(), net = { mtn: "MTN", moov: "MOOV", celtiis: "CELTIIS BJ" }[op];
   const path = op === "celtiis" ? "/api/payouts/public/celtiis_bj" : "/api/payouts/public/transfer/global";
   if (!net) return { status: "unavailable", detail: "Cet opérateur : traitement manuel." };
