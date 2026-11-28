@@ -34,6 +34,9 @@ async function ensure() {
     created_at timestamptz NOT NULL DEFAULT now(), expires_at timestamptz NOT NULL, paid_at timestamptz, refunded_at timestamptz)`;
   await q`CREATE TABLE IF NOT EXISTS biz_payout_requests (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), merchant_id uuid NOT NULL, key_id uuid, amount integer NOT NULL, operator varchar(8) NOT NULL, phone varchar(20) NOT NULL,
     reference varchar(60), description varchar(120), status varchar(12) NOT NULL DEFAULT 'awaiting', created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz)`;
+  await q`CREATE TABLE IF NOT EXISTS biz_employees (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), merchant_id uuid NOT NULL, name varchar(60) NOT NULL, operator varchar(8) NOT NULL, phone varchar(20) NOT NULL,
+    amount integer NOT NULL DEFAULT 0, created_at timestamptz NOT NULL DEFAULT now())`;
+  await q`CREATE INDEX IF NOT EXISTS biz_emp_m ON biz_employees (merchant_id)`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS biz_pay_ref ON biz_payments (merchant_id, mode, reference) WHERE reference IS NOT NULL`;
   await q`CREATE INDEX IF NOT EXISTS biz_pay_m ON biz_payments (merchant_id, created_at DESC)`;
   ready = true;
@@ -296,6 +299,29 @@ router.post("/payout-requests/:id/:act(done|reject)", requireAuth, async (req, r
     const r = await sql()`UPDATE biz_payout_requests SET status = ${req.params.act === "done" ? "confirmed" : "rejected"}, decided_at = now() WHERE id = ${req.params.id}::uuid AND merchant_id = ${req.user.userId}::uuid AND status = 'awaiting' RETURNING id`;
     res.json({ ok: r.length > 0 });
   } catch (e) { console.error("BIZ_PR2", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+
+// ---------- Paie en lot : liste de bénéficiaires du marchand (le paiement lui-même passe par le retrait habituel, avec toutes ses protections) ----------
+router.get("/employees", requireAuth, async (req, res) => {
+  try { await ensure(); res.json({ employees: await sql()`SELECT id, name, operator, phone, amount FROM biz_employees WHERE merchant_id = ${req.user.userId}::uuid ORDER BY name LIMIT 300` }); }
+  catch (e) { console.error("BIZ_EMP", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.post("/employees", requireAuth, async (req, res) => {
+  try {
+    await ensure(); const b = req.body || {}, name = clean(b.name, 60), op = String(b.operator || "").toLowerCase(), ph = String(b.phone || "").replace(/[^\d+]/g, "").slice(0, 20), amount = Math.floor(Number(b.amount)) || 0;
+    if (name.length < 2) return res.status(400).json({ error: "Nom du bénéficiaire requis." });
+    if (!["mtn", "moov", "celtiis"].includes(op)) return res.status(400).json({ error: "Choisissez MTN, Moov ou Celtiis." });
+    if (ph.replace(/\D/g, "").length < 8) return res.status(400).json({ error: "Numéro invalide." });
+    if (amount < 0 || amount > MAX()) return res.status(400).json({ error: `Montant entre 0 et ${MAX()} FCFA.` });
+    const q = sql(), n = await q`SELECT count(*)::int AS n FROM biz_employees WHERE merchant_id = ${req.user.userId}::uuid`;
+    if (n[0].n >= 300) return res.status(400).json({ error: "300 bénéficiaires maximum." });
+    const r = await q`INSERT INTO biz_employees (merchant_id, name, operator, phone, amount) VALUES (${req.user.userId}::uuid, ${name}, ${op}, ${ph}, ${amount}) RETURNING id`;
+    res.status(201).json({ id: r[0].id });
+  } catch (e) { console.error("BIZ_EMP_ADD", e.message); res.status(500).json({ error: "Erreur." }); }
+});
+router.delete("/employees/:id", requireAuth, async (req, res) => {
+  try { await ensure(); if (!UUID.test(req.params.id)) return res.status(400).json({ error: "Invalide." }); const r = await sql()`DELETE FROM biz_employees WHERE id = ${req.params.id}::uuid AND merchant_id = ${req.user.userId}::uuid RETURNING id`; res.json({ ok: r.length > 0 }); }
+  catch (e) { console.error("BIZ_EMP_DEL", e.message); res.status(500).json({ error: "Erreur." }); }
 });
 
 module.exports = router;
