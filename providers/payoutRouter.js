@@ -103,10 +103,11 @@ async function viaPawapay({ txId, operator, phone, amount }) {
 // ---- Canal FedaPay : transferts sortants uniquement (PAYOUT_ROUTE_<OPÉRATEUR>=fedapay) ----
 async function viaFedapay(args) { return require("./fedapay.js").payout(args); }
 // ---- Canal FeexPay (PAYOUT_ROUTE_MTN / PAYOUT_ROUTE_MOOV = feexpay) : retrait Mobile Money Bénin par API. Statut final par webhook signé (routes/feexpayCashin.js). ----
-// Variables : FEEXPAY_API_KEY, FEEXPAY_SHOP_ID ; plafond par retrait FEEXPAY_PAYOUT_MAX_XOF (défaut 50000). Celtiis : API non fournie -> traitement manuel.
+// Variables : FEEXPAY_API_KEY, FEEXPAY_SHOP_ID ; plafond par retrait FEEXPAY_PAYOUT_MAX_XOF (défaut 50000). MTN, Moov et Celtiis.
 async function viaFeexpay({ txId, operator, phone, amount }) {
   if (!process.env.FEEXPAY_API_KEY || !process.env.FEEXPAY_SHOP_ID) return { status: "unavailable", detail: "Prestataire non configuré." };
-  const net = { mtn: "MTN", moov: "MOOV" }[String(operator).toLowerCase()];
+  const op = String(operator).toLowerCase(), net = { mtn: "MTN", moov: "MOOV", celtiis: "CELTIIS BJ" }[op];
+  const path = op === "celtiis" ? "/api/payouts/public/celtiis_bj" : "/api/payouts/public/transfer/global";
   if (!net) return { status: "unavailable", detail: "Cet opérateur : traitement manuel." };
   const cap = Number(process.env.FEEXPAY_PAYOUT_MAX_XOF) > 0 ? Number(process.env.FEEXPAY_PAYOUT_MAX_XOF) : 50000;
   if (Number(amount) > cap) return { status: "unavailable", detail: `Au-dessus du plafond automatique (${cap} F) : traitement manuel.` };
@@ -114,7 +115,7 @@ async function viaFeexpay({ txId, operator, phone, amount }) {
   let d = String(phone || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); if (d.startsWith("229")) d = d.slice(3); if (d.length === 8) d = "01" + d;
   if (!/^01\d{8}$/.test(d)) return { status: "refused", detail: "Numéro invalide." };
   try {
-    const r = await axios.post(String(process.env.FEEXPAY_BASE || "https://api-v2.feexpay.me").replace(/\/+$/, "") + "/api/payouts/public/transfer/global",
+    const r = await axios.post(String(process.env.FEEXPAY_BASE || "https://api-v2.feexpay.me").replace(/\/+$/, "") + path,
       { phoneNumber: "229" + d, amount: Math.floor(Number(amount)), shop: process.env.FEEXPAY_SHOP_ID, network: net, motif: "Retrait OMNIPAY", callback_info: String(txId) },
       { headers: { Authorization: "Bearer " + process.env.FEEXPAY_API_KEY }, timeout: 20000, validateStatus: () => true });
     if (r.status >= 200 && r.status < 300 && r.data && /^(PENDING|SUCCESSFUL)$/i.test(String(r.data.status))) return { status: "sent", detail: "accepté", ref: String(r.data.reference || txId) };
